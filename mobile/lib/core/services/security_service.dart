@@ -162,6 +162,12 @@ class SecurityService {
   /// - match case-insensitive (Android può variare) ⇒ `true`;
   /// - lista multi-firma (csv) ⇒ `true` se ALMENO una corrisponde;
   /// - nessun match ⇒ `false`.
+  ///
+  /// PERCHÉ (fix v0.1.1): il confronto è insensibile ai separatori di formato
+  /// (`31:F8:8D:…` da keytool/.env, `31F88D…` da package_info_plus Android,
+  /// `31-F8-8D-…` stile Apple): entrambi i lati vengono normalizzati. Senza
+  /// questo, l'APK release non avviava: firma attesa con ":" vs firma runtime
+  /// senza separator ⇒ mismatch ⇒ fail-closed (splash con logo su schermo nero).
   @visibleForTesting
   static bool evaluateIntegrity({
     required String currentSignature,
@@ -170,19 +176,26 @@ class SecurityService {
     if (configuredSignatures.isEmpty) return false;
     final expectedSignatures = configuredSignatures
         .split(',')
-        .map((s) => s.trim())
+        .map(_normalizeSignature)
         .where((s) => s.isNotEmpty)
         .toList();
-    if (expectedSignatures.isEmpty) return true;
+    // PERCHÉ (fail-closed): se dopo la normalizzazione non resta alcuna firma
+    // attesa (es. config = "," o soli spazi) NON è verificabile ⇒ false.
+    if (expectedSignatures.isEmpty) return false;
 
-    final current = currentSignature.toLowerCase();
+    final current = _normalizeSignature(currentSignature);
     for (final expected in expectedSignatures) {
-      if (current == expected.toLowerCase()) {
+      if (current == expected) {
         return true;
       }
     }
     return false;
   }
+
+  /// Normalizza una firma per il confronto: minuscolo e senza separatori
+  /// (`:`, `-`, spazi). Il confronto resta esatto sui 64 nibble dello SHA-256.
+  static String _normalizeSignature(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'[\s:-]'), '');
 
   /// Checks the application integrity by comparing the build signature.
   /// In debug mode, prints the current signature so you can add it to .env.
@@ -214,10 +227,20 @@ class SecurityService {
     try {
       final currentSignature =
           await (_getSignatureOverride ?? getAppSignature)();
-      return evaluateIntegrity(
+      final integrityOk = evaluateIntegrity(
         currentSignature: currentSignature,
         configuredSignatures: Env.appSignature,
       );
+      if (!integrityOk) {
+        // PERCHÉ (diagnosi v0.1.1): un mismatch in release si manifesta solo
+        // con l'app che non parte; questo log rende immediata la causa.
+        // Le firme sono dati pubblici (incorporate nell'APK stesso).
+        debugPrint(
+          'SECURITY: signature mismatch — corrente=[$currentSignature] '
+          'attesa=[${Env.appSignature}]',
+        );
+      }
+      return integrityOk;
     } catch (e) {
       if (kDebugMode) debugPrint('SECURITY: Integrity check error: $e');
       // In caso di errore, meglio bloccare (fail-secure)

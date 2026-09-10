@@ -97,7 +97,17 @@ Future<void> main() async {
   // skippato (stampa solo la firma corrente per la configurazione).
   if (!await SecurityService().verifyIntegrity()) {
     debugPrint('SECURITY: Integrity check FAILED — avvio app bloccato');
-    return; // Fail-closed
+    // PERCHÉ (fix v0.1.0 → v0.1.1): senza UI di errore l'app restava bloccata
+    // sulla splash (logo su sfondo nero) senza alcun indizio visibile. Il
+    // blocco resta fail-closed: si mostra solo il motivo dell'arresto.
+    runApp(
+      const _BootstrapErrorApp(
+        error: 'Verifica di integrità non superata: questa build non può '
+            'avviarsi (firma APK non riconosciuta o configurazione di '
+            'release non valida).',
+      ),
+    );
+    return; // Fail-closed: l'app resta bloccata
   }
 
   // PERCHÉ (audit A6): attiva la protezione screenshot globale (release

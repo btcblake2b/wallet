@@ -1,17 +1,20 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Btc Blake2b Wallet — Wallet self-custodial per bitcoin-blake2b</title>
-  <meta name="description" content="Btc Blake2b Wallet: wallet 100% locale, self-custodial e privacy-first per la rete bitcoin-blake2b. Download APK, sorgente open source (MIT).">
+  <title>Btc Blake2b Wallet — Self-custodial wallet for bitcoin-blake2b</title>
+  <meta name="description" content="Btc Blake2b Wallet: a local, self-custodial and privacy-first wallet for the bitcoin-blake2b network. Download the APK and read the open-source MIT code.">
   <meta name="theme-color" content="#0A0F1E">
   <link rel="canonical" href="https://btcblake2b.org/">
+  <link rel="alternate" hreflang="en" href="https://btcblake2b.org/">
+  <link rel="alternate" hreflang="it" href="https://btcblake2b.org/it/">
+  <link rel="alternate" hreflang="x-default" href="https://btcblake2b.org/">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
   <meta property="og:title" content="Btc Blake2b Wallet">
-  <meta property="og:description" content="Wallet self-custodial 100% locale per la rete bitcoin-blake2b. Sicuro come un caveau, semplice da usare.">
+  <meta property="og:description" content="A local, self-custodial wallet for the bitcoin-blake2b network. Secure by design, simple to use.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://btcblake2b.org/">
   <script type="application/ld+json">
@@ -23,16 +26,16 @@
     "operatingSystem": "Android",
     "softwareVersion": "0.1.0",
     "url": "https://btcblake2b.org/",
-    "description": "Wallet self-custodial 100% locale per la rete bitcoin-blake2b (minority chain). Nessun server dell'autore, nessun tracking.",
+    "description": "A local, self-custodial wallet for the bitcoin-blake2b minority chain. No author-operated server and no tracking.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
     "author": { "@type": "Person", "name": "Filippo Santagiuliana" }
   }
   </script>
 </head>
 <body>
-  <a class="skip-link" href="#contenuto">Salta al contenuto</a>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
   <header class="site-header">
-    <nav class="nav container" aria-label="Navigazione principale">
+    <nav class="nav container" aria-label="Main navigation">
       <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
         <picture class="brand-logo">
           <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
@@ -42,8 +45,9 @@
       <ul class="nav-links">
         <li><a href="/download.html">Download</a></li>
         <li><a href="/privacy.html">Privacy</a></li>
-        <li><a href="/legal.html">Note legali</a></li>
-        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Sorgente</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
+        <li><a href="/it/" lang="it" aria-label="Switch to Italian">IT</a></li>
       </ul>
     </nav>
   </header>
@@ -52,99 +56,99 @@
     <section class="hero">
       <div class="container">
         <p class="eyebrow">Bitcoin-blake2b mainnet · minority chain · self-custody</p>
-        <h1>I tuoi fondi.<br>Le tue chiavi. <span class="accent">Solo sul tuo device.</span></h1>
-        <p class="lead">Btc Blake2b Wallet è un wallet <strong>self-custodial e locale</strong> per bitcoin-blake2b mainnet. Le chiavi vengono gestite sul dispositivo e non vengono inviate ai server dell'autore.</p>
+        <h1>Your funds.<br>Your keys. <span class="accent">Only on your device.</span></h1>
+        <p class="lead">Btc Blake2b Wallet is a <strong>local, self-custodial wallet</strong> for bitcoin-blake2b mainnet. Your keys stay on your device and are never sent to the author&apos;s servers.</p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="/download.html">Scarica l'APK</a>
-          <a class="btn btn-ghost" href="https://github.com/btcblake2b/wallet" rel="noopener">Codice sorgente</a>
+          <a class="btn btn-primary" href="/download.html">Download APK</a>
+          <a class="btn btn-ghost" href="https://github.com/btcblake2b/wallet" rel="noopener">Source code</a>
         </div>
-        <p class="disclaimer-inline">⚠️ Rete sperimentale di minoranza: informati sui rischi prima di usarla.</p>
+        <p class="disclaimer-inline">⚠️ Experimental minority chain: understand the risks before using it.</p>
       </div>
     </section>
 
-    <section class="features" aria-label="Caratteristiche">
+    <section class="features" aria-label="Features">
       <div class="container">
-        <h2>Caratteristiche e principi</h2>
+        <h2>Features and principles</h2>
         <div class="grid">
           <article class="card">
-            <h3>🔒 Sicurezza first</h3>
-            <p>Seed cifrato AES-GCM su secure storage, rilevamento root/jailbreak, protezione schermo e integrità dell'APK.</p>
+            <h3>🔒 Security first</h3>
+            <p>AES-GCM encrypted seed in secure storage, root/jailbreak detection, screen protection and APK integrity checks.</p>
           </article>
           <article class="card">
             <h3>🏠 Self-custody &amp; privacy</h3>
-            <p>Wallet 100% locale. Nessun dato su server dell'autore: solo le API pubbliche necessarie (saldo e storico).</p>
+            <p>100% local wallet. No data goes to the author&apos;s servers: only the public APIs needed for balance and history.</p>
           </article>
           <article class="card">
             <h3>👁️ Watch-only</h3>
-            <p>Importa un xpub per monitorare un wallet esterno senza esporre mai le chiavi private.</p>
+            <p>Import an xpub to monitor an external wallet without ever exposing private keys.</p>
           </article>
           <article class="card">
             <h3>🧩 Multi-account</h3>
-            <p>Supporto BIP84, BIP49 e BIP44. La firma SIGHASH_UNIFIED aiuta a ridurre il rischio di replay, ma la rete non offre protezione a livello di consenso.</p>
+            <p>Supports BIP84, BIP49 and BIP44. SIGHASH_UNIFIED helps reduce replay risk, but the network has no consensus-level replay protection.</p>
           </article>
           <article class="card">
-            <h3>🎯 UX di livello professionale</h3>
-            <p>Onboarding guidato, backup confermato, coin control e 7 lingue. Pensato sia per chi inizia sia per chi vuole controllare direttamente le proprie chiavi.</p>
+            <h3>🎯 Professional UX</h3>
+            <p>Guided onboarding, confirmed backups, coin control and 7 languages. Built for newcomers and users who want direct control of their keys.</p>
           </article>
           <article class="card">
-            <h3>🕊️ Gratis e open source</h3>
-            <p>Licenza MIT. Nessuna funzione a pagamento, nessun account, nessun paywall. Le donazioni sono liberalità volontaria.</p>
+            <h3>🕊️ Free and open source</h3>
+            <p>MIT licensed. No paid features, accounts or paywalls. Donations are voluntary gifts.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="honesty" aria-label="Trasparenza sulla rete">
+    <section class="honesty" aria-label="Network transparency">
       <div class="container">
-        <h2>Onestà sulla rete</h2>
+        <h2>Honesty about the network</h2>
         <ul>
-          <li><strong>Minority chain</strong>: bitcoin-blake2b è una rete sperimentale separata da Bitcoin. Informati prima di usarla.</li>
-          <li><strong>Nessuna replay protection di rete</strong>: l'app firma con SIGHASH_UNIFIED per ridurre il rischio, ma verifica sempre gli indirizzi.</li>
-          <li><strong>Fee realistiche</strong> e fallback API automatico per saldo e storico.</li>
-          <li>Questo progetto <strong>non è affiliato</strong> a Bitcoin, bitcoin.org o al progetto bitcoin-blake2b.</li>
+          <li><strong>Minority chain</strong>: bitcoin-blake2b is an experimental network separate from Bitcoin. Learn about the risks before using it.</li>
+          <li><strong>No network replay protection</strong>: the app uses SIGHASH_UNIFIED to reduce risk, but always verify addresses.</li>
+          <li><strong>Realistic fees</strong> with an automatic API fallback for balance and history.</li>
+          <li>This project is <strong>not affiliated</strong> with Bitcoin, bitcoin.org or the bitcoin-blake2b project.</li>
         </ul>
       </div>
     </section>
 
-    <!-- PERCHÉ: il percorso iniziale riduce gli errori prima dell'uso di una rete sperimentale. -->
-    <section class="journey" aria-label="Come iniziare">
+    <!-- WHY: a clear first journey reduces mistakes before using an experimental network. -->
+    <section class="journey" aria-label="Getting started">
       <div class="container">
-        <h2>Un percorso chiaro per iniziare</h2>
+        <h2>A clear way to get started</h2>
         <div class="journey-grid">
           <article class="journey-step">
             <span class="step-number">01</span>
-            <h3>Comprendi la rete</h3>
-            <p>Bitcoin-blake2b è una rete separata e sperimentale. Verifica i rischi prima di usare fondi.</p>
+            <h3>Understand the network</h3>
+            <p>Bitcoin-blake2b is a separate experimental network. Understand the risks before using funds.</p>
           </article>
           <article class="journey-step">
             <span class="step-number">02</span>
-            <h3>Proteggi il backup</h3>
-            <p>Scrivi la seed su carta, verifica il backup e non conservarla in screenshot o cloud.</p>
+            <h3>Protect your backup</h3>
+            <p>Write your seed on paper, verify the backup and never store it in screenshots or cloud storage.</p>
           </article>
           <article class="journey-step">
             <span class="step-number">03</span>
-            <h3>Controlla ogni operazione</h3>
-            <p>Verifica rete, indirizzo, importo e fee prima di firmare o trasmettere una transazione.</p>
+            <h3>Check every transaction</h3>
+            <p>Verify the network, address, amount and fee before signing or broadcasting a transaction.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- PERCHÉ: le risposte brevi intercettano i dubbi più rischiosi senza nasconderli. -->
-    <section class="faq" aria-label="Domande frequenti">
+    <!-- WHY: concise answers address the riskiest questions without hiding them. -->
+    <section class="faq" aria-label="Frequently asked questions">
       <div class="container">
-        <h2>Domande frequenti</h2>
+        <h2>Frequently asked questions</h2>
         <details>
-          <summary>È un wallet Bitcoin classico?</summary>
-          <p>No. Supporta la rete bitcoin-blake2b, una chain separata da Bitcoin. Monete e transazioni non sono intercambiabili.</p>
+          <summary>Is this a standard Bitcoin wallet?</summary>
+          <p>No. It supports bitcoin-blake2b, a network separate from Bitcoin. Coins and transactions are not interchangeable.</p>
         </details>
         <details>
-          <summary>L'autore può recuperare la mia seed?</summary>
-          <p>No. L'app è self-custodial. Se perdi la seed e il dispositivo, il recupero dei fondi potrebbe essere impossibile.</p>
+          <summary>Can the author recover my seed?</summary>
+          <p>No. The app is self-custodial. If you lose your seed and device, recovering your funds may be impossible.</p>
         </details>
         <details>
-          <summary>Quali dati vengono trasmessi?</summary>
-          <p>Per saldo, fee e storico l'app interroga API pubbliche. Queste richieste possono esporre al provider l'indirizzo IP e l'indirizzo pubblico interrogato.</p>
+          <summary>What data is transmitted?</summary>
+          <p>For balance, fees and history the app queries public APIs. These requests may expose your IP address and the queried public address to the provider.</p>
         </details>
       </div>
     </section>
@@ -153,13 +157,13 @@
   <footer class="site-footer">
     <div class="container footer-grid">
       <div>
-        <p><strong>Btc Blake2b Wallet</strong> — licenza <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT</a>.</p>
-        <p>Sito statico: nessun analytics né cookie di profilazione. Hosting: Cloudflare.</p>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
       </div>
       <ul class="footer-links">
         <li><a href="/download.html">Download APK</a></li>
         <li><a href="/privacy.html">Privacy policy</a></li>
-        <li><a href="/legal.html">Note legali</a></li>
+        <li><a href="/legal.html">Legal</a></li>
         <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
       </ul>
     </div>

@@ -1,8 +1,8 @@
 {
-  "name": "Btc Blake2b Wallet — sito ufficiale",
+  "name": "Btc Blake2b Wallet — official website",
   "short_name": "Btc Blake2b Wallet",
-  "description": "Wallet self-custodial 100% locale per la rete bitcoin-blake2b. Download APK e documentazione.",
-  "lang": "it",
+  "description": "A local, self-custodial wallet for the bitcoin-blake2b network. Download the APK and read the documentation.",
+  "lang": "en",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0F1E",

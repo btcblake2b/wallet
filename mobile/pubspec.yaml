@@ -2,7 +2,7 @@ name: btc_blake2b_wallet
 description: Wallet Bitcoin self-custodial per la rete bitcoin-blake2b (mainnet).
 publish_to: "none"
 
-version: 0.1.0+1
+version: 0.1.1+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

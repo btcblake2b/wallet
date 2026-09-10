@@ -64,11 +64,33 @@ void main() {
         ),
         isTrue,
       );
-      // Edge storico: solo separatori ⇒ nessuna firma attesa ⇒ true.
+      // PERCHÉ (fix v0.1.1): solo separatori ⇒ nessuna firma attesa utile ⇒
+      // NON verificabile ⇒ false (fail-closed, coerente col contratto del
+      // metodo). In precedenza questa edge era true (fail-open).
       expect(
         SecurityService.evaluateIntegrity(
           currentSignature: 'ABC',
           configuredSignatures: ',',
+        ),
+        isFalse,
+      );
+    });
+
+    test('formato con separatori vs runtime senza separatori ⇒ true', () {
+      // PERCHÉ (fix v0.1.1): package_info_plus restituisce hex MAIUSCOLO senza
+      // separatori (bytesToHex), mentre .env/keytool usano "AA:BB:…". Senza
+      // normalizzazione l'APK release non avviava (fail-closed da mismatch).
+      expect(
+        SecurityService.evaluateIntegrity(
+          currentSignature: '31F88D39DCE50991',
+          configuredSignatures: '31:F8:8D:39:DC:E5:09:91',
+        ),
+        isTrue,
+      );
+      expect(
+        SecurityService.evaluateIntegrity(
+          currentSignature: '31-F8-8D-39-DC-E5-09-91',
+          configuredSignatures: '31:f8:8d:39:dc:e5:09:91',
         ),
         isTrue,
       );

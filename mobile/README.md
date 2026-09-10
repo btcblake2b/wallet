@@ -66,6 +66,35 @@ flutter analyze   # 0 errori
 flutter test      # suite completa
 ```
 
+## Release APK (Android)
+
+> ⚠️ **Regola d'oro**: dopo OGNI modifica a `.env` riesegui
+> `dart run build_runner build` **prima** di buildare la release. Envied incorpora
+> i valori nel generato `env.g.dart`: se il generato è più vecchio del `.env`, la
+> build usa i valori precedenti. Con `APP_SIGNATURE` incorporata vuota,
+> `verifyIntegrity()` blocca l'avvio in release (fail-closed) — è ciò che ha
+> bloccato la v0.1.0 (splash con logo su schermo nero), fixato in v0.1.1.
+
+```bash
+cd mobile
+# 1) .env → env.g.dart (se la cache non rileva il cambio: `dart run build_runner clean`,
+#    rimuovere lib/core/config/env.g.dart e rieseguire)
+dart run build_runner build
+# 2) APK firmato (richiede android/key.properties + keystore)
+flutter build apk --release
+```
+
+Verifica firma e hash **prima** di pubblicare:
+
+```powershell
+$apksigner = "$env:LOCALAPPDATA\Android\sdk\build-tools\36.0.0\apksigner.bat"
+& $apksigner verify --print-certs build\app\outputs\flutter-apk\app-release.apk
+Get-FileHash build\app\outputs\flutter-apk\app-release.apk -Algorithm SHA256
+```
+
+Poi: `scripts/publish-release.ps1 -Version <x.y.z>` (un commit per release sul repo
+pubblico), GitHub Release con APK + checksum, aggiornamento `website/` (nome file + hash).
+
 ## Nota sicurezza e privacy
 
 - La rete bitcoin-blake2b è una **minority chain** con hashrate limitato e **senza replay protection**: le transazioni possono essere riorganizzate o non riconosciute. La valuta del fork potrebbe non avere valore di mercato. Usa solo piccoli importi.
