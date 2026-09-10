@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Btc Blake2b Wallet — App icon MASKABLE 1024×1024 (safe zone: contenuto al ~55%, centrato).
+     Concept C4: anello esagonale arancio #F7931A + nodo hex cyan #38BDF8 su navy #0B0F19.
+     Nessun glifo ₿. Flat, no gradienti. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" fill="#0B0F19"/>
+  <!-- PERCHÉ: scala 0.55 attorno al centro → il contenuto resta entro il cerchio sicuro
+       del formato maskable (80%), niente tagli del ring con le maschere circolari. -->
+  <g transform="translate(512 512) scale(0.55) translate(-512 -512)">
+    <polygon points="512,224 761.4,368 761.4,656 512,800 262.6,656 262.6,368"
+             fill="none" stroke="#F7931A" stroke-width="104" stroke-linejoin="round"/>
+    <polygon points="512,452 564,482 564,542 512,572 460,542 460,482" fill="#38BDF8"/>
+  </g>
+</svg>

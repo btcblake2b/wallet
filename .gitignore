@@ -1,0 +1,53 @@
+# Environment variables (contains secrets)
+**/.env
+!**/.env.example
+
+# envied generated files (contenuti offuscati ma decodificabili)
+**/env.g.dart
+
+# Android signing
+mobile/android/key.properties
+
+# Google services (Firebase — non usato nel fork blake2b)
+**/google-services.json
+!**/google-services.json.example
+
+# IDE
+.continue/
+.sixth/
+.idea/
+*.iml
+
+# rtt cache
+.rtt-cache/
+
+# Python (MCP servers locali)
+.venv/
+
+# OS
+Thumbs.db
+.DS_Store
+*.apk
+
+# AI tooling: artefatti generati (ai-context/) NON si committano.
+# Il generatore (ai-core/) SI versiona.
+mobile/ai-context/
+mobile/ai-core/module_state.json
+
+# Node dependencies (mobile tooling)
+mobile/node_modules/
+
+# Flutter build & tooling
+mobile/build/
+mobile/.dart_tool/
+mobile/coverage/
+mobile/analyze_output.txt
+
+# Sentry
+mobile/sentry.properties
+
+# Log di debug
+firestore-debug.log
+
+# Cloudflare Wrangler (cache locale di login/credenziali — mai versionare)
+.wrangler/

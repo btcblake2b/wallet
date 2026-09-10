@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ Splash Screen API: tema con icona animata centrata -->
+    <style name="LaunchTheme" parent="Theme.SplashScreen">
+        <!-- Sfondo della splash screen (stesso colore del bg dell'app) -->
+        <item name="windowSplashScreenBackground">#0B0F19</item>
+        <!-- Icona animata al centro (usa ic_launcher generato da flutter) -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <!-- Durata animazione splash (0 = nessuna animazione extra dopo il primo frame Flutter) -->
+        <item name="postSplashScreenTheme">@style/NormalTheme</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">#0B0F19</item>
+    </style>
+</resources>

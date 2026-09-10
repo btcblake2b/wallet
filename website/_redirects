@@ -1,0 +1,5 @@
+# Redirect www -> apex (Cloudflare Pages)
+# Serve solo quando il dominio custom btcblake2b.org è attivo.
+/README.md /404.html 404!
+/DNS_CUSTOM_DOMAIN.md /404.html 404!
+www.btcblake2b.org/* https://btcblake2b.org/:splat 301

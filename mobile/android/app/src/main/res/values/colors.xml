@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PERCHÉ: sfondo dell'adaptive icon = navy brand (AppTheme.bgColor #0B0F19).
+         La maschera launcher mostra quindi un disco navy pulito con il mark C4 (anello+nodo). -->
+    <color name="ic_launcher_background">#0B0F19</color>
+</resources>

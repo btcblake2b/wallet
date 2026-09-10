@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Btc Blake2b Wallet — Logo orizzontale per sfondi CHIARI (testo navy #0B0F19). Sfondo trasparente.
+     Simbolo C4 (anello + nodo) al posto del glifo ₿. Font placeholder Outfit/Sora/Segoe UI. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 480" width="1500" height="480">
+  <!-- Mark: anello esagonale + nodo cyan -->
+  <g transform="translate(130 108) scale(0.512)">
+    <polygon points="256,46 437.9,151 437.9,361 256,466 74.1,361 74.1,151"
+             fill="none" stroke="#F7931A" stroke-width="56" stroke-linejoin="round"/>
+    <polygon points="256,218 288.9,237 288.9,275 256,294 223.1,275 223.1,237" fill="#38BDF8"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="448" y="238" font-family="'Outfit','Sora','Avenir Next','Segoe UI',sans-serif"
+        font-size="118" font-weight="600" letter-spacing="-1">
+    <tspan fill="#0B0F19">Btc </tspan><tspan fill="#F7931A">blake2b</tspan><tspan fill="#0B0F19"> Wallet</tspan>
+  </text>
+  <!-- Tagline -->
+  <text x="452" y="332" font-family="'Outfit','Sora','Avenir Next','Segoe UI',sans-serif"
+        font-size="22" font-weight="500" letter-spacing="8" fill="#64748B">YOUR KEYS, YOUR COINS</text>
+</svg>

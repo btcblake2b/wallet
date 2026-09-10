@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+# .gitattributes — export-ignore per lo snapshot di release pubblica
+#
+# PERCHÉ: scripts/publish-release.ps1 estrae lo snapshot con `git archive <tag>`.
+# `export-ignore` fa sì che i percorsi interni (AI, dev, deploy) vengano esclusi
+# dagli archivi git e quindi dallo snapshot pubblicato sul repo
+# `btcblake2b/wallet`. Tutto ciò che resta è ciò che serve a un utente pubblico
+# per leggere e buildare il sorgente (LICENSE, README, website/, mobile/).
+#
+# I pattern sono relativi alla root del repository.
+# ---------------------------------------------------------------------------
+
+# --- Infrastruttura AI / agenti (interna) ---
+# PERCHÉ: definizioni di agenti, skills, hooks di memoria, workflow AI:
+# inutili e potenzialmente fuorvianti per un utente pubblico.
+.agent.md export-ignore
+.aionrs/** export-ignore
+.github/** export-ignore
+.githooks/** export-ignore
+.rtt/** export-ignore
+.vscode/** export-ignore
+CLAUDE.md export-ignore
+tasks.json export-ignore
+
+# --- docs/ interamente interna ---
+# PERCHÉ: tutti i 19 file tracciati sono interni: docs/ai-memory/** (memoria
+# condivisa AI + telemetria agent_runs.jsonl), docs/legal-audit.md e
+# docs/legal-todo.md (tracker legali), docs/PUBLISHING.md (runbook con
+# riferimenti al repo privato), docs/api-explorer/server-prompt.md (prompt AI).
+# Nessun file in docs/ è necessario al build né destinato al pubblico.
+docs/** export-ignore
+
+# --- scripts/ interamente interni ---
+# PERCHÉ: publish-release.ps1 (pubblica, riferimenti repo privato),
+# deploy-site.ps1 (Cloudflare), hooks/ (sessioni AI), embed_*/validate-memory
+# (memoria AI), coverage-gate.py e install-git-hooks (CI/dev interno).
+# generate_third_party_licenses.dart è l'unico potenzialmente utile al
+# pubblico, ma THIRD_PARTY_LICENSES.md è già incluso pre-generato: si esclude
+# l'intera directory invece di mantenere eccezioni file-per-file fragili.
+scripts/** export-ignore
+
+# --- Analizzatore statico AI interno ---
+mobile/ai-core/** export-ignore
+
+# --- Asset sorgente del logo (interno) ---
+# PERCHÉ: contiene BRIEF_E_PROMPT.md (prompt AI), render.ps1 e preview/render
+# HTML (tooling di render). Gli asset di prodotto finali sono già tracciati
+# altrove: website/favicon.svg, mobile/web/icons/*, android/app/src/main/res/
+# mipmap-* e assets/. Duplicarli nello snapshot non ha valore pubblico.
+btc_blake2b_logo/** export-ignore
+
+# --- Documentazione operativa del sito ---
+# PERCHÉ: queste guide contengono dettagli interni Cloudflare/Pages e non fanno
+# parte degli asset necessari al sito pubblico o al build dell'app.
+website/README.md export-ignore
+website/DNS_CUSTOM_DOMAIN.md export-ignore

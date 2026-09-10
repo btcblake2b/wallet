@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Btc Blake2b Wallet — App icon 1024×1024 (full-bleed navy, spigoli VIVI: aggiungi il radius).
+     Concept C4: anello esagonale arancio #F7931A (coin/blocco) + nodo hex cyan #38BDF8 (hash BLAKE2b)
+     su sfondo #0B0F19. Flat, no gradienti. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" fill="#0B0F19"/>
+  <!-- anello esagonale arancio Bitcoin (corposo per reggere anche a 16px) -->
+  <polygon points="512,224 761.4,368 761.4,656 512,800 262.6,656 262.6,368"
+           fill="none" stroke="#F7931A" stroke-width="104" stroke-linejoin="round"/>
+  <!-- nodo esagonale centrale cyan -->
+  <polygon points="512,452 564,482 564,542 512,572 460,542 460,482"
+           fill="#38BDF8"/>
+</svg>

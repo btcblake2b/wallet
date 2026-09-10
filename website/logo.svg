@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Btc Blake2b Wallet — Mark (simbolo "anello + nodo", sfondo trasparente)
+     Concept C4: anello esagonale arancio (coin/blocco/rete) + nodo hex cyan (hash BLAKE2b).
+     Nessun glifo ₿. Palette: #F7931A · #38BDF8 · trasparente. Flat, no gradienti. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- anello esagonale arancio -->
+  <polygon points="256,46 437.9,151 437.9,361 256,466 74.1,361 74.1,151"
+           fill="none" stroke="#F7931A" stroke-width="56" stroke-linejoin="round"/>
+  <!-- nodo centrale esagonale cyan -->
+  <polygon points="256,218 288.9,237 288.9,275 256,294 223.1,275 223.1,237"
+           fill="#38BDF8"/>
+</svg>

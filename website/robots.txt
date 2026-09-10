@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://btcblake2b.org/sitemap.xml

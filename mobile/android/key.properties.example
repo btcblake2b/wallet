@@ -1,0 +1,9 @@
+# Android keystore properties
+# NON COMMITTARE questo file! Contiene le password del keystore.
+# Copia questo file in key.properties e inserisci i valori reali.
+
+storePassword=LA_TUA_STORE_PASSWORD
+keyPassword=LA_TUA_KEY_PASSWORD
+keyAlias=upload
+# Percorso relativo alla directory android/app/
+storeFile=app/upload-keystore.jks
