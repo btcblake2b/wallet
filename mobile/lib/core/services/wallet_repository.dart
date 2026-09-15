@@ -119,6 +119,15 @@ class WalletRepository {
     await _cryptoService.unlockWebStorage(password);
   }
 
+  /// Web (hardening 2.4): blocca il vault azzerando le chiavi in memoria.
+  /// Chiamato dall'auto-lock (inattività / pagina nascosta) e dal menu "Blocca".
+  /// Su native è un no-op: il keyring OS protegge le chiavi a riposo e non
+  /// esiste uno stato "sbloccato in RAM" governato dall'app.
+  Future<void> lockWebStorage() async {
+    _secureSeedStorage.lock();
+    _cryptoService.lockWebStorage();
+  }
+
   Future<WalletRecord> updateWallet(WalletRecord wallet) async {
     await _secureSeedStorage.upsertWallet(wallet);
     return wallet;

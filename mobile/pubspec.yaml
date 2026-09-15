@@ -2,7 +2,7 @@ name: btc_blake2b_wallet
 description: Wallet Bitcoin self-custodial per la rete bitcoin-blake2b (mainnet).
 publish_to: "none"
 
-version: 0.1.1+2
+version: 0.2.0+3
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -43,6 +43,8 @@ dependencies:
   qr: ^3.0.2
   yaml: ^3.1.3
   watcher: ^1.2.1
+  web_socket_channel: ^3.0.3
+  bip340: ^0.3.0
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +60,11 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    # PERCHÉ (fix 2.6): attribuzioni terze parti visibili OFFLINE nella
+    # schermata About (nessuna chiamata di rete a raw.githubusercontent.com).
+    # Generato da scripts/generate_third_party_licenses.dart.
+    - assets/legal/
   # Font Outfit locale (P2.2): font variabile [wght] bundlato — niente fetch
   # runtime da Google Fonts, niente FOUT/blocco render/richieste CSP.
   # Copre tutti i pesi 100-900 con un solo file (~108 KB).

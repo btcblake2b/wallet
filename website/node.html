@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Node — Btc Blake2b Wallet</title>
+  <meta name="description" content="Run your own self-hosted Lightning node for bitcoin-blake2b and control it from the app with the NWC/NCC bridge. Verify the installer SHA-256 before running it.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/node.html">
+  <link rel="alternate" hreflang="en" href="https://btcblake2b.org/node.html">
+  <link rel="alternate" hreflang="it" href="https://btcblake2b.org/it/node.html">
+  <link rel="alternate" hreflang="x-default" href="https://btcblake2b.org/node.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/download.html">Download</a></li>
+        <li><a href="/node.html" aria-current="page">Node</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/control-plane" rel="noopener">Source</a></li>
+        <li><a href="/it/node.html" lang="it" aria-label="Switch to Italian">IT</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <h1>Run your own Lightning node</h1>
+    <p class="lead">Self-hosted node for <strong>bitcoin-blake2b</strong>, controlled from the app</p>
+
+    <div class="download-box">
+      <p><strong>Before downloading</strong>: get the installer only from this page (domain <code>btcblake2b.org</code>) or from the official GitHub repository.</p>
+      <a class="btn btn-primary btn-lg" href="https://github.com/btcblake2b/control-plane/releases/latest" rel="noopener">Download installer (GitHub Releases)</a>
+      <p class="small">Release <strong>v0.2.0</strong> — package <code>tlw-node-installer-0.2.0.tar.gz</code>, with <code>SHA256SUMS</code> covering the package and the bridge binary.</p>
+
+      <h2>Verify the checksum (SHA-256)</h2>
+      <p>The file <code>tlw-node-installer-0.2.0.tar.gz</code> must have this hash:</p>
+      <pre class="checksum" aria-label="SHA-256 checksum of the node installer package"><code>SHA256(tlw-node-installer-0.2.0.tar.gz) = <span id="checksum">bda658654b847dcaa05b8dbe94036f766f4589c38dae3b9e6c3a0320e4f8cc95</span></code></pre>
+      <h3>Verify on Linux</h3>
+      <pre><code>sha256sum tlw-node-installer-0.2.0.tar.gz</code></pre>
+      <h3>Verify on Windows (PowerShell)</h3>
+      <pre><code>Get-FileHash .\tlw-node-installer-0.2.0.tar.gz -Algorithm SHA256</code></pre>
+    </div>
+
+    <h2>Install (3 commands)</h2>
+    <pre><code>tar -xzf tlw-node-installer-0.2.0.tar.gz
+cd tlw-node-installer-0.2.0
+./install.sh --bitcoind-rpc rpcuser:rpcpass@127.0.0.1:8332</code></pre>
+    <p class="small">Run it as your regular user: <code>sudo</code> is never required.</p>
+    <p>At the end the installer prints the <strong>connection string</strong> (NWC/NCC URI) — see “Connect the app” below for where to find it and a format example.</p>
+
+    <h2>Requirements</h2>
+    <p>Lightning means running a real node: the installer sets everything up for you, but the machine and the full node must already be there.</p>
+    <ul>
+      <li><strong>A machine you keep online</strong> (server / VM / homelab): Ubuntu <strong>22.04 / 24.04 / 26.04</strong> (x86_64). Other distributions only with custom artifacts (<code>--cln-url/--cln-sha256 --allow-custom-urls</code>); Debian 12 is not covered by the upstream binaries.</li>
+      <li><strong>A synced <code>bitcoind</code> blake2b full node</strong>, reachable via RPC — it is <em>not</em> installed by this package (reference: <code>DarkWebDivingClub/bitcoin-knots</code>). Auto-detected from <code>~/.bitcoin/bitcoin.conf</code>, or pass <code>--bitcoind-rpc user:pass@host:port</code>.</li>
+      <li><strong><code>curl</code> and <code>python3</code></strong> — standard on Ubuntu.</li>
+      <li><strong>No <code>sudo</code>, no system changes</strong>: everything is user-level (<code>~/cln-blake2b</code>, <code>~/bridge</code>, <code>~/.lightning</code>). <code>--uninstall</code> removes the binaries but never the wallet datadir (funds, channels, keys stay).</li>
+      <li><strong>No open ports needed</strong>: the bridge connects <em>outbound</em> to a Nostr relay and your phone reaches the node through the relay — nothing has to be exposed on your router; <code>clnrest</code> stays bound to loopback.</li>
+    </ul>
+
+    <h2>Connect the app (NWC/NCC)</h2>
+    <p>To control the node from the app you need the <strong>connection string</strong> (NWC URI): the installer prints it at the end and stores it on the server.</p>
+    <pre><code>cat ~/bridge/uri.txt</code></pre>
+    <p>Paste it in the app under <em>Lightning → Connect</em>. Format example (fake values):</p>
+    <pre><code>nostr+walletconnect://&lt;bridge-pubkey-64-hex&gt;?relay=wss://relay.primal.net&amp;secret=&lt;64-hex&gt;</code></pre>
+    <p class="small">The string contains a personal authorization secret: treat it like a password and never share it. Authorize another device with <code>./install.sh --gen-uri</code>; revoke a lost one with <code>./install.sh --revoke-client &lt;pubkey&gt;</code>.</p>
+
+    <h2>What the installer does</h2>
+    <ul>
+      <li>installs <strong>Core Lightning (blake2b fork)</strong> and the <strong>NWC/NCC bridge</strong>, each with a <strong>pinned SHA-256</strong>: any mismatch stops the installation (fail-closed);</li>
+      <li>creates a dedicated <strong>rune</strong> on the node and an authorization URI per device;</li>
+      <li>everything is user-level (<code>~/cln-blake2b</code>, <code>~/bridge</code>, <code>~/.lightning</code>): no system changes, no root;</li>
+      <li><code>--uninstall</code> removes binaries and configuration but <strong>never touches the wallet datadir</strong> (funds, channels, keys stay).</li>
+    </ul>
+
+    <h2>Security &amp; trust</h2>
+    <ul>
+      <li>self-hosted by design: the node runs on <strong>your</strong> server; nobody else can operate it;</li>
+      <li>the bridge accepts requests only from devices you authorized;</li>
+      <li>step-by-step guide, FAQ and threat model: <a href="https://github.com/btcblake2b/control-plane/blob/main/docs/INSTALLER.md" rel="noopener">installer documentation</a>.</li>
+    </ul>
+
+    <div class="notice">
+      <strong>⚠️ Important notice</strong> — This is an experimental network. The node software is provided without warranty under the MIT license: use it only after understanding the risks and verifying the integrity of the package.
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/control-plane/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/privacy.html">Privacy policy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

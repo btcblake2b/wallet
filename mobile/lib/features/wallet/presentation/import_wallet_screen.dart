@@ -9,6 +9,11 @@ import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../l10n/app_localizations.dart';
 
+/// Lunghezze mnemoniche valide BIP39 (entropia 128-256 bit): 12/15/18/21/24
+/// parole. PERCHÉ: il package bip39 1.0.6 accetta queste lunghezze (entropia
+/// 16-32 byte) — il validator di import non deve restringere a 12.
+const _kBip39WordCounts = <int>[12, 15, 18, 21, 24];
+
 /// Modalità di import dello schermo.
 /// PERCHÉ (P1 watch-only): seed phrase (wallet con chiavi) oppure xpub
 /// (wallet di sola lettura, nessuna chiave privata).
@@ -234,7 +239,9 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
                         .toLowerCase()
                         .replaceAll(RegExp(r'\s+'), ' ');
                     final words = clean.split(' ');
-                    if (words.length != 12) {
+                    // PERCHÉ: BIP39 standard ammette 12/15/18/21/24 parole;
+                    // il vincolo "!= 12" scartava le seed da 15/18/21/24.
+                    if (!_kBip39WordCounts.contains(words.length)) {
                       return loc.importScreenValidateCount(words.length);
                     }
                     if (!bip39.validateMnemonic(clean)) {

@@ -123,6 +123,10 @@ Future<void> main() async {
     themeProvider: themeProvider,
   );
 
+  // PERCHÉ (blocco app): lo stato va risolto PRIMA di runApp — se attivo
+  // l'app parte già coperta dalla lock screen (nessun flash di contenuti).
+  await services.appLockService.init();
+
   runApp(
     BtcBlake2bWalletApp(
       services: services,

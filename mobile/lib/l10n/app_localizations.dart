@@ -99,8 +99,8 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
-    Locale('it'),
     Locale('en'),
+    Locale('it'),
     Locale('de'),
     Locale('fi'),
     Locale('es'),
@@ -299,6 +299,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More options'**
   String get homeMoreOptions;
+
+  /// No description provided for @homeLockVault.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock vault'**
+  String get homeLockVault;
+
+  /// No description provided for @homeVaultLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault locked'**
+  String get homeVaultLocked;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsSectionSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get settingsSectionSecurity;
+
+  /// No description provided for @settingsSectionAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsSectionAppearance;
+
+  /// No description provided for @settingsSectionTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get settingsSectionTools;
+
+  /// No description provided for @settingsSectionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Information'**
+  String get settingsSectionInfo;
+
+  /// No description provided for @settingsTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark theme'**
+  String get settingsTheme;
+
+  /// No description provided for @settingsAppLock.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock'**
+  String get settingsAppLock;
+
+  /// No description provided for @settingsAppLockDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Require biometrics or phone PIN on every open'**
+  String get settingsAppLockDesc;
+
+  /// No description provided for @settingsAppLockUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No biometrics enrolled on this device'**
+  String get settingsAppLockUnavailable;
+
+  /// No description provided for @settingsAppLockEnableFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed: app lock not enabled'**
+  String get settingsAppLockEnableFailed;
+
+  /// No description provided for @settingsAppLockEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock enabled'**
+  String get settingsAppLockEnabled;
+
+  /// No description provided for @settingsAppLockDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock disabled'**
+  String get settingsAppLockDisabled;
+
+  /// No description provided for @appLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App locked'**
+  String get appLockTitle;
+
+  /// No description provided for @appLockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with biometrics or phone PIN'**
+  String get appLockSubtitle;
+
+  /// No description provided for @appLockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get appLockUnlock;
+
+  /// No description provided for @appLockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock the wallet'**
+  String get appLockReason;
+
+  /// No description provided for @appLockNoticeDeviceAuthRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock disabled: the phone screen protection (biometrics/PIN) is no longer available. Re-enable it in the system settings to use app lock again.'**
+  String get appLockNoticeDeviceAuthRemoved;
+
+  /// No description provided for @appLockNoticeContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get appLockNoticeContinue;
+
+  /// No description provided for @appLockPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable app lock?'**
+  String get appLockPromptTitle;
+
+  /// No description provided for @appLockPromptMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the wallet will require biometrics or your phone PIN.'**
+  String get appLockPromptMessage;
+
+  /// No description provided for @appLockPromptEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get appLockPromptEnable;
+
+  /// No description provided for @appLockPromptLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get appLockPromptLater;
+
+  /// No description provided for @aboutLicensesOpenOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Open online'**
+  String get aboutLicensesOpenOnline;
 
   /// No description provided for @homeCreated.
   ///
@@ -933,7 +1083,7 @@ abstract class AppLocalizations {
   /// No description provided for @importScreenHintText.
   ///
   /// In en, this message translates to:
-  /// **'The seed phrase consists of 12 words separated by spaces. You can paste it directly.'**
+  /// **'The seed phrase consists of 12, 15, 18, 21 or 24 words separated by spaces. You can paste it directly.'**
   String get importScreenHintText;
 
   /// No description provided for @onboardingSubmitError.
@@ -1068,6 +1218,12 @@ abstract class AppLocalizations {
   /// **'The scanned code is not a valid Bitcoin address.'**
   String get scanQrInvalid;
 
+  /// No description provided for @scanQrInvalidInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'The scanned code is not a valid Lightning invoice.'**
+  String get scanQrInvalidInvoice;
+
   /// No description provided for @scanQrTorch.
   ///
   /// In en, this message translates to:
@@ -1101,13 +1257,13 @@ abstract class AppLocalizations {
   /// No description provided for @importScreenHeading.
   ///
   /// In en, this message translates to:
-  /// **'Enter the 12 words'**
+  /// **'Enter your seed phrase'**
   String get importScreenHeading;
 
   /// No description provided for @importScreenSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter the 12-word mnemonic phrase separated by spaces, then choose the account type that matches the original wallet.'**
+  /// **'Enter the mnemonic phrase (12, 15, 18, 21 or 24 words) separated by spaces, then choose the account type that matches the original wallet.'**
   String get importScreenSubtitle;
 
   /// No description provided for @importScriptTypeLabel.
@@ -1161,7 +1317,7 @@ abstract class AppLocalizations {
   /// No description provided for @importScreenValidateCount.
   ///
   /// In en, this message translates to:
-  /// **'The phrase must contain exactly 12 words (detected: {count}).'**
+  /// **'The phrase must contain 12, 15, 18, 21 or 24 words (detected: {count}).'**
   String importScreenValidateCount(Object count);
 
   /// No description provided for @importScreenValidateInvalid.
@@ -1571,6 +1727,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Language'**
   String get languageSelector;
+
+  /// No description provided for @languageSelectorAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'🌐 Automatic (system)'**
+  String get languageSelectorAuto;
 
   /// No description provided for @languageSelectorEn.
   ///
@@ -2435,6 +2597,1164 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error: {error}'**
   String explorerErrorGeneric(String error);
+
+  /// No description provided for @walletLayerOnchain.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain'**
+  String get walletLayerOnchain;
+
+  /// No description provided for @walletLayerLightning.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning'**
+  String get walletLayerLightning;
+
+  /// No description provided for @lightningDisconnectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Lightning node connected'**
+  String get lightningDisconnectedTitle;
+
+  /// No description provided for @lightningDisconnectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your blake2b Lightning node to send and receive payments. The app never holds your funds or keys.'**
+  String get lightningDisconnectedBody;
+
+  /// No description provided for @lightningConnectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect node'**
+  String get lightningConnectButton;
+
+  /// No description provided for @lightningConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Lightning node'**
+  String get lightningConnectTitle;
+
+  /// No description provided for @lightningConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the connection string (nostr+walletconnect://…)'**
+  String get lightningConnectHint;
+
+  /// No description provided for @lightningConnectInvalidUri.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid connection string'**
+  String get lightningConnectInvalidUri;
+
+  /// No description provided for @lightningConnectInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The node must authorize this app (grant): check your node\'\'s control panel.'**
+  String get lightningConnectInfo;
+
+  /// No description provided for @lightningConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get lightningConnecting;
+
+  /// No description provided for @lightningConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get lightningConnected;
+
+  /// No description provided for @lightningDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get lightningDisconnect;
+
+  /// No description provided for @lightningBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning balance'**
+  String get lightningBalance;
+
+  /// No description provided for @lightningChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get lightningChannels;
+
+  /// No description provided for @lightningNoChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'No open channels'**
+  String get lightningNoChannels;
+
+  /// No description provided for @lightningChannelPeer.
+  ///
+  /// In en, this message translates to:
+  /// **'Peer'**
+  String get lightningChannelPeer;
+
+  /// No description provided for @lightningChannelCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Capacity'**
+  String get lightningChannelCapacity;
+
+  /// No description provided for @lightningChannelLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get lightningChannelLocal;
+
+  /// No description provided for @lightningChannelRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote'**
+  String get lightningChannelRemote;
+
+  /// No description provided for @lightningOpenChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open channel'**
+  String get lightningOpenChannel;
+
+  /// No description provided for @lightningOpenChannelNodeId.
+  ///
+  /// In en, this message translates to:
+  /// **'Node ID (pubkey)'**
+  String get lightningOpenChannelNodeId;
+
+  /// No description provided for @lightningOpenChannelHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Host (optional, ip:port)'**
+  String get lightningOpenChannelHost;
+
+  /// No description provided for @lightningOpenChannelAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (sat)'**
+  String get lightningOpenChannelAmount;
+
+  /// No description provided for @lightningOpenChannelPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private channel'**
+  String get lightningOpenChannelPrivate;
+
+  /// No description provided for @lightningChannelOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel opening requested'**
+  String get lightningChannelOpened;
+
+  /// No description provided for @lightningCloseChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close channel'**
+  String get lightningCloseChannel;
+
+  /// No description provided for @lightningCloseChannelForce.
+  ///
+  /// In en, this message translates to:
+  /// **'Force close'**
+  String get lightningCloseChannelForce;
+
+  /// No description provided for @lightningCloseChannelForceWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Force close broadcasts the latest channel state on-chain. Fees and delays may apply. Continue?'**
+  String get lightningCloseChannelForceWarning;
+
+  /// No description provided for @lightningReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive'**
+  String get lightningReceive;
+
+  /// No description provided for @lightningSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get lightningSend;
+
+  /// No description provided for @lightningInvoiceAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (sat)'**
+  String get lightningInvoiceAmount;
+
+  /// No description provided for @lightningInvoiceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get lightningInvoiceDescription;
+
+  /// No description provided for @lightningInvoiceCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create invoice'**
+  String get lightningInvoiceCreate;
+
+  /// No description provided for @lightningInvoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning invoice'**
+  String get lightningInvoiceTitle;
+
+  /// No description provided for @lightningPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay invoice'**
+  String get lightningPay;
+
+  /// No description provided for @lightningPayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the invoice (lnbc…)'**
+  String get lightningPayHint;
+
+  /// No description provided for @lightningPayDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Lightning payment'**
+  String get lightningPayDialogTitle;
+
+  /// No description provided for @lightningPayDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay this invoice?'**
+  String get lightningPayDialogBody;
+
+  /// No description provided for @lightningPaySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment sent'**
+  String get lightningPaySuccess;
+
+  /// No description provided for @lightningCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get lightningCopied;
+
+  /// No description provided for @lightningErrorRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'The node hasn\'\'t authorized this app. Create a grant on your node for this connection.'**
+  String get lightningErrorRestricted;
+
+  /// No description provided for @lightningErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning error: {error}'**
+  String lightningErrorGeneric(String error);
+
+  /// No description provided for @lightningConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get lightningConfirm;
+
+  /// No description provided for @lightningCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get lightningCancel;
+
+  /// No description provided for @lightningNodeOnchain.
+  ///
+  /// In en, this message translates to:
+  /// **'Node on-chain'**
+  String get lightningNodeOnchain;
+
+  /// No description provided for @lightningDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit'**
+  String get lightningDeposit;
+
+  /// No description provided for @lightningWithdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Send on-chain'**
+  String get lightningWithdraw;
+
+  /// No description provided for @lightningDepositTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain deposit'**
+  String get lightningDepositTitle;
+
+  /// No description provided for @lightningDepositHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send blake2b funds to this node address.'**
+  String get lightningDepositHint;
+
+  /// No description provided for @lightningDepositNewAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'New address'**
+  String get lightningDepositNewAddress;
+
+  /// No description provided for @lightningDepositWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Send only on the blake2b network. Funds sent on the wrong network are lost.'**
+  String get lightningDepositWarning;
+
+  /// No description provided for @lightningOnchainSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain send'**
+  String get lightningOnchainSendTitle;
+
+  /// No description provided for @lightningOnchainAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient address'**
+  String get lightningOnchainAddressLabel;
+
+  /// No description provided for @lightningOnchainAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (sat)'**
+  String get lightningOnchainAmountLabel;
+
+  /// No description provided for @lightningOnchainFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Network fee'**
+  String get lightningOnchainFeeLabel;
+
+  /// No description provided for @lightningOnchainFeeMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Min'**
+  String get lightningOnchainFeeMin;
+
+  /// No description provided for @lightningOnchainFeeEconomical.
+  ///
+  /// In en, this message translates to:
+  /// **'Economical'**
+  String get lightningOnchainFeeEconomical;
+
+  /// No description provided for @lightningOnchainFeePriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get lightningOnchainFeePriority;
+
+  /// No description provided for @lightningOnchainConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm send'**
+  String get lightningOnchainConfirm;
+
+  /// No description provided for @lightningOnchainConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm on-chain send?'**
+  String get lightningOnchainConfirmTitle;
+
+  /// No description provided for @lightningOnchainWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Irreversible operation: funds will leave the node.'**
+  String get lightningOnchainWarning;
+
+  /// No description provided for @lightningOnchainSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction sent'**
+  String get lightningOnchainSuccess;
+
+  /// No description provided for @lightningOnchainInvalidAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid blake2b address'**
+  String get lightningOnchainInvalidAddress;
+
+  /// No description provided for @lightningOnchainInsufficient.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient on-chain funds'**
+  String get lightningOnchainInsufficient;
+
+  /// No description provided for @lightningFeesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee estimates unavailable: the node will choose the fee'**
+  String get lightningFeesUnavailable;
+
+  /// No description provided for @lightningOpenChannelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pubkey or pubkey@host:port (onion needs Tor on the node)'**
+  String get lightningOpenChannelHint;
+
+  /// No description provided for @lightningOpenChannelInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid node ID or host (66 hex, host:port)'**
+  String get lightningOpenChannelInvalid;
+
+  /// No description provided for @lightningActivityDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Node activity detected'**
+  String get lightningActivityDetected;
+
+  /// No description provided for @lightningPeers.
+  ///
+  /// In en, this message translates to:
+  /// **'Peers'**
+  String get lightningPeers;
+
+  /// No description provided for @lightningPeersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No peers connected'**
+  String get lightningPeersEmpty;
+
+  /// No description provided for @lightningConnectPeer.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect peer'**
+  String get lightningConnectPeer;
+
+  /// No description provided for @lightningDisconnectPeer.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get lightningDisconnectPeer;
+
+  /// No description provided for @lightningPeerDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected'**
+  String get lightningPeerDisconnected;
+
+  /// No description provided for @lightningPeerId.
+  ///
+  /// In en, this message translates to:
+  /// **'Peer ID'**
+  String get lightningPeerId;
+
+  /// No description provided for @lightningPeerAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Addresses'**
+  String get lightningPeerAddresses;
+
+  /// No description provided for @lightningDisconnectPeerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect this peer? Open channels stay active.'**
+  String get lightningDisconnectPeerConfirm;
+
+  /// No description provided for @lightningChannelDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel details'**
+  String get lightningChannelDetail;
+
+  /// No description provided for @lightningChannelShortId.
+  ///
+  /// In en, this message translates to:
+  /// **'Short channel ID'**
+  String get lightningChannelShortId;
+
+  /// No description provided for @lightningChannelState.
+  ///
+  /// In en, this message translates to:
+  /// **'Node status'**
+  String get lightningChannelState;
+
+  /// No description provided for @lightningChannelFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee'**
+  String get lightningChannelFee;
+
+  /// No description provided for @lightningChannelSpendable.
+  ///
+  /// In en, this message translates to:
+  /// **'Spendable'**
+  String get lightningChannelSpendable;
+
+  /// No description provided for @lightningChannelReceivable.
+  ///
+  /// In en, this message translates to:
+  /// **'Receivable'**
+  String get lightningChannelReceivable;
+
+  /// No description provided for @lightningChannelHtlcs.
+  ///
+  /// In en, this message translates to:
+  /// **'HTLCs'**
+  String get lightningChannelHtlcs;
+
+  /// No description provided for @lightningChannelFundingTxid.
+  ///
+  /// In en, this message translates to:
+  /// **'Funding txid'**
+  String get lightningChannelFundingTxid;
+
+  /// No description provided for @lightningNodeManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Node management'**
+  String get lightningNodeManagement;
+
+  /// No description provided for @lightningNodeManagementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{peers} peers · {channels} channels'**
+  String lightningNodeManagementSubtitle(int peers, int channels);
+
+  /// No description provided for @lightningNodeIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Node identity'**
+  String get lightningNodeIdentity;
+
+  /// No description provided for @lightningNodePubkey.
+  ///
+  /// In en, this message translates to:
+  /// **'Public key'**
+  String get lightningNodePubkey;
+
+  /// No description provided for @lightningNodeVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get lightningNodeVersion;
+
+  /// No description provided for @lightningNodePeersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Peers'**
+  String get lightningNodePeersCount;
+
+  /// No description provided for @lightningNodeChannelsActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active channels'**
+  String get lightningNodeChannelsActive;
+
+  /// No description provided for @lightningNodeChannelsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending channels'**
+  String get lightningNodeChannelsPending;
+
+  /// No description provided for @lightningNodeLiquidityAdsUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this node: advertising lease terms requires the liquidity-ads plugin.'**
+  String get lightningNodeLiquidityAdsUnsupported;
+
+  /// No description provided for @lightningLiquidity.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquidity'**
+  String get lightningLiquidity;
+
+  /// No description provided for @lightningLiquidityTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total capacity'**
+  String get lightningLiquidityTotal;
+
+  /// No description provided for @lightningLiquidityOutbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbound'**
+  String get lightningLiquidityOutbound;
+
+  /// No description provided for @lightningLiquidityInbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbound'**
+  String get lightningLiquidityInbound;
+
+  /// No description provided for @lightningLiquidityWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'No inbound liquidity: payments can only arrive after a peer opens a channel towards this node.'**
+  String get lightningLiquidityWarning;
+
+  /// No description provided for @lightningMovements.
+  ///
+  /// In en, this message translates to:
+  /// **'Movements'**
+  String get lightningMovements;
+
+  /// No description provided for @lightningMovementsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No movements yet'**
+  String get lightningMovementsEmpty;
+
+  /// No description provided for @lightningMovementsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All movements'**
+  String get lightningMovementsAll;
+
+  /// No description provided for @lightningMovementsLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get lightningMovementsLoadMore;
+
+  /// No description provided for @lightningMovementDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain deposit'**
+  String get lightningMovementDeposit;
+
+  /// No description provided for @lightningMovementWithdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain send'**
+  String get lightningMovementWithdrawal;
+
+  /// No description provided for @lightningMovementChannelOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel opening'**
+  String get lightningMovementChannelOpen;
+
+  /// No description provided for @lightningMovementChannelClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel closing'**
+  String get lightningMovementChannelClose;
+
+  /// No description provided for @lightningMovementInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning payment'**
+  String get lightningMovementInvoice;
+
+  /// No description provided for @lightningMovementOnchainFee.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain fee'**
+  String get lightningMovementOnchainFee;
+
+  /// No description provided for @lightningMovementForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarding'**
+  String get lightningMovementForward;
+
+  /// No description provided for @lightningMovementOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Movement'**
+  String get lightningMovementOther;
+
+  /// No description provided for @lightningChannelsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All channels ({count})'**
+  String lightningChannelsAll(int count);
+
+  /// No description provided for @lightningOnchainNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Node on-chain'**
+  String get lightningOnchainNode;
+
+  /// No description provided for @lightningOnchainBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain balance'**
+  String get lightningOnchainBalance;
+
+  /// No description provided for @lightningOnchainConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get lightningOnchainConfirmed;
+
+  /// No description provided for @lightningOnchainPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get lightningOnchainPending;
+
+  /// No description provided for @lightningOnchainUtxos.
+  ///
+  /// In en, this message translates to:
+  /// **'UTXOs'**
+  String get lightningOnchainUtxos;
+
+  /// No description provided for @lightningOnchainUtxosEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No UTXOs'**
+  String get lightningOnchainUtxosEmpty;
+
+  /// No description provided for @lightningOnchainAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Node addresses'**
+  String get lightningOnchainAddresses;
+
+  /// No description provided for @lightningOnchainNewAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'New address'**
+  String get lightningOnchainNewAddress;
+
+  /// No description provided for @lightningOnchainAddressType.
+  ///
+  /// In en, this message translates to:
+  /// **'Address type'**
+  String get lightningOnchainAddressType;
+
+  /// No description provided for @lightningOnchainTypeBech32.
+  ///
+  /// In en, this message translates to:
+  /// **'Bech32 (bc1q)'**
+  String get lightningOnchainTypeBech32;
+
+  /// No description provided for @lightningOnchainTypeTaproot.
+  ///
+  /// In en, this message translates to:
+  /// **'Taproot (bc1p)'**
+  String get lightningOnchainTypeTaproot;
+
+  /// No description provided for @lightningOnchainHasFunds.
+  ///
+  /// In en, this message translates to:
+  /// **'With funds'**
+  String get lightningOnchainHasFunds;
+
+  /// No description provided for @lightningOnchainReserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserved'**
+  String get lightningOnchainReserved;
+
+  /// No description provided for @lightningOnchainBlockHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get lightningOnchainBlockHeight;
+
+  /// No description provided for @lightningPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get lightningPayments;
+
+  /// No description provided for @lightningInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get lightningInvoices;
+
+  /// No description provided for @lightningInvoicesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No invoices yet'**
+  String get lightningInvoicesEmpty;
+
+  /// No description provided for @lightningInvoiceStatusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get lightningInvoiceStatusPaid;
+
+  /// No description provided for @lightningInvoiceStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for payment'**
+  String get lightningInvoiceStatusPending;
+
+  /// No description provided for @lightningInvoiceStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get lightningInvoiceStatusExpired;
+
+  /// No description provided for @lightningInvoicePaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid on {date}'**
+  String lightningInvoicePaidOn(String date);
+
+  /// No description provided for @lightningInvoiceExpiresOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires on {date}'**
+  String lightningInvoiceExpiresOn(String date);
+
+  /// No description provided for @lightningReceivePaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice paid'**
+  String get lightningReceivePaid;
+
+  /// No description provided for @lightningPaymentsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} invoices · {pending} waiting'**
+  String lightningPaymentsSummary(int total, int pending);
+
+  /// No description provided for @lightningPays.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent payments'**
+  String get lightningPays;
+
+  /// No description provided for @lightningPaysEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments yet'**
+  String get lightningPaysEmpty;
+
+  /// No description provided for @lightningPaymentFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee'**
+  String get lightningPaymentFee;
+
+  /// No description provided for @lightningPaymentCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get lightningPaymentCompleted;
+
+  /// No description provided for @lightningPaymentPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get lightningPaymentPending;
+
+  /// No description provided for @lightningPaymentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get lightningPaymentFailed;
+
+  /// No description provided for @lightningHtlcsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No HTLCs'**
+  String get lightningHtlcsEmpty;
+
+  /// No description provided for @lightningHtlcInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get lightningHtlcInProgress;
+
+  /// No description provided for @lightningHtlcIncoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get lightningHtlcIncoming;
+
+  /// No description provided for @lightningHtlcOutgoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing'**
+  String get lightningHtlcOutgoing;
+
+  /// No description provided for @lightningChannelFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing fees'**
+  String get lightningChannelFees;
+
+  /// No description provided for @lightningFeeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit fees'**
+  String get lightningFeeEdit;
+
+  /// No description provided for @lightningFeeBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get lightningFeeBefore;
+
+  /// No description provided for @lightningFeeAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get lightningFeeAfter;
+
+  /// No description provided for @lightningFeeBaseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base (sat)'**
+  String get lightningFeeBaseLabel;
+
+  /// No description provided for @lightningFeePpmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate (ppm)'**
+  String get lightningFeePpmLabel;
+
+  /// No description provided for @lightningHtlcMinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Min HTLC (sat)'**
+  String get lightningHtlcMinLabel;
+
+  /// No description provided for @lightningHtlcMaxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max HTLC (sat)'**
+  String get lightningHtlcMaxLabel;
+
+  /// No description provided for @lightningCltvLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'CLTV delta'**
+  String get lightningCltvLabel;
+
+  /// No description provided for @lightningChannelReserve.
+  ///
+  /// In en, this message translates to:
+  /// **'Our reserve'**
+  String get lightningChannelReserve;
+
+  /// No description provided for @lightningChannelToSelfDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'To-self delay'**
+  String get lightningChannelToSelfDelay;
+
+  /// No description provided for @lightningFeeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply these routing fees?'**
+  String get lightningFeeConfirmTitle;
+
+  /// No description provided for @lightningFeeWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees apply to routed payments. The network accepts only a few changes per day, and peers may take time to adopt them.'**
+  String get lightningFeeWarning;
+
+  /// No description provided for @lightningFeeUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee policy updated'**
+  String get lightningFeeUpdated;
+
+  /// No description provided for @lightningDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get lightningDiagnostics;
+
+  /// No description provided for @lightningDiagnosticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounting, plugins and forwarding'**
+  String get lightningDiagnosticsSubtitle;
+
+  /// No description provided for @lightningStatsEconomy.
+  ///
+  /// In en, this message translates to:
+  /// **'Economy'**
+  String get lightningStatsEconomy;
+
+  /// No description provided for @lightningStatsNet.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get lightningStatsNet;
+
+  /// No description provided for @lightningStatsSource.
+  ///
+  /// In en, this message translates to:
+  /// **'From the node\'\'s accounting (bookkeeper)'**
+  String get lightningStatsSource;
+
+  /// No description provided for @lightningStatsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounting data yet'**
+  String get lightningStatsEmpty;
+
+  /// No description provided for @lightningStatsTagDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposits'**
+  String get lightningStatsTagDeposit;
+
+  /// No description provided for @lightningStatsTagInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get lightningStatsTagInvoice;
+
+  /// No description provided for @lightningStatsTagWithdrawal.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawals'**
+  String get lightningStatsTagWithdrawal;
+
+  /// No description provided for @lightningStatsTagOnchainFee.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain fees'**
+  String get lightningStatsTagOnchainFee;
+
+  /// No description provided for @lightningStatsTagChannelOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel opens'**
+  String get lightningStatsTagChannelOpen;
+
+  /// No description provided for @lightningStatsTagChannelClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel closes'**
+  String get lightningStatsTagChannelClose;
+
+  /// No description provided for @lightningStatsTagRouted.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing fees earned'**
+  String get lightningStatsTagRouted;
+
+  /// No description provided for @lightningStatsEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count,plural, =1{1 entry} other{{count} entries}}'**
+  String lightningStatsEntries(int count);
+
+  /// No description provided for @lightningPluginsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugins'**
+  String get lightningPluginsTitle;
+
+  /// No description provided for @lightningPluginsActiveCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active'**
+  String lightningPluginsActiveCount(int count);
+
+  /// No description provided for @lightningPluginInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'inactive'**
+  String get lightningPluginInactive;
+
+  /// No description provided for @lightningForwardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarding'**
+  String get lightningForwardsTitle;
+
+  /// No description provided for @lightningForwardsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No forwarded payments yet'**
+  String get lightningForwardsEmpty;
+
+  /// No description provided for @lightningForwardSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get lightningForwardSettled;
+
+  /// No description provided for @lightningForwardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get lightningForwardFailed;
+
+  /// No description provided for @lightningForwardOffered.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get lightningForwardOffered;
+
+  /// No description provided for @lightningKeysendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to node (keysend)'**
+  String get lightningKeysendTitle;
+
+  /// No description provided for @lightningKeysendHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination node pubkey (66 hex)'**
+  String get lightningKeysendHint;
+
+  /// No description provided for @lightningKeysendAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (sat)'**
+  String get lightningKeysendAmountLabel;
+
+  /// No description provided for @lightningKeysendMaxFeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max fee (sat)'**
+  String get lightningKeysendMaxFeeLabel;
+
+  /// No description provided for @lightningKeysendMaxFeeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the node default (0.5%)'**
+  String get lightningKeysendMaxFeeHelp;
+
+  /// No description provided for @lightningKeysendWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Keysend pays a node without an invoice: funds move immediately and cannot be reversed.'**
+  String get lightningKeysendWarning;
+
+  /// No description provided for @lightningKeysendConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this keysend payment?'**
+  String get lightningKeysendConfirmTitle;
+
+  /// No description provided for @lightningKeysendDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get lightningKeysendDestination;
+
+  /// No description provided for @lightningKeysendSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Keysend sent'**
+  String get lightningKeysendSent;
+
+  /// No description provided for @lightningKeysendInvalidPubkey.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid node pubkey'**
+  String get lightningKeysendInvalidPubkey;
+
+  /// No description provided for @lightningKeysendInvalidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount greater than zero'**
+  String get lightningKeysendInvalidAmount;
+
+  /// No description provided for @lightningKeysendSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get lightningKeysendSend;
 }
 
 class _AppLocalizationsDelegate

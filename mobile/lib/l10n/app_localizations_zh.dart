@@ -116,6 +116,82 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeMoreOptions => '更多选项';
 
   @override
+  String get homeLockVault => '锁定保险库';
+
+  @override
+  String get homeVaultLocked => '保险库已锁定';
+
+  @override
+  String get settingsTitle => '设置';
+
+  @override
+  String get settingsSectionSecurity => '安全';
+
+  @override
+  String get settingsSectionAppearance => '外观';
+
+  @override
+  String get settingsSectionTools => '工具';
+
+  @override
+  String get settingsSectionInfo => '信息';
+
+  @override
+  String get settingsTheme => '深色主题';
+
+  @override
+  String get settingsAppLock => '应用锁';
+
+  @override
+  String get settingsAppLockDesc => '每次打开都要求生物识别或手机密码';
+
+  @override
+  String get settingsAppLockUnavailable => '此设备未注册生物识别';
+
+  @override
+  String get settingsAppLockEnableFailed => '验证失败：应用锁未启用';
+
+  @override
+  String get settingsAppLockEnabled => '应用锁已启用';
+
+  @override
+  String get settingsAppLockDisabled => '应用锁已禁用';
+
+  @override
+  String get appLockTitle => '应用已锁定';
+
+  @override
+  String get appLockSubtitle => '使用生物识别或手机密码解锁';
+
+  @override
+  String get appLockUnlock => '解锁';
+
+  @override
+  String get appLockReason => '解锁钱包';
+
+  @override
+  String get appLockNoticeDeviceAuthRemoved =>
+      '应用锁已禁用：手机的屏幕保护（生物识别/密码）已不可用。请在系统设置中重新启用后使用应用锁。';
+
+  @override
+  String get appLockNoticeContinue => '继续';
+
+  @override
+  String get appLockPromptTitle => '启用应用锁？';
+
+  @override
+  String get appLockPromptMessage => '打开应用时将要求生物识别或手机密码。';
+
+  @override
+  String get appLockPromptEnable => '启用';
+
+  @override
+  String get appLockPromptLater => '稍后';
+
+  @override
+  String get aboutLicensesOpenOnline => '在线打开';
+
+  @override
   String homeCreated(Object date) {
     return '创建于：$date';
   }
@@ -463,7 +539,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get importScreenHintText => '助记词由12个以空格分隔的单词组成。您可以直接粘贴。';
+  String get importScreenHintText => '助记词由12、15、18、21或24个以空格分隔的单词组成。您可以直接粘贴。';
 
   @override
   String onboardingSubmitError(Object error) {
@@ -551,6 +627,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scanQrInvalid => '扫描的代码不是有效的比特币地址。';
 
   @override
+  String get scanQrInvalidInvoice => '扫描的代码不是有效的闪电网络发票。';
+
+  @override
   String get scanQrTorch => '切换手电筒';
 
   @override
@@ -566,10 +645,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importScreenTitle => '导入钱包';
 
   @override
-  String get importScreenHeading => '输入 12 个单词';
+  String get importScreenHeading => '输入助记词';
 
   @override
-  String get importScreenSubtitle => '输入以空格分隔的 12 个单词助记词，然后选择与原始钱包匹配的账户类型。';
+  String get importScreenSubtitle =>
+      '输入以空格分隔的助记词（12、15、18、21 或 24 个单词），然后选择与原始钱包匹配的账户类型。';
 
   @override
   String get importScriptTypeLabel => '账户类型';
@@ -599,7 +679,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String importScreenValidateCount(Object count) {
-    return '助记词必须恰好包含 12 个单词（检测到：$count）。';
+    return '助记词必须包含 12、15、18、21 或 24 个单词（检测到：$count）。';
   }
 
   @override
@@ -825,6 +905,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get languageSelector => '语言';
+
+  @override
+  String get languageSelectorAuto => '🌐 自动（跟随系统）';
 
   @override
   String get languageSelectorEn => '🇬🇧 English';
@@ -1327,4 +1410,609 @@ class AppLocalizationsZh extends AppLocalizations {
   String explorerErrorGeneric(String error) {
     return '错误：$error';
   }
+
+  @override
+  String get walletLayerOnchain => 'On-chain';
+
+  @override
+  String get walletLayerLightning => 'Lightning';
+
+  @override
+  String get lightningDisconnectedTitle => '未连接 Lightning 节点';
+
+  @override
+  String get lightningDisconnectedBody =>
+      '连接您的 blake2b Lightning 节点以发送和接收付款。应用不会保管您的资金或密钥。';
+
+  @override
+  String get lightningConnectButton => '连接节点';
+
+  @override
+  String get lightningConnectTitle => '连接 Lightning 节点';
+
+  @override
+  String get lightningConnectHint => '粘贴连接字符串（nostr+walletconnect://…）';
+
+  @override
+  String get lightningConnectInvalidUri => '连接字符串无效';
+
+  @override
+  String get lightningConnectInfo => '节点必须授权此应用（grant）：请检查节点的控制面板。';
+
+  @override
+  String get lightningConnecting => '连接中…';
+
+  @override
+  String get lightningConnected => '已连接';
+
+  @override
+  String get lightningDisconnect => '断开连接';
+
+  @override
+  String get lightningBalance => 'Lightning 余额';
+
+  @override
+  String get lightningChannels => '通道';
+
+  @override
+  String get lightningNoChannels => '无已打开的通道';
+
+  @override
+  String get lightningChannelPeer => '对等节点';
+
+  @override
+  String get lightningChannelCapacity => '容量';
+
+  @override
+  String get lightningChannelLocal => '本地';
+
+  @override
+  String get lightningChannelRemote => '远程';
+
+  @override
+  String get lightningOpenChannel => '打开通道';
+
+  @override
+  String get lightningOpenChannelNodeId => 'Node ID（公钥）';
+
+  @override
+  String get lightningOpenChannelHost => '主机（可选，ip:端口）';
+
+  @override
+  String get lightningOpenChannelAmount => '金额（聪）';
+
+  @override
+  String get lightningOpenChannelPrivate => '私有通道';
+
+  @override
+  String get lightningChannelOpened => '已请求打开通道';
+
+  @override
+  String get lightningCloseChannel => '关闭通道';
+
+  @override
+  String get lightningCloseChannelForce => '强制关闭';
+
+  @override
+  String get lightningCloseChannelForceWarning =>
+      '强制关闭会在链上广播通道的最新状态。可能产生费用和延迟。是否继续？';
+
+  @override
+  String get lightningReceive => '接收';
+
+  @override
+  String get lightningSend => '发送';
+
+  @override
+  String get lightningInvoiceAmount => '金额（聪）';
+
+  @override
+  String get lightningInvoiceDescription => '描述（可选）';
+
+  @override
+  String get lightningInvoiceCreate => '创建发票';
+
+  @override
+  String get lightningInvoiceTitle => 'Lightning 发票';
+
+  @override
+  String get lightningPay => '支付发票';
+
+  @override
+  String get lightningPayHint => '粘贴发票（lnbc…）';
+
+  @override
+  String get lightningPayDialogTitle => '确认 Lightning 支付';
+
+  @override
+  String get lightningPayDialogBody => '支付此发票吗？';
+
+  @override
+  String get lightningPaySuccess => '付款已发送';
+
+  @override
+  String get lightningCopied => '已复制';
+
+  @override
+  String get lightningErrorRestricted => '节点未授权此应用。请为此次连接在节点上创建 grant。';
+
+  @override
+  String lightningErrorGeneric(String error) {
+    return 'Lightning 错误：$error';
+  }
+
+  @override
+  String get lightningConfirm => '确认';
+
+  @override
+  String get lightningCancel => '取消';
+
+  @override
+  String get lightningNodeOnchain => '节点链上';
+
+  @override
+  String get lightningDeposit => '充值';
+
+  @override
+  String get lightningWithdraw => '链上转账';
+
+  @override
+  String get lightningDepositTitle => '链上充值';
+
+  @override
+  String get lightningDepositHint => '将 blake2b 资金发送到此节点地址。';
+
+  @override
+  String get lightningDepositNewAddress => '新地址';
+
+  @override
+  String get lightningDepositWarning => '仅限 blake2b 网络。发送到错误网络的资金将丢失。';
+
+  @override
+  String get lightningOnchainSendTitle => '链上转账';
+
+  @override
+  String get lightningOnchainAddressLabel => '收款地址';
+
+  @override
+  String get lightningOnchainAmountLabel => '金额（sat）';
+
+  @override
+  String get lightningOnchainFeeLabel => '网络手续费';
+
+  @override
+  String get lightningOnchainFeeMin => '最低';
+
+  @override
+  String get lightningOnchainFeeEconomical => '经济';
+
+  @override
+  String get lightningOnchainFeePriority => '优先';
+
+  @override
+  String get lightningOnchainConfirm => '确认发送';
+
+  @override
+  String get lightningOnchainConfirmTitle => '确认链上转账？';
+
+  @override
+  String get lightningOnchainWarning => '不可撤销操作：资金将离开节点。';
+
+  @override
+  String get lightningOnchainSuccess => '交易已发送';
+
+  @override
+  String get lightningOnchainInvalidAddress => '无效的 blake2b 地址';
+
+  @override
+  String get lightningOnchainInsufficient => '链上余额不足';
+
+  @override
+  String get lightningFeesUnavailable => '手续费估算不可用：将由节点选择手续费';
+
+  @override
+  String get lightningOpenChannelHint =>
+      'Pubkey 或 pubkey@host:port（onion 需要节点上的 Tor）';
+
+  @override
+  String get lightningOpenChannelInvalid =>
+      '节点 ID 或 host 无效（66 位十六进制，host:port）';
+
+  @override
+  String get lightningActivityDetected => '检测到节点活动';
+
+  @override
+  String get lightningPeers => '对等节点';
+
+  @override
+  String get lightningPeersEmpty => '没有已连接的对等节点';
+
+  @override
+  String get lightningConnectPeer => '连接对等节点';
+
+  @override
+  String get lightningDisconnectPeer => '断开';
+
+  @override
+  String get lightningPeerDisconnected => '已断开';
+
+  @override
+  String get lightningPeerId => '对等节点 ID';
+
+  @override
+  String get lightningPeerAddresses => '地址';
+
+  @override
+  String get lightningDisconnectPeerConfirm => '断开此对等节点？已打开的通道保持活跃。';
+
+  @override
+  String get lightningChannelDetail => '通道详情';
+
+  @override
+  String get lightningChannelShortId => '短通道 ID';
+
+  @override
+  String get lightningChannelState => '节点状态';
+
+  @override
+  String get lightningChannelFee => '手续费';
+
+  @override
+  String get lightningChannelSpendable => '可用';
+
+  @override
+  String get lightningChannelReceivable => '可接收';
+
+  @override
+  String get lightningChannelHtlcs => 'HTLC';
+
+  @override
+  String get lightningChannelFundingTxid => '资金交易 ID';
+
+  @override
+  String get lightningNodeManagement => '节点管理';
+
+  @override
+  String lightningNodeManagementSubtitle(int peers, int channels) {
+    return '$peers 个对等节点 · $channels 个通道';
+  }
+
+  @override
+  String get lightningNodeIdentity => '节点身份';
+
+  @override
+  String get lightningNodePubkey => '公钥';
+
+  @override
+  String get lightningNodeVersion => '版本';
+
+  @override
+  String get lightningNodePeersCount => '对等节点';
+
+  @override
+  String get lightningNodeChannelsActive => '活动通道';
+
+  @override
+  String get lightningNodeChannelsPending => '待确认通道';
+
+  @override
+  String get lightningNodeLiquidityAdsUnsupported =>
+      '此节点不支持：需要 liquidity-ads 插件才能公布租赁条款。';
+
+  @override
+  String get lightningLiquidity => '流动性';
+
+  @override
+  String get lightningLiquidityTotal => '总容量';
+
+  @override
+  String get lightningLiquidityOutbound => '出站';
+
+  @override
+  String get lightningLiquidityInbound => '入站';
+
+  @override
+  String get lightningLiquidityWarning => '没有入站流动性：在对等节点向此节点开启通道前无法收款。';
+
+  @override
+  String get lightningMovements => '交易记录';
+
+  @override
+  String get lightningMovementsEmpty => '暂无记录';
+
+  @override
+  String get lightningMovementsAll => '全部记录';
+
+  @override
+  String get lightningMovementsLoadMore => '加载更多';
+
+  @override
+  String get lightningMovementDeposit => '链上充值';
+
+  @override
+  String get lightningMovementWithdrawal => '链上发送';
+
+  @override
+  String get lightningMovementChannelOpen => '通道开启';
+
+  @override
+  String get lightningMovementChannelClose => '通道关闭';
+
+  @override
+  String get lightningMovementInvoice => '闪电支付';
+
+  @override
+  String get lightningMovementOnchainFee => '链上手续费';
+
+  @override
+  String get lightningMovementForward => '转发';
+
+  @override
+  String get lightningMovementOther => '记录';
+
+  @override
+  String lightningChannelsAll(int count) {
+    return '全部通道（$count）';
+  }
+
+  @override
+  String get lightningOnchainNode => '节点链上';
+
+  @override
+  String get lightningOnchainBalance => '链上余额';
+
+  @override
+  String get lightningOnchainConfirmed => '已确认';
+
+  @override
+  String get lightningOnchainPending => '待确认';
+
+  @override
+  String get lightningOnchainUtxos => 'UTXO';
+
+  @override
+  String get lightningOnchainUtxosEmpty => '没有 UTXO';
+
+  @override
+  String get lightningOnchainAddresses => '节点地址';
+
+  @override
+  String get lightningOnchainNewAddress => '新地址';
+
+  @override
+  String get lightningOnchainAddressType => '地址类型';
+
+  @override
+  String get lightningOnchainTypeBech32 => 'Bech32（bc1q）';
+
+  @override
+  String get lightningOnchainTypeTaproot => 'Taproot（bc1p）';
+
+  @override
+  String get lightningOnchainHasFunds => '有余额';
+
+  @override
+  String get lightningOnchainReserved => '已预留';
+
+  @override
+  String get lightningOnchainBlockHeight => '区块';
+
+  @override
+  String get lightningPayments => '支付';
+
+  @override
+  String get lightningInvoices => '发票';
+
+  @override
+  String get lightningInvoicesEmpty => '暂无发票';
+
+  @override
+  String get lightningInvoiceStatusPaid => '已支付';
+
+  @override
+  String get lightningInvoiceStatusPending => '等待支付';
+
+  @override
+  String get lightningInvoiceStatusExpired => '已过期';
+
+  @override
+  String lightningInvoicePaidOn(String date) {
+    return '支付于 $date';
+  }
+
+  @override
+  String lightningInvoiceExpiresOn(String date) {
+    return '到期于 $date';
+  }
+
+  @override
+  String get lightningReceivePaid => '发票已支付';
+
+  @override
+  String lightningPaymentsSummary(int total, int pending) {
+    return '$total 张发票 · $pending 等待中';
+  }
+
+  @override
+  String get lightningPays => '已发送付款';
+
+  @override
+  String get lightningPaysEmpty => '暂无付款';
+
+  @override
+  String get lightningPaymentFee => '手续费';
+
+  @override
+  String get lightningPaymentCompleted => '已完成';
+
+  @override
+  String get lightningPaymentPending => '进行中';
+
+  @override
+  String get lightningPaymentFailed => '失败';
+
+  @override
+  String get lightningHtlcsEmpty => '没有 HTLC';
+
+  @override
+  String get lightningHtlcInProgress => '进行中';
+
+  @override
+  String get lightningHtlcIncoming => '入站';
+
+  @override
+  String get lightningHtlcOutgoing => '出站';
+
+  @override
+  String get lightningChannelFees => '路由费率';
+
+  @override
+  String get lightningFeeEdit => '修改费率';
+
+  @override
+  String get lightningFeeBefore => '当前';
+
+  @override
+  String get lightningFeeAfter => '新的';
+
+  @override
+  String get lightningFeeBaseLabel => '基础费 (sat)';
+
+  @override
+  String get lightningFeePpmLabel => '比例费 (ppm)';
+
+  @override
+  String get lightningHtlcMinLabel => '最小 HTLC (sat)';
+
+  @override
+  String get lightningHtlcMaxLabel => '最大 HTLC (sat)';
+
+  @override
+  String get lightningCltvLabel => 'CLTV 增量';
+
+  @override
+  String get lightningChannelReserve => '我方储备';
+
+  @override
+  String get lightningChannelToSelfDelay => '自有延迟';
+
+  @override
+  String get lightningFeeConfirmTitle => '应用这些路由费率？';
+
+  @override
+  String get lightningFeeWarning => '费率影响被路由的支付。网络每天只接受少量变更，对等节点可能需要时间采用。';
+
+  @override
+  String get lightningFeeUpdated => '费率策略已更新';
+
+  @override
+  String get lightningDiagnostics => '诊断';
+
+  @override
+  String get lightningDiagnosticsSubtitle => '账务、插件与转发';
+
+  @override
+  String get lightningStatsEconomy => '经济';
+
+  @override
+  String get lightningStatsNet => '净额';
+
+  @override
+  String get lightningStatsSource => '来自节点账务（bookkeeper）';
+
+  @override
+  String get lightningStatsEmpty => '暂无账务数据';
+
+  @override
+  String get lightningStatsTagDeposit => '入金';
+
+  @override
+  String get lightningStatsTagInvoice => '发票';
+
+  @override
+  String get lightningStatsTagWithdrawal => '提现';
+
+  @override
+  String get lightningStatsTagOnchainFee => '链上手续费';
+
+  @override
+  String get lightningStatsTagChannelOpen => '通道开启';
+
+  @override
+  String get lightningStatsTagChannelClose => '通道关闭';
+
+  @override
+  String get lightningStatsTagRouted => '已赚取的路由手续费';
+
+  @override
+  String lightningStatsEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条记录',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lightningPluginsTitle => '插件';
+
+  @override
+  String lightningPluginsActiveCount(int count) {
+    return '$count 个已启用';
+  }
+
+  @override
+  String get lightningPluginInactive => '未启用';
+
+  @override
+  String get lightningForwardsTitle => '转发';
+
+  @override
+  String get lightningForwardsEmpty => '还没有转发的支付';
+
+  @override
+  String get lightningForwardSettled => '已结算';
+
+  @override
+  String get lightningForwardFailed => '失败';
+
+  @override
+  String get lightningForwardOffered => '进行中';
+
+  @override
+  String get lightningKeysendTitle => '发送到节点（keysend）';
+
+  @override
+  String get lightningKeysendHint => '目标节点公钥（66 hex）';
+
+  @override
+  String get lightningKeysendAmountLabel => '金额（sat）';
+
+  @override
+  String get lightningKeysendMaxFeeLabel => '最大手续费（sat）';
+
+  @override
+  String get lightningKeysendMaxFeeHelp => '留空使用节点默认值（0.5%）';
+
+  @override
+  String get lightningKeysendWarning => 'Keysend 向没有发票的节点付款：资金立即转出且无法撤销。';
+
+  @override
+  String get lightningKeysendConfirmTitle => '发送这笔 keysend 支付？';
+
+  @override
+  String get lightningKeysendDestination => '目标';
+
+  @override
+  String get lightningKeysendSent => 'Keysend 已发送';
+
+  @override
+  String get lightningKeysendInvalidPubkey => '节点公钥无效';
+
+  @override
+  String get lightningKeysendInvalidAmount => '请输入大于零的金额';
+
+  @override
+  String get lightningKeysendSend => '发送';
 }

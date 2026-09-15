@@ -40,6 +40,21 @@ Future<void> persistLanguageImpl(String langTag) async {
   }
 }
 
+/// Rimuove la preferenza salvata — si torna alla modalità automatica
+/// (lingua di sistema, fallback inglese).
+Future<void> clearStoredLanguageImpl() async {
+  try {
+    await _storage.delete(key: _storageKey);
+    if (kDebugMode) {
+      debugPrint('LocaleProvider: stored language cleared');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('LocaleProvider: clearStoredLanguage failed: $e');
+    }
+  }
+}
+
 Future<String?> detectSystemLanguageImpl() async {
   final locale = PlatformDispatcher.instance.locale;
   final code = locale.countryCode != null && locale.countryCode!.isNotEmpty

@@ -5,6 +5,8 @@ import 'dart:js_interop';
 import 'dart:math';
 import 'dart:typed_data';
 
+import '../utils/unlock_backoff.dart';
+
 // ──────────────────────────────────────────────────────────────
 // JS interop bindings per Web Crypto API (NON usare `dynamic` o
 // `dart:html`._SubtleCrypto perché minificano i nomi dei metodi).
@@ -53,6 +55,9 @@ class BiometricService {
 
   String? _cachedDerivedKeyBase64;
 
+  /// Chiave localStorage del contatore tentativi falliti (backoff, 2.4).
+  static const String _failuresKey = 'pwa_unlock_failures_v1';
+
   Future<bool> canAuthenticate() async {
     final storage = html.window.localStorage;
     if (_cachedDerivedKeyBase64 != null) return true;
@@ -60,9 +65,13 @@ class BiometricService {
         storage.containsKey(_passwordKeyV1);
   }
 
-  Future<bool> authenticateForUnlock() async {
+  /// Sul web non esistono biometrie native → sempre false.
+  /// (Il blocco app è una feature native; sul web resta il vault con password.)
+  Future<bool> hasEnrolledBiometrics() async => false;
+
+  Future<bool> authenticateForUnlock({String? reason}) async {
     return authenticateForSensitiveAction(
-      reason: 'Unlock wallet (enter password)',
+      reason: reason ?? 'Unlock wallet (enter password)',
     );
   }
 
@@ -73,6 +82,12 @@ class BiometricService {
       return false;
     }
     return false;
+  }
+
+  /// Hardening 2.4: rimuove la chiave derivata dalla memoria (auto-lock).
+  /// La prossima verifica richiederà di nuovo la password.
+  void lockCache() {
+    _cachedDerivedKeyBase64 = null;
   }
 
   Future<bool> setPassword(String password) async {
@@ -98,10 +113,19 @@ class BiometricService {
     // Rimuovi vecchio formato v1 (SHA256 semplice)
     html.window.localStorage.remove(_passwordKeyV1);
 
+    // PERCHÉ (hardening 2.4): password impostata → contatore tentativi azzerato.
+    _resetFailures();
+
     return true;
   }
 
   Future<bool> verifyPassword(String password) async {
+    // PERCHÉ (hardening 2.4): backoff crescente e PERSISTENTE sui tentativi
+    // falliti (sopravvive al reload della pagina): alza il costo di un attacco
+    // dizionario senza introdurre una UI di lockout. Limite dichiarato: chi può
+    // cancellare localStorage azzera il contatore — è attrito, non un muro.
+    await Future<void>.delayed(unlockBackoffDelay(_readFailures()));
+
     // Prova formato v2 (PBKDF2)
     final storedV2 = html.window.localStorage[_passwordKeyV2];
     if (storedV2 != null && storedV2.isNotEmpty) {
@@ -122,7 +146,12 @@ class BiometricService {
           // PERCHÉ (audit F5): confronto constant-time sul derived key
           // per evitare timing side-channel sulla verifica password.
           final ok = _constantTimeEquals(derivedKeyBase64, expectedKeyBase64);
-          if (ok) _cachedDerivedKeyBase64 = derivedKeyBase64;
+          if (ok) {
+            _cachedDerivedKeyBase64 = derivedKeyBase64;
+            _resetFailures();
+          } else {
+            _registerFailure();
+          }
           return ok;
         }
       } catch (_) {
@@ -135,6 +164,8 @@ class BiometricService {
     if (ok) {
       // Migra a v2 automaticamente
       await setPassword(password);
+    } else {
+      _registerFailure();
     }
     return ok;
   }
@@ -190,6 +221,21 @@ class BiometricService {
     if (storedV1 == null || storedV1.isEmpty) return false;
     final hash = await _sha256(password);
     return _constantTimeEquals(hash, storedV1);
+  }
+
+  // ── Backoff tentativi falliti (hardening 2.4) ───────────────────────────
+
+  int _readFailures() {
+    final raw = html.window.localStorage[_failuresKey];
+    return int.tryParse(raw ?? '') ?? 0;
+  }
+
+  void _registerFailure() {
+    html.window.localStorage[_failuresKey] = '${_readFailures() + 1}';
+  }
+
+  void _resetFailures() {
+    html.window.localStorage.remove(_failuresKey);
   }
 
   /// Confronto stringhe in tempo costante (XOR cumulativo) per evitare

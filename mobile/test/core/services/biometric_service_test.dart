@@ -19,11 +19,47 @@ void main() {
       expect(sut, isNotNull);
     });
 
-    // TODO: Implementa test per i metodi pubblici
-    // test('canAuthenticate should ...', () { ... });
-    // test('authenticateForUnlock should ...', () { ... });
-    // test('authenticateForSensitiveAction should ...', () { ... });
-    // test('setPassword should ...', () { ... });
-    // test('verifyPassword should ...', () { ... });
+    test('hasEnrolledBiometrics: true con biometrie registrate', () async {
+      when(() => mockLocalAuthentication.getAvailableBiometrics())
+          .thenAnswer((_) async => [BiometricType.fingerprint]);
+
+      expect(await sut.hasEnrolledBiometrics(), isTrue);
+    });
+
+    test('hasEnrolledBiometrics: false senza biometrie', () async {
+      when(() => mockLocalAuthentication.getAvailableBiometrics())
+          .thenAnswer((_) async => []);
+
+      expect(await sut.hasEnrolledBiometrics(), isFalse);
+    });
+
+    test('hasEnrolledBiometrics: false su eccezione (fail-safe)', () async {
+      when(() => mockLocalAuthentication.getAvailableBiometrics())
+          .thenThrow(Exception('plugin error'));
+
+      expect(await sut.hasEnrolledBiometrics(), isFalse);
+    });
+
+    test('authenticateForUnlock inoltra la reason localizzata', () async {
+      when(() => mockLocalAuthentication.canCheckBiometrics)
+          .thenAnswer((_) async => true);
+      when(() => mockLocalAuthentication.isDeviceSupported())
+          .thenAnswer((_) async => true);
+      when(
+        () => mockLocalAuthentication.authenticate(
+          localizedReason: any(named: 'localizedReason'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result =
+          await sut.authenticateForUnlock(reason: 'Sblocca il wallet');
+
+      expect(result, isTrue);
+      verify(
+        () => mockLocalAuthentication.authenticate(
+          localizedReason: 'Sblocca il wallet',
+        ),
+      ).called(1);
+    });
   });
 }

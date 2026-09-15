@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/services/app_lock_service.dart';
 import '../core/services/biometric_service.dart';
 import '../core/services/bitcoin_service.dart';
 import '../core/services/consent_service.dart';
 import '../core/services/crypto_service.dart';
 import '../core/services/device_service.dart';
+import '../core/services/lightning/lightning_connection_store.dart';
+import '../core/services/lightning/lightning_service.dart';
+import '../core/services/lightning/nwc_lightning_service.dart';
 import '../core/services/locale_provider.dart';
+import '../core/services/nostr/websocket_transport.dart';
 import '../core/services/secure_seed_storage.dart';
 import '../core/services/theme_provider.dart';
 import '../core/services/wallet_repository.dart';
 import '../core/theme/app_theme.dart';
 import '../features/donate/presentation/donate_screen.dart';
+import '../features/lock/presentation/app_lock_gate.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/onboarding/presentation/splash_screen.dart';
 import '../features/settings/presentation/about_screen.dart';
@@ -27,6 +33,9 @@ class AppServices {
     required this.cryptoService,
     required this.deviceService,
     required this.consentService,
+    required this.appLockService,
+    required this.lightningService,
+    required this.lightningConnectionStore,
   });
 
   final WalletRepository walletRepository;
@@ -35,6 +44,11 @@ class AppServices {
   final CryptoService cryptoService;
   final DeviceService deviceService;
   final ConsentService consentService;
+  final AppLockService appLockService;
+
+  /// Client Lightning (nodo remoto via NWC/NCC) — feature opzionale.
+  final LightningService lightningService;
+  final LightningConnectionStore lightningConnectionStore;
 }
 
 class BtcBlake2bWalletApp extends StatelessWidget {
@@ -57,12 +71,20 @@ class BtcBlake2bWalletApp extends StatelessWidget {
     final bitcoinService = BitcoinService();
     final biometricService = BiometricService();
     final consentService = ConsentService();
+    final appLockService = AppLockService();
 
     final walletRepository = WalletRepository(
       secureSeedStorage: secureSeedStorage,
       deviceService: deviceService,
       cryptoService: cryptoService,
       bitcoinService: bitcoinService,
+    );
+
+    // PERCHÉ (Lightning): client verso nodo remoto — nessun servizio in
+    // background e nessuna chiave custodita: solo comandi Nostr on-demand.
+    final lightningConnectionStore = LightningConnectionStore();
+    final lightningService = NwcLightningService(
+      transport: WebSocketTransport(),
     );
 
     return AppServices(
@@ -72,6 +94,9 @@ class BtcBlake2bWalletApp extends StatelessWidget {
       cryptoService: cryptoService,
       deviceService: deviceService,
       consentService: consentService,
+      appLockService: appLockService,
+      lightningService: lightningService,
+      lightningConnectionStore: lightningConnectionStore,
     );
   }
 
@@ -107,6 +132,13 @@ class BtcBlake2bWalletApp extends StatelessWidget {
           locale: localeProvider.locale,
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
+          // PERCHÉ: gate globale del blocco app — sopra il Navigator, copre
+          // qualsiasi route/dialog. Il child resta montato (stato preservato).
+          builder: (context, child) => AppLockGate(
+            service: services.appLockService,
+            biometricService: services.biometricService,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );
@@ -139,6 +171,9 @@ class BtcBlake2bWalletApp extends StatelessWidget {
           deviceService: services.deviceService,
           localeProvider: localeProvider,
           themeProvider: themeProvider,
+          appLockService: services.appLockService,
+          lightningService: services.lightningService,
+          lightningConnectionStore: services.lightningConnectionStore,
         ),
       ),
       GoRoute(

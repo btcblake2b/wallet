@@ -110,4 +110,9 @@ class SecureSeedStorage {
 
   /// Web-only: sblocca il vault con la password (su native no-op).
   Future<void> unlockWithPassword(String password) async {}
+
+  /// Hardening 2.4: su native non esiste una cache di chiavi in RAM governata
+  /// dall'app (le chiavi a riposo sono nel keyring OS) → no-op per parità di
+  /// interfaccia con la variante web (auto-lock / blocco manuale).
+  void lock() {}
 }

@@ -25,6 +25,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="/it/download.html" aria-current="page">Download</a></li>
+        <li><a href="/it/node.html">Nodo</a></li>
         <li><a href="/it/privacy.html">Privacy</a></li>
         <li><a href="/it/legal.html">Note legali</a></li>
         <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Sorgente</a></li>
@@ -35,22 +36,22 @@
 
   <main id="contenuto" class="container page">
     <h1>Scarica Btc Blake2b Wallet</h1>
-    <p class="lead">Android · versione <strong>0.1.0</strong> (build 1)</p>
+    <p class="lead">Android · versione <strong>0.2.0</strong> (build 3)</p>
 
     <div class="download-box">
       <p><strong>Prima di scaricare</strong>: verifica sempre che l'APK provenga da questa pagina (dominio <code>btcblake2b.org</code>) o dal repository GitHub ufficiale.</p>
       <a class="btn btn-primary btn-lg" href="https://github.com/btcblake2b/wallet/releases" rel="noopener">Scarica l'APK (GitHub Releases)</a>
-      <p class="small">La release <strong>v0.1.0</strong>, con APK e checksum verificato, è disponibile anche su GitHub Releases.</p>
+      <p class="small">La release <strong>v0.2.0</strong>, con APK e checksum verificato, è disponibile anche su GitHub Releases.</p>
 
       <h2>Verifica il checksum (SHA-256)</h2>
-      <p>L'app è disponibile <strong>solo per Android</strong>. Il file <code>btc-blake2b-wallet-v0.1.0.apk</code> deve avere questo hash:</p>
-      <pre class="checksum" aria-label="Checksum SHA-256 dell'APK"><code>SHA256(btc-blake2b-wallet-v0.1.0.apk) = <span id="checksum">956093E716C3AB05A5111D02C6EDE7D335EB9C3BCF055E7BEB51EC55B8542EAC</span></code></pre>
+      <p>L'app è disponibile <strong>solo per Android</strong>. Il file <code>btc-blake2b-wallet-v0.2.0.apk</code> deve avere questo hash:</p>
+      <pre class="checksum" aria-label="Checksum SHA-256 dell'APK"><code>SHA256(btc-blake2b-wallet-v0.2.0.apk) = <span id="checksum">E89859EFAC7A23983480CAF4DFB4029679B49FEE670587D68F825AF050FA260C</span></code></pre>
       <p class="small">I comandi seguenti verificano il file APK sul tuo computer (Windows, Linux o macOS) prima di trasferirlo sul dispositivo Android — non sono versioni dell'app per questi sistemi.</p>
 
       <h3>Verifica su Windows (PowerShell)</h3>
-      <pre><code>Get-FileHash .\btc-blake2b-wallet-v0.1.0.apk -Algorithm SHA256</code></pre>
+      <pre><code>Get-FileHash .\btc-blake2b-wallet-v0.2.0.apk -Algorithm SHA256</code></pre>
       <h3>Verifica su Linux / macOS</h3>
-      <pre><code>sha256sum btc-blake2b-wallet-v0.1.0.apk</code></pre>
+      <pre><code>sha256sum btc-blake2b-wallet-v0.2.0.apk</code></pre>
     </div>
 
     <h2>Installazione</h2>
@@ -60,8 +61,14 @@
       <li>Al primo avvio l'app ti guida nella creazione del wallet e nel <strong>backup del seed</strong>: salvalo su carta, mai in cloud.</li>
     </ol>
 
+    <h2>Domande frequenti</h2>
+    <h3>Perché Android mostra una scansione quando installo l'app?</h3>
+    <p>Le app installate fuori da Google Play (sideload) vengono sempre analizzate da Google Play Protect: succede a tutte le app distribuite direttamente e non significa che l'APK sia pericoloso. Verifica il checksum SHA-256 qui sopra e scarica solo da questa pagina o dal repository GitHub ufficiale. Questa app è registrata al programma di Verifica sviluppatore Android di Google, così le installazioni da questo sito continueranno a funzionare correttamente sui dispositivi certificati (rollout globale: 2027).</p>
+    <h3>L'app è su Google Play?</h3>
+    <p>No. L'app è distribuita direttamente da questo sito e da GitHub Releases, così puoi sempre verificare l'APK esatto e il suo checksum. Vedi <a href="/it/legal.html">Note legali</a> e <a href="/it/privacy.html">Privacy</a>.</p>
+
     <div class="notice">
-      <strong>⚠️ Avviso importante</strong> — Questa è una rete sperimentale di minoranza. L'app è distribuita senza garanzie (MIT): usala solo dopo aver compreso i rischi e aver verificato l'integrità dell'APK.
+      <strong>⚠️ Avviso importante</strong> — Questa è una rete sperimentale. L'app è distribuita senza garanzie (MIT): usala solo dopo aver compreso i rischi e aver verificato l'integrità dell'APK.
     </div>
   </main>
 

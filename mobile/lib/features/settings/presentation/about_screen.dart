@@ -7,9 +7,16 @@
 // ha più backend Firebase → dichiarazione falsa).
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../l10n/app_localizations.dart';
+
+// PERCHÉ (fix 2.6): le attribuzioni sono un ASSET LOCALE dell'app — visibili
+// offline e senza chiamate di rete a terzi (prima si apriva
+// raw.githubusercontent.com nel browser esterno). L'URL pubblico resta per il
+// fallback esplicito se l'asset non è disponibile (build anomala).
+const String kThirdPartyLicensesAsset = 'assets/legal/THIRD_PARTY_LICENSES.md';
 
 // PERCHÉ (audit legale): repo pubblico del progetto — il link precedente
 // puntava a un repo inesistente (btc-blake2b-wallet/mobile).
@@ -48,11 +55,11 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  Future<void> _openLicenses() async {
-    final uri = Uri.parse(kThirdPartyLicensesUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+  /// Apre la schermata licenze IN-APP (asset locale, offline-first).
+  void _openLicenses() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const _LicensesScreen()),
+    );
   }
 
   @override
@@ -120,6 +127,76 @@ class _AboutScreenState extends State<AboutScreen> {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Schermata delle licenze terze parti letta dall'asset locale.
+///
+/// PERCHÉ (fix 2.6): l'obbligo Apache-2.0 §4(d) richiede che le attribuzioni
+/// siano accessibili NELL'app, non su un sito esterno raggiungibile solo con
+/// la rete. Il fallback online è un'azione esplicita dell'utente.
+class _LicensesScreen extends StatelessWidget {
+  const _LicensesScreen();
+
+  Future<void> _openOnline() async {
+    final uri = Uri.parse(kThirdPartyLicensesUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final textStyle = Theme.of(context).textTheme.bodySmall;
+
+    return Scaffold(
+      appBar: AppBar(title: Text(loc.aboutThirdPartyLicenses)),
+      body: FutureBuilder<String>(
+        future: rootBundle.loadString(kThirdPartyLicensesAsset),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && (snapshot.data ?? '').isNotEmpty) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: SelectableText(
+                snapshot.data!,
+                // PERCHÉ: il file è markdown/testo puro generato dallo
+                // script — font monospace per leggibilità, niente parsing.
+                style: textStyle?.copyWith(
+                  fontFamily: 'monospace',
+                  height: 1.4,
+                ),
+              ),
+            );
+          }
+          if (snapshot.hasError) {
+            // PERCHÉ: mai un vicolo cieco — se l'asset manca, l'utente può
+            // ancora consultare le attribuzioni online (scelta esplicita).
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      loc.aboutThirdPartyLicensesDesc,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _openOnline,
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: Text(loc.aboutLicensesOpenOnline),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
       ),
     );
   }

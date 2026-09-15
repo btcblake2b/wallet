@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:btc_blake2b_wallet/core/models/transaction_record.dart';
 import 'package:btc_blake2b_wallet/core/models/wallet_record.dart';
 import 'package:btc_blake2b_wallet/core/models/wallet_snapshot.dart';
+import 'package:btc_blake2b_wallet/core/services/app_lock_service.dart';
 import 'package:btc_blake2b_wallet/core/services/biometric_service.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/crypto_service.dart';
@@ -158,6 +159,7 @@ void main() {
             cryptoService: cryptoService,
             deviceService: deviceService,
             localeProvider: LocaleProvider(),
+            appLockService: AppLockService.test(),
           ),
         ),
       );

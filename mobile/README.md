@@ -1,32 +1,33 @@
 # Btc Blake2b Wallet
 
-Wallet Bitcoin **self-custodial** per la rete **bitcoin-blake2b** (mainnet), fork da `tr_loc_wal` senza funzionalità di trasferimento wallet, senza backend Firebase e senza classificazione locked/unlocked: ogni wallet è un normale wallet Bitcoin (stile BlueWallet), con seed cifrata localmente e backup confermato dall'utente.
+**Self-custodial** Bitcoin wallet for the **bitcoin-blake2b** network (mainnet), forked from `tr_loc_wal` without the wallet-transfer feature, without a Firebase backend and without locked/unlocked classification: every wallet is a regular Bitcoin wallet (BlueWallet-style), with a locally encrypted seed and a user-confirmed backup.
 
-> ⚠️ **Sperimentale**: la rete bitcoin-blake2b è un fork di Bitcoin con valuta dal valore incerto. Usa l'app **solo con importi che puoi permetterti di perdere**. Non è affiliata a Bitcoin/bitcoin.org. Il software non è un consiglio finanziario.
+> ⚠️ **Experimental**: the bitcoin-blake2b network is a Bitcoin fork whose currency has an uncertain value. Use the app **only with amounts you can afford to lose**. Not affiliated with Bitcoin/bitcoin.org. This software is not financial advice.
 
-## Funzionalità
+## Features
 
-- ✅ Crea wallet (BIP39 + BIP32/BIP84, seed cifrato AES-GCM su secure storage)
-- ✅ Importa wallet da seed phrase
-- ✅ Ricevi (QR + indirizzo) / Invia (build & sign tx, fee estimate, broadcast)
-- ✅ Saldo e transazioni (API Esplora-compatibile: `mempool.guide`)
-- ✅ Sblocco con biometria / password (web)
-- ✅ Firma e verifica messaggi
-- ✅ Backup seed con conferma obbligatoria
-- ✅ Consenso GDPR locale (nessun dato su server)
-- ✅ 8 lingue (EN, IT, DE, FR, ES, FI, ZH)
-- ✅ Security: jailbreak/root detection, integrità APK, screen protection
-- ❌ Nessuna funzionalità di trasferimento wallet (rimossa dal fork)
-- ❌ Nessun backend Firebase (wallet 100% locale)
+- ✅ Create wallet (BIP39 + BIP32/BIP84, seed encrypted AES-GCM in secure storage)
+- ✅ Import wallet from seed phrase
+- ✅ Receive (QR + address) / Send (build & sign tx, fee estimate, broadcast)
+- ✅ Balance and transactions (Esplora-compatible API: `mempool.guide`)
+- ✅ Unlock with biometrics / password (web)
+- ✅ Message signing and verification
+- ✅ Lightning (experimental): control of a remote blake2b node via NWC/NCC — see the [main README](../README.md) for the connection string
+- ✅ Seed backup with mandatory confirmation
+- ✅ Local GDPR consent (no data on servers)
+- ✅ 7 languages (EN, IT, DE, FR, ES, FI, ZH)
+- ✅ Security: jailbreak/root detection, APK integrity, screen protection
+- ❌ No wallet-transfer feature (removed from the fork)
+- ❌ No Firebase backend (100% local wallet)
 
-## Struttura
+## Structure
 
 ```
 mobile/
   lib/
     app/              → bootstrap, router, DI
     core/
-      config/         → bitcoin_network_config (rete blake2b mainnet)
+      config/         → bitcoin_network_config (blake2b mainnet)
       models/         → WalletRecord, OnboardingData
       services/       → bitcoin, crypto, wallet_repository, consent, security...
       theme/          → AppTheme dark
@@ -36,23 +37,23 @@ mobile/
       onboarding/     → splash, onboarding
       settings/       → about
       donate/         → donate
-    l10n/             → ARB + generati
-  ai-core/            → analizzatore statico (docs in ai-context/)
-  test/               → suite di test
+    l10n/             → ARB + generated
+  ai-core/            → static analyzer (docs in ai-context/)
+  test/               → test suite
 ```
 
-## Rete bitcoin-blake2b (mainnet)
+## bitcoin-blake2b network (mainnet)
 
-- **Indirizzi/chiavi/firme invariati** rispetto a Bitcoin: prefissi mainnet (`bc1...`, `xpub`, coin_type `0'`).
-- **API**: `https://mempool.guide/api` (formato Esplora-compatibile).
-- Config centralizzata in `lib/core/config/bitcoin_network_config.dart`.
+- **Addresses/keys/signatures unchanged** compared to Bitcoin: mainnet prefixes (`bc1...`, `xpub`, coin_type `0'`).
+- **API**: `https://mempool.guide/api` (Esplora-compatible format).
+- Configuration centralized in `lib/core/config/bitcoin_network_config.dart`.
 
 ## Setup
 
 ```bash
 cd mobile
 flutter pub get
-# crea .env da .env.example (APP_SIGNATURE vuoto per dev)
+# create .env from .env.example (APP_SIGNATURE empty for dev)
 dart run build_runner build --delete-conflicting-outputs
 flutter gen-l10n
 flutter run
@@ -62,29 +63,29 @@ flutter run
 
 ```bash
 cd mobile
-flutter analyze   # 0 errori
-flutter test      # suite completa
+flutter analyze   # 0 issues
+flutter test      # full suite
 ```
 
-## Release APK (Android)
+## APK release (Android)
 
-> ⚠️ **Regola d'oro**: dopo OGNI modifica a `.env` riesegui
-> `dart run build_runner build` **prima** di buildare la release. Envied incorpora
-> i valori nel generato `env.g.dart`: se il generato è più vecchio del `.env`, la
-> build usa i valori precedenti. Con `APP_SIGNATURE` incorporata vuota,
-> `verifyIntegrity()` blocca l'avvio in release (fail-closed) — è ciò che ha
-> bloccato la v0.1.0 (splash con logo su schermo nero), fixato in v0.1.1.
+> ⚠️ **Golden rule**: after EVERY change to `.env`, re-run
+> `dart run build_runner build` **before** building the release. Envied embeds
+> the values into the generated `env.g.dart`: if the generated file is older
+> than `.env`, the build uses the previous values. With an empty embedded
+> `APP_SIGNATURE`, `verifyIntegrity()` blocks startup in release (fail-closed) —
+> that is what blocked v0.1.0 (logo splash on a black screen), fixed in v0.1.1.
 
 ```bash
 cd mobile
-# 1) .env → env.g.dart (se la cache non rileva il cambio: `dart run build_runner clean`,
-#    rimuovere lib/core/config/env.g.dart e rieseguire)
+# 1) .env → env.g.dart (if the cache misses the change: `dart run build_runner clean`,
+#    delete lib/core/config/env.g.dart and re-run)
 dart run build_runner build
-# 2) APK firmato (richiede android/key.properties + keystore)
+# 2) signed APK (requires android/key.properties + keystore)
 flutter build apk --release
 ```
 
-Verifica firma e hash **prima** di pubblicare:
+Verify signature and hash **before** publishing:
 
 ```powershell
 $apksigner = "$env:LOCALAPPDATA\Android\sdk\build-tools\36.0.0\apksigner.bat"
@@ -92,10 +93,32 @@ $apksigner = "$env:LOCALAPPDATA\Android\sdk\build-tools\36.0.0\apksigner.bat"
 Get-FileHash build\app\outputs\flutter-apk\app-release.apk -Algorithm SHA256
 ```
 
-Poi: `scripts/publish-release.ps1 -Version <x.y.z>` (un commit per release sul repo
-pubblico), GitHub Release con APK + checksum, aggiornamento `website/` (nome file + hash).
+Then: `scripts/publish-release.ps1 -Version <x.y.z>` (one commit per release on the
+public repo), GitHub Release with APK + checksum, `website/` update (file name + hash).
 
-## Nota sicurezza e privacy
+## Web build (PWA)
 
-- La rete bitcoin-blake2b è una **minority chain** con hashrate limitato e **senza replay protection**: le transazioni possono essere riorganizzate o non riconosciute. La valuta del fork potrebbe non avere valore di mercato. Usa solo piccoli importi.
-- **Privacy**: nessun dato personale è salvato su server dell'autore (seed cifrata solo sul dispositivo). Per saldo e fee l'app interroga una sola API di terze parti (mempool.guide) a cui vengono trasmessi IP e indirizzo pubblico interrogato. **Niente controvalore fiat**: la rete blake2b non ha un prezzo di mercato riconosciuto. Dettagli nella Privacy Policy in-app (schermata Info Legali).
+> ⚠️ The PWA is **experimental**: the browser threat model (active XSS, local
+> storage) differs from the native one. Auto-lock removes keys from RAM after
+> 10 min of inactivity and on a hidden page, but the browser remains a wider
+> surface than an OS keyring: do not use it for meaningful amounts.
+
+```bash
+cd mobile
+# HARDENED build: self-hosted assets (no third-party CDN) and no dynamic
+# code generation (prerequisite for a strict CSP).
+flutter build web --release --csp --no-web-resources-cdn
+```
+
+- `web/_headers` (copied into `build/web/`) applies CSP/HSTS/nosniff on
+  Cloudflare Pages: **HTTPS is required** (the web vault refuses insecure contexts).
+- `web/boot.js` is an external script: no inline scripts in the HTML.
+- Outfit font bundled and licenses in `assets/legal/`: no requests to Google
+  Fonts or raw.githubusercontent.com while using the app.
+- Deploy: publish `build/web/` (Cloudflare Pages). A dedicated origin is
+  recommended (e.g. `app.btcblake2b.org`) separate from the showcase site.
+
+## Security and privacy note
+
+- The bitcoin-blake2b network is a **network separate from Bitcoin** with limited hashrate and **no replay protection**: transactions can be reorganized or not recognized. The fork's currency may have no market value. Use small amounts only.
+- **Privacy**: no personal data is stored on author-operated servers (seed encrypted on the device only). For balance and fees the app queries a single third-party API (mempool.guide) to which the IP and the queried public address are transmitted. **No fiat countervalue**: the blake2b network has no recognized market price. Details in the in-app Privacy Policy (Legal Info screen).

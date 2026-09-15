@@ -20,6 +20,16 @@ Future<void> persistLanguageImpl(String langTag) async {
   }
 }
 
+/// Rimuove la preferenza salvata — si torna alla modalità automatica
+/// (lingua di sistema, fallback inglese).
+Future<void> clearStoredLanguageImpl() async {
+  try {
+    html.window.localStorage.remove('lang');
+  } catch (_) {
+    // Silently ignore
+  }
+}
+
 Future<String?> detectSystemLanguageImpl() async {
   try {
     final navLang = html.window.navigator.language;

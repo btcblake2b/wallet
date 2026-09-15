@@ -283,6 +283,18 @@ class SecureSeedStorage {
     return backup != null && backup.isNotEmpty;
   }
 
+  /// PERCHÉ (hardening 2.4): WebCrypto e la persistenza sicura hanno senso solo
+  /// in un secure context (HTTPS o localhost). Su HTTP il vault NON deve essere
+  /// creato/sbloccato: meglio un errore chiaro di una falsa sensazione di
+  /// sicurezza (su origini non sicure il browser può degradare le API crypto).
+  static void _assertSecureContext() {
+    if (html.window.isSecureContext != true) {
+      throw StorageLockedException(
+        'Contesto non sicuro (serve HTTPS): il vault chiavi non può essere usato.',
+      );
+    }
+  }
+
   /// Avvolge la chiave AES corrente con un KEK derivato dalla password
   /// (PBKDF2-SHA256 600k + AES-256-GCM) e rimuove la chiave in chiaro da
   /// localStorage E IndexedDB. Idempotente: se già protetto, è un no-op.
@@ -290,6 +302,7 @@ class SecureSeedStorage {
   /// Il salt e le iterazioni sono salvati nel blob: migrazione sicura anche
   /// se i parametri di default cambieranno in futuro.
   Future<void> enablePasswordProtection(String password) async {
+    _assertSecureContext();
     if (password.isEmpty || isKeyProtected) return;
     // La chiave corrente (o nuova se mai generata) viene AVVOLTA, non rigenerata:
     // i wallet esistenti restano decifrabili.
@@ -326,6 +339,7 @@ class SecureSeedStorage {
   /// Sblocca il vault: deriva il KEK dalla password e decifra la chiave AES.
   /// La chiave resta SOLO in memoria ([_cachedEncryptionKey]).
   Future<void> unlockWithPassword(String password) async {
+    _assertSecureContext();
     if (_cachedEncryptionKey != null) return; // già sbloccato
     var blob = _storage[_walletAesKeyWrapped];
     if (blob == null || blob.isEmpty) {
@@ -348,8 +362,14 @@ class SecureSeedStorage {
     _cachedEncryptionKey = base64Decode(keyBase64);
   }
 
-  /// Pulisce la chiave e l'indice dalla memoria (logout / lock).
+  /// Pulisce la chiave e l'indice dalla memoria (logout / lock / auto-lock 2.4).
   void lock() {
+    // PERCHÉ (hardening 2.4): best-effort wipe del buffer prima del drop —
+    // riduce la finestra in cui la chiave AES resta leggibile in un heap dump.
+    final key = _cachedEncryptionKey;
+    if (key != null) {
+      key.fillRange(0, key.length, 0);
+    }
     _cachedEncryptionKey = null;
     _cachedIndex = null;
   }

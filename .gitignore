@@ -43,6 +43,9 @@ mobile/.dart_tool/
 mobile/coverage/
 mobile/analyze_output.txt
 
+# Bridge (Dart) — artefatti di build locali
+bridge/.dart_tool/
+
 # Sentry
 mobile/sentry.properties
 

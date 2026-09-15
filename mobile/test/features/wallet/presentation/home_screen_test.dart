@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:btc_blake2b_wallet/core/services/app_lock_service.dart';
 import 'package:btc_blake2b_wallet/core/services/biometric_service.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/balance_cache.dart';
@@ -49,6 +50,7 @@ void main() {
             cryptoService: cryptoService,
             deviceService: deviceService,
             localeProvider: localeProvider,
+            appLockService: AppLockService.test(),
           ),
         ),
       );
@@ -105,6 +107,7 @@ void main() {
               cryptoService: cryptoService,
               deviceService: deviceService,
               localeProvider: localeProvider,
+              appLockService: AppLockService.test(),
             ),
           );
 
@@ -131,7 +134,7 @@ void main() {
       );
     });
 
-    testWidgets('toggle tema: icona presente e tap attiva il provider',
+    testWidgets('AppBar: icone Impostazioni + Donazioni, menu "⋮" rimosso',
         (tester) async {
       final walletRepository = MockWalletRepository();
       final biometricService = MockBiometricService();
@@ -139,11 +142,8 @@ void main() {
       final cryptoService = MockCryptoService();
       final deviceService = MockDeviceService();
       final localeProvider = LocaleProvider();
-      final themeProvider = MockThemeProvider();
 
       when(() => walletRepository.loadWallets()).thenAnswer((_) async => []);
-      when(() => themeProvider.isDark).thenReturn(true);
-      when(() => themeProvider.toggle()).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         MaterialApp(
@@ -157,21 +157,57 @@ void main() {
             cryptoService: cryptoService,
             deviceService: deviceService,
             localeProvider: localeProvider,
-            themeProvider: themeProvider,
+            appLockService: AppLockService.test(),
           ),
         ),
       );
-
-      // PERCHÉ (UX): il tema ora sta nel menu overflow "⋮" — si apre il menu
-      // e si seleziona la voce con l'icona del tema.
-      await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
 
-      // In dark mode la voce mostra l'icona per passare al chiaro.
-      expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.light_mode_outlined));
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+      expect(find.byIcon(Icons.more_vert), findsNothing);
+    });
+
+    testWidgets('blocco app: proposto una tantum solo con biometria',
+        (tester) async {
+      final walletRepository = MockWalletRepository();
+      final biometricService = MockBiometricService();
+      final bitcoinService = MockBitcoinService();
+      final cryptoService = MockCryptoService();
+      final deviceService = MockDeviceService();
+      final localeProvider = LocaleProvider();
+
+      when(() => walletRepository.loadWallets()).thenAnswer((_) async => []);
+      when(() => biometricService.hasEnrolledBiometrics())
+          .thenAnswer((_) async => true);
+
+      final appLockService = AppLockService.test(promptSeen: false);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(
+            walletRepository: walletRepository,
+            biometricService: biometricService,
+            bitcoinService: bitcoinService,
+            cryptoService: cryptoService,
+            deviceService: deviceService,
+            localeProvider: localeProvider,
+            appLockService: appLockService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
-      verify(() => themeProvider.toggle()).called(1);
+
+      // Proposta visibile; "Later" chiude senza attivare ma marca il flag.
+      expect(find.text('Enable app lock?'), findsOneWidget);
+      await tester.tap(find.text('Later'));
+      await tester.pumpAndSettle();
+
+      expect(appLockService.isEnabled, isFalse);
+      expect(appLockService.isPromptSeen, isTrue);
     });
 
     testWidgets('main actions expose semantic button labels (a11y)', (
@@ -202,6 +238,7 @@ void main() {
             cryptoService: cryptoService,
             deviceService: deviceService,
             localeProvider: localeProvider,
+            appLockService: AppLockService.test(),
           ),
         ),
       );
@@ -251,6 +288,7 @@ void main() {
               cryptoService: cryptoService,
               deviceService: deviceService,
               localeProvider: localeProvider,
+              appLockService: AppLockService.test(),
             ),
           ),
         );
@@ -320,6 +358,7 @@ void main() {
               cryptoService: cryptoService,
               deviceService: deviceService,
               localeProvider: localeProvider,
+              appLockService: AppLockService.test(),
             ),
           ),
         );
@@ -401,6 +440,7 @@ void main() {
               cryptoService: cryptoService,
               deviceService: deviceService,
               localeProvider: localeProvider,
+              appLockService: AppLockService.test(),
             ),
           ),
         );
@@ -466,6 +506,7 @@ void main() {
               cryptoService: cryptoService,
               deviceService: deviceService,
               localeProvider: localeProvider,
+              appLockService: AppLockService.test(),
             ),
           ),
         );
@@ -544,6 +585,7 @@ void main() {
               cryptoService: cryptoService,
               deviceService: deviceService,
               localeProvider: localeProvider,
+              appLockService: AppLockService.test(),
             ),
           ),
         );

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import '../../../core/widgets/password_dialog.dart';
 import 'package:flutter/material.dart';
@@ -15,19 +18,28 @@ import '../../../core/services/device_service.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/services/locale_provider.dart';
 import '../../../core/services/theme_provider.dart';
+import '../../../core/services/vault_autolock.dart';
+import '../../../core/services/app_lock_service.dart';
+import '../../../core/services/lightning/lightning_connection_store.dart';
+import '../../../core/services/lightning/lightning_service.dart';
 import '../../donate/presentation/donate_screen.dart';
-import '../../explorer/presentation/explorer_screen.dart';
+import '../../lightning/presentation/lightning_view.dart';
+import '../../settings/presentation/settings_screen.dart';
 import 'wallet_detail_screen.dart';
 import 'import_wallet_screen.dart';
 import 'backup_seed_screen.dart';
 import 'api_error_text.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/connectivity.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../../core/widgets/glass_container.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../l10n/app_localizations.dart';
-import 'legal_info_screen.dart';
+import '../../lock/app_lock_flow.dart';
+
+/// Contesto selezionato nella home: wallet on-chain o Lightning.
+enum WalletLayer { onchain, lightning }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -38,7 +50,10 @@ class HomeScreen extends StatefulWidget {
     required this.cryptoService,
     required this.deviceService,
     required this.localeProvider,
+    required this.appLockService,
     this.themeProvider,
+    this.lightningService,
+    this.lightningConnectionStore,
   });
 
   final WalletRepository walletRepository;
@@ -48,8 +63,16 @@ class HomeScreen extends StatefulWidget {
   final DeviceService deviceService;
   final LocaleProvider localeProvider;
 
-  /// Opzionale (S5): se presente mostra il toggle tema nell'AppBar.
+  /// Blocco app (biometria/PIN): proposta al primo avvio + gate globale.
+  final AppLockService appLockService;
+
+  /// Opzionale (S5): se presente abilita il toggle tema nelle Impostazioni.
   final ThemeProvider? themeProvider;
+
+  /// Client Lightning (nodo remoto via NWC/NCC). Se null il selettore
+  /// On-chain/Lightning non viene mostrato (feature spenta / test legacy).
+  final LightningService? lightningService;
+  final LightningConnectionStore? lightningConnectionStore;
 
   /// // PERCHÉ (S6): storage del disclaimer sovrascrivibile nei test.
   /// Lo State è privato ma nella stessa libreria → accesso al membro statico.
@@ -62,8 +85,12 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late Future<List<WalletRecord>> _walletsFuture;
+
+  /// Auto-lock del vault web (hardening 2.4): attivo solo su web, null altrove.
+  VaultAutoLock? _vaultAutoLock;
+
   bool _creating = false;
   final Map<String, double> _balances = {};
   bool _loadingBalances = false;
@@ -87,10 +114,16 @@ class _HomeScreenState extends State<HomeScreen> {
   static FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   static const _disclaimerKey = 'disclaimer_accepted';
 
+  /// Layer selezionato nella home: On-chain (wallet blake2b) o Lightning.
+  WalletLayer _layer = WalletLayer.onchain;
+
   @override
   void initState() {
     super.initState();
     _loadDisclaimerAccepted();
+    // PERCHÉ: proposta UNA TANTUM del blocco app (solo con biometria
+    // registrata e al primo avvio non ancora deciso).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptAppLock());
     // PERCHÉ: nessun refresh automatico periodico — politica "all'avvio e poi
     // basta": si aggiorna su azioni utente (pull-to-refresh, invio, import) o
     // quando la cache condivisa cambia (il Detail notifica dopo "Aggiorna").
@@ -104,6 +137,13 @@ class _HomeScreenState extends State<HomeScreen> {
       // Web (audit F1): il vault chiavi è protetto da password. I wallet
       // vengono caricati SOLO dopo l'autenticazione.
       WidgetsBinding.instance.addPostFrameCallback((_) => _initWebVault());
+      // PERCHÉ (hardening 2.4): auto-lock del vault — le chiavi vengono rimosse
+      // dalla memoria dopo inattività o quando la pagina è nascosta (prima
+      // restavano in RAM fino al reload della scheda).
+      WidgetsBinding.instance.addObserver(this);
+      GestureBinding.instance.pointerRouter
+          .addGlobalRoute(_onGlobalPointerEvent);
+      _vaultAutoLock = VaultAutoLock(onLock: _onVaultAutoLock)..start();
     }
   }
 
@@ -178,6 +218,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted) return;
     if (vaultReady) {
+      // PERCHÉ (hardening 2.4): vault sbloccato → riarma il countdown.
+      _vaultAutoLock?.start();
       _loadData();
     } else {
       _loadEmpty();
@@ -191,11 +233,56 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// Hardening 2.4: QUALSIASI interazione (anche su schermate push sopra la
+  /// home) riarma il countdown dell'auto-lock: scatta solo dopo vera inattività.
+  void _onGlobalPointerEvent(PointerEvent event) => _vaultAutoLock?.touch();
+
+  /// Blocca il vault web rimuovendo le chiavi dalla memoria (hardening 2.4).
+  /// Idempotente: se le chiavi sono già state rimosse non cambia nulla.
+  void _onVaultAutoLock() {
+    if (!kIsWeb) return;
+    unawaited(widget.walletRepository.lockWebStorage());
+    widget.biometricService.lockCache();
+    if (!mounted) return;
+    // PERCHÉ: notifica non invasiva — le azioni sensibili (invio, backup,
+    // dettaglio) chiederanno di nuovo la password perché le chiavi non sono
+    // più in RAM; la lista wallet (dati pubblici) resta visibile.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).homeVaultLocked)),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    final autoLock = _vaultAutoLock;
+    if (autoLock == null) return;
+    // PERCHÉ (hardening 2.4): quando la pagina/app diventa nascosta il vault si
+    // blocca SUBITO (protegge da multitasking e schede dimenticate); al ritorno
+    // il countdown riparte. `inactive` (es. finestra che perde focus) NON
+    // blocca: sarebbe troppo aggressivo durante l'uso normale.
+    if (state == AppLifecycleState.resumed) {
+      autoLock.handleVisibility(visible: true);
+    } else if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      autoLock.handleVisibility(visible: false);
+    }
+  }
+
   @override
   void dispose() {
     // PERCHÉ: rimuovi il listener della cache condivisa — evita setState dopo
     // il dispose quando il Detail notifica un aggiornamento dello snapshot.
     BalanceCache.removeListener(_onCacheChanged);
+    // PERCHÉ (hardening 2.4): ferma l'auto-lock e stacca observer/route globale
+    // — senza questo il timer sopravvivrebbe alla schermata.
+    _vaultAutoLock?.stop();
+    if (_vaultAutoLock != null) {
+      WidgetsBinding.instance.removeObserver(this);
+      GestureBinding.instance.pointerRouter
+          .removeGlobalRoute(_onGlobalPointerEvent);
+    }
     super.dispose();
   }
 
@@ -563,6 +650,68 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Apre la pagina Impostazioni (sostituisce il vecchio menu overflow).
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsScreen(
+          themeProvider: widget.themeProvider,
+          localeProvider: widget.localeProvider,
+          appLockService: widget.appLockService,
+          biometricService: widget.biometricService,
+          walletRepository: widget.walletRepository,
+        ),
+      ),
+    );
+  }
+
+  /// Proposta UNA TANTUM del blocco app (vincolo: SOLO con biometria
+  /// registrata; se assente non si propone e non si marca il flag, così la
+  /// proposta riappare se in futuro viene registrata).
+  Future<void> _maybePromptAppLock() async {
+    if (kIsWeb) return;
+    final service = widget.appLockService;
+    if (service.isEnabled || service.isPromptSeen) return;
+    if (!await widget.biometricService.hasEnrolledBiometrics()) return;
+    if (!mounted) return;
+    await service.markPromptSeen();
+    if (!mounted) return;
+
+    final loc = AppLocalizations.of(context);
+    final enable = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.appLockPromptTitle),
+        content: Text(loc.appLockPromptMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(loc.appLockPromptLater),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.appLockPromptEnable),
+          ),
+        ],
+      ),
+    );
+    if (enable != true || !mounted) return;
+
+    final ok = await AppLockFlow.enable(
+      biometricService: widget.biometricService,
+      appLockService: widget.appLockService,
+      loc: loc,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? loc.settingsAppLockEnabled : loc.settingsAppLockEnableFailed,
+        ),
+      ),
+    );
+  }
+
   // ──────────────────────────────────────────────────────────────
   // Selezione multipla ed eliminazione (P1 #7)
   // ──────────────────────────────────────────────────────────────
@@ -597,93 +746,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectionMode = false;
       _selectedIds.clear();
     });
-  }
-
-  /// Voce del menu overflow: icona + testo allineati.
-  Widget _menuItem(IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, size: 20),
-        const SizedBox(width: 12),
-        Expanded(child: Text(label)),
-      ],
-    );
-  }
-
-  /// Selettore lingua (bottom sheet con spunta sulla lingua attiva).
-  ///
-  /// PERCHÉ (UX): la lingua è un'azione secondaria → sta nel menu overflow;
-  /// il bottom sheet mostra la lingua corrente ed evita un submenu annidato
-  /// dentro il PopupMenu (non supportato nativamente).
-  void _showLanguagePicker() {
-    final loc = AppLocalizations.of(context);
-    final current = widget.localeProvider.languageCode;
-
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) {
-        final entries = <String, String>{
-          'it': loc.languageSelectorIt,
-          'en': loc.languageSelectorEn,
-          'de': loc.languageSelectorDe,
-          'fi': loc.languageSelectorFi,
-          'es': loc.languageSelectorEs,
-          'zh': loc.languageSelectorZhCN,
-          'fr': loc.languageSelectorFrCA,
-        };
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.language,
-                      color: Theme.of(ctx).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      loc.languageSelector,
-                      style: Theme.of(ctx)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: entries.entries.map((entry) {
-                    final selected = current == entry.key;
-                    return ListTile(
-                      leading: Icon(
-                        selected
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        color: selected
-                            ? Theme.of(ctx).colorScheme.primary
-                            : Theme.of(ctx).colorScheme.onSurfaceVariant,
-                      ),
-                      title: Text(entry.value),
-                      onTap: () {
-                        widget.localeProvider.setLocale(Locale(entry.key));
-                        Navigator.of(ctx).pop();
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   /// Elimina tutti i wallet selezionati.
@@ -806,11 +868,50 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Selettore di layer (On-chain ↔ Lightning), sotto l'AppBar.
+  ///
+  /// // PERCHÉ: il contesto cambia completamente (rete, saldo, azioni) —
+  /// il segmento rende esplicito dove ci si trova; accent viola per Lightning.
+  Widget _buildLayerSelector(BuildContext context, AppLocalizations loc) {
+    if (widget.lightningService == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: SegmentedButton<WalletLayer>(
+        segments: [
+          ButtonSegment(
+            value: WalletLayer.onchain,
+            icon: const Icon(Icons.currency_bitcoin, size: 18),
+            label: Text(loc.walletLayerOnchain),
+          ),
+          ButtonSegment(
+            value: WalletLayer.lightning,
+            icon: const Icon(Icons.bolt, size: 18),
+            label: Text(loc.walletLayerLightning),
+          ),
+        ],
+        selected: {_layer},
+        onSelectionChanged: (selection) {
+          setState(() => _layer = selection.first);
+        },
+        expandedInsets: EdgeInsets.zero,
+        style: SegmentedButton.styleFrom(
+          selectedBackgroundColor: _layer == WalletLayer.lightning
+              ? AppTheme.lightningAccent.withValues(alpha: 0.25)
+              : null,
+          selectedForegroundColor:
+              _layer == WalletLayer.lightning ? AppTheme.lightningAccent : null,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final textTheme = Theme.of(context).textTheme;
     return AppBackground(
+      // PERCHÉ: in modalità Lightning i glow virano sul viola dedicato.
+      accent: _layer == WalletLayer.lightning ? AppTheme.lightningAccent : null,
       child: Scaffold(
         appBar: _selectionMode
             ? AppBar(
@@ -838,290 +939,274 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             : AppBar(
                 title: Text(loc.homeScreenTitle),
-                // PERCHÉ (UX): le azioni secondarie (lingua, tema, info
-                // legali, explorer, donazione) sono raggruppate in un unico
-                // menu overflow "⋮". Con 5 icone separate il titolo lungo
-                // "Btc Blake2b Wallet" veniva troncato su schermi stretti.
+                // PERCHÉ (UX): due sole icone (Impostazioni + Donazioni) — le
+                // voci secondarie (lingua, tema, legali, explorer, about) sono
+                // confluite nella pagina Impostazioni; il menu "⋮" era un
+                // nascondiglio poco scopribile.
                 actions: [
-                  PopupMenuButton<String>(
-                    tooltip: loc.homeMoreOptions,
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'language':
-                          _showLanguagePicker();
-                        case 'theme':
-                          widget.themeProvider?.toggle();
-                        case 'legal':
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const LegalInfoScreen(),
-                            ),
-                          );
-                        case 'explorer':
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ExplorerScreen(),
-                            ),
-                          );
-                        case 'donate':
-                          DonateScreen.show(context);
-                      }
-                    },
-                    itemBuilder: (context) {
-                      final loc = AppLocalizations.of(context);
-                      return [
-                        PopupMenuItem(
-                          value: 'language',
-                          child: _menuItem(
-                            Icons.language,
-                            loc.languageSelector,
-                          ),
-                        ),
-                        if (widget.themeProvider != null)
-                          PopupMenuItem(
-                            value: 'theme',
-                            child: _menuItem(
-                              widget.themeProvider!.isDark
-                                  ? Icons.light_mode_outlined
-                                  : Icons.dark_mode_outlined,
-                              loc.themeToggle,
-                            ),
-                          ),
-                        if (_disclaimerAccepted)
-                          PopupMenuItem(
-                            value: 'legal',
-                            child: _menuItem(
-                              Icons.info_outline,
-                              loc.legalInfoTitle,
-                            ),
-                          ),
-                        PopupMenuItem(
-                          value: 'explorer',
-                          child: _menuItem(
-                            Icons.travel_explore,
-                            loc.explorerTitle,
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'donate',
-                          child: _menuItem(
-                            Icons.favorite_border,
-                            loc.donateButton,
-                          ),
-                        ),
-                      ];
-                    },
+                  IconButton(
+                    tooltip: loc.settingsTitle,
+                    icon: const Icon(Icons.settings_outlined),
+                    onPressed: _openSettings,
+                  ),
+                  IconButton(
+                    tooltip: loc.donateButton,
+                    icon: const Icon(Icons.favorite_border),
+                    onPressed: () => DonateScreen.show(context),
                   ),
                 ],
               ),
         floatingActionButton: null,
-        body: Stack(
+        body: Column(
           children: [
-            RefreshIndicator(
-              onRefresh: _reload,
-              child: FutureBuilder<List<WalletRecord>>(
-                future: _walletsFuture,
-                builder: (context, snapshot) {
-                  final wallets = snapshot.data ?? const <WalletRecord>[];
-
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                    children: [
-                      if (!_disclaimerAccepted)
-                        GlassContainer(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .tertiaryContainer
-                              .withValues(alpha: 0.8),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                loc.homeSecurityWarning,
-                                style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onTertiaryContainer,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton.icon(
-                                  onPressed: () => _acceptDisclaimer(),
-                                  icon: const Icon(Icons.check, size: 16),
-                                  label: Text(loc.homeDisclaimerAccept),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Theme.of(context)
-                                        .colorScheme
-                                        .onTertiaryContainer,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (!_disclaimerAccepted) const SizedBox(height: 16),
-                      if (!_selectionMode) ...[
-                        const SizedBox(height: 20),
-                        // ── Bilancio totale ──
-                        if (wallets.any((w) => w.displayInHomeScreen)) ...[
-                          _TotalBalanceCard(
-                            wallets: wallets,
-                            balances: _balances,
-                            isLoading: _loadingBalances,
-                            errorCode: _loadErrorCode,
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        Text(
-                          loc.homeLocalWallets,
-                          style: textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (snapshot.connectionState == ConnectionState.waiting &&
-                          wallets.isEmpty)
-                        const Column(
-                          children: [
-                            GlassCardSkeleton(lines: 3),
-                            SizedBox(height: 12),
-                            GlassCardSkeleton(lines: 2),
-                          ],
-                        )
-                      else if (snapshot.hasError)
-                        GlassContainer(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            loc.homeErrorLoading(snapshot.error ?? ''),
-                          ),
-                        )
-                      else if (wallets.isEmpty)
-                        EmptyStateWidget(
-                          icon: Icons.account_balance_wallet_outlined,
-                          title: loc.homeEmptyTitle,
-                          subtitle: loc.homeEmptySubtitle,
-                          actionLabel: loc.homeCreateWallet,
-                          onAction: _createWallet,
-                          secondaryLabel: loc.homeImportWallet,
-                          onSecondaryAction: _importWalletFlow,
-                        )
-                      else
-                        Column(
-                          children: wallets
-                              .map(
-                                (wallet) => _WalletCard(
-                                  wallet: wallet,
-                                  onTap: () {
-                                    if (_selectionMode) {
-                                      _toggleSelection(wallet.walletId);
-                                    } else {
-                                      _openWalletDetail(wallet);
-                                    }
-                                  },
-                                  onLongPress: () =>
-                                      _enterSelectionMode(wallet.walletId),
-                                  isSelectionMode: _selectionMode,
-                                  isSelected:
-                                      _selectedIds.contains(wallet.walletId),
-                                  balance: _balances[wallet.publicAddress],
-                                  isLoading: _loadingBalances &&
-                                      wallet.displayInHomeScreen &&
-                                      !_balances.containsKey(
-                                        wallet.publicAddress,
-                                      ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      const SizedBox(height: 120),
-                    ],
-                  );
-                },
-              ),
-            ),
-            if (_isFabOpen)
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isFabOpen = false;
-                  });
-                },
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.4),
-                ),
-              ),
-            // ── Bottom action bar ──
-            if (!_selectionMode)
-              // PERCHÉ: Align (non-positioned) al posto di Positioned(bottom:0).
-              // Root cause (dal log reale): minimumSize con larghezza infinita sotto il
-              // FittedBox -> 'BoxConstraints forces an infinite width'; il 'Cannot hit test'
-              // del log era solo la cascata del box senza size.
-              // Layout invariato: bottomCenter + Row full-width (mainAxisSize.max) = barra in basso.
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+            _buildLayerSelector(context, loc),
+            Expanded(
+              child: _layer == WalletLayer.lightning
+                  ? LightningView(
+                      lightningService: widget.lightningService!,
+                      connectionStore: widget.lightningConnectionStore!,
+                    )
+                  : Stack(
                       children: [
-                        const SizedBox(width: 12),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            if (_isFabOpen) ...[
-                              FloatingActionButton.extended(
-                                heroTag: 'fab_import',
-                                onPressed: () {
-                                  setState(() => _isFabOpen = false);
-                                  _importWalletFlow();
-                                },
-                                icon: const Icon(Icons.file_download),
-                                label: Text(loc.homeImportWallet),
-                              ),
-                              const SizedBox(height: 12),
-                              FloatingActionButton.extended(
-                                heroTag: 'fab_create',
-                                onPressed: _creating
-                                    ? null
-                                    : () {
-                                        setState(() => _isFabOpen = false);
-                                        _createWallet();
-                                      },
-                                icon: _creating
-                                    ? const SizedBox.square(
-                                        dimension: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                        RefreshIndicator(
+                          onRefresh: _reload,
+                          child: FutureBuilder<List<WalletRecord>>(
+                            future: _walletsFuture,
+                            builder: (context, snapshot) {
+                              final wallets =
+                                  snapshot.data ?? const <WalletRecord>[];
+
+                              return ListView(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                                children: [
+                                  if (!_disclaimerAccepted)
+                                    GlassContainer(
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .tertiaryContainer
+                                          .withValues(alpha: 0.8),
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            loc.homeSecurityWarning,
+                                            style: TextStyle(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onTertiaryContainer,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: TextButton.icon(
+                                              onPressed: () =>
+                                                  _acceptDisclaimer(),
+                                              icon: const Icon(
+                                                Icons.check,
+                                                size: 16,
+                                              ),
+                                              label: Text(
+                                                loc.homeDisclaimerAccept,
+                                              ),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .onTertiaryContainer,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  if (!_disclaimerAccepted)
+                                    const SizedBox(height: 16),
+                                  if (!_selectionMode) ...[
+                                    const SizedBox(height: 20),
+                                    // ── Bilancio totale ──
+                                    if (wallets
+                                        .any((w) => w.displayInHomeScreen)) ...[
+                                      _TotalBalanceCard(
+                                        wallets: wallets,
+                                        balances: _balances,
+                                        isLoading: _loadingBalances,
+                                        errorCode: _loadErrorCode,
+                                      ),
+                                      const SizedBox(height: 20),
+                                    ],
+                                    Text(
+                                      loc.homeLocalWallets,
+                                      style: textTheme.headlineSmall,
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                  if (snapshot.connectionState ==
+                                          ConnectionState.waiting &&
+                                      wallets.isEmpty)
+                                    const Column(
+                                      children: [
+                                        GlassCardSkeleton(lines: 3),
+                                        SizedBox(height: 12),
+                                        GlassCardSkeleton(lines: 2),
+                                      ],
+                                    )
+                                  else if (snapshot.hasError)
+                                    GlassContainer(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Text(
+                                        loc.homeErrorLoading(
+                                          snapshot.error ?? '',
                                         ),
-                                      )
-                                    : const Icon(Icons.add),
-                                label: Text(loc.homeCreateWallet),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            FloatingActionButton(
-                              heroTag: 'fab_main',
-                              onPressed: () {
-                                setState(() => _isFabOpen = !_isFabOpen);
-                              },
-                              child: Icon(
-                                _isFabOpen ? Icons.close : Icons.menu,
+                                      ),
+                                    )
+                                  else if (wallets.isEmpty)
+                                    EmptyStateWidget(
+                                      icon:
+                                          Icons.account_balance_wallet_outlined,
+                                      title: loc.homeEmptyTitle,
+                                      subtitle: loc.homeEmptySubtitle,
+                                      actionLabel: loc.homeCreateWallet,
+                                      onAction: _createWallet,
+                                      secondaryLabel: loc.homeImportWallet,
+                                      onSecondaryAction: _importWalletFlow,
+                                    )
+                                  else
+                                    Column(
+                                      children: wallets
+                                          .map(
+                                            (wallet) => _WalletCard(
+                                              wallet: wallet,
+                                              onTap: () {
+                                                if (_selectionMode) {
+                                                  _toggleSelection(
+                                                    wallet.walletId,
+                                                  );
+                                                } else {
+                                                  _openWalletDetail(wallet);
+                                                }
+                                              },
+                                              onLongPress: () =>
+                                                  _enterSelectionMode(
+                                                wallet.walletId,
+                                              ),
+                                              isSelectionMode: _selectionMode,
+                                              isSelected: _selectedIds
+                                                  .contains(wallet.walletId),
+                                              balance: _balances[
+                                                  wallet.publicAddress],
+                                              isLoading: _loadingBalances &&
+                                                  wallet.displayInHomeScreen &&
+                                                  !_balances.containsKey(
+                                                    wallet.publicAddress,
+                                                  ),
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  const SizedBox(height: 120),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        if (_isFabOpen)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isFabOpen = false;
+                              });
+                            },
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.4),
+                            ),
+                          ),
+                        // ── Bottom action bar ──
+                        if (!_selectionMode)
+                          // PERCHÉ: Align (non-positioned) al posto di Positioned(bottom:0).
+                          // Root cause (dal log reale): minimumSize con larghezza infinita sotto il
+                          // FittedBox -> 'BoxConstraints forces an infinite width'; il 'Cannot hit test'
+                          // del log era solo la cascata del box senza size.
+                          // Layout invariato: bottomCenter + Row full-width (mainAxisSize.max) = barra in basso.
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: SafeArea(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        if (_isFabOpen) ...[
+                                          FloatingActionButton.extended(
+                                            heroTag: 'fab_import',
+                                            onPressed: () {
+                                              setState(
+                                                () => _isFabOpen = false,
+                                              );
+                                              _importWalletFlow();
+                                            },
+                                            icon:
+                                                const Icon(Icons.file_download),
+                                            label: Text(loc.homeImportWallet),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          FloatingActionButton.extended(
+                                            heroTag: 'fab_create',
+                                            onPressed: _creating
+                                                ? null
+                                                : () {
+                                                    setState(
+                                                      () => _isFabOpen = false,
+                                                    );
+                                                    _createWallet();
+                                                  },
+                                            icon: _creating
+                                                ? const SizedBox.square(
+                                                    dimension: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  )
+                                                : const Icon(Icons.add),
+                                            label: Text(loc.homeCreateWallet),
+                                          ),
+                                          const SizedBox(height: 16),
+                                        ],
+                                        FloatingActionButton(
+                                          heroTag: 'fab_main',
+                                          onPressed: () {
+                                            setState(
+                                              () => _isFabOpen = !_isFabOpen,
+                                            );
+                                          },
+                                          child: Icon(
+                                            _isFabOpen
+                                                ? Icons.close
+                                                : Icons.menu,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
                       ],
                     ),
-                  ),
-                ),
-              ),
+            ),
           ],
         ),
       ),

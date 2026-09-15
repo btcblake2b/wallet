@@ -25,6 +25,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="/download.html" aria-current="page">Download</a></li>
+        <li><a href="/node.html">Node</a></li>
         <li><a href="/privacy.html">Privacy</a></li>
         <li><a href="/legal.html">Legal</a></li>
         <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
@@ -35,22 +36,22 @@
 
   <main id="contenuto" class="container page">
     <h1>Download Btc Blake2b Wallet</h1>
-    <p class="lead">Android · version <strong>0.1.0</strong> (build 1)</p>
+    <p class="lead">Android · version <strong>0.2.0</strong> (build 3)</p>
 
     <div class="download-box">
       <p><strong>Before downloading</strong>: make sure the APK comes from this page (domain <code>btcblake2b.org</code>) or the official GitHub repository.</p>
       <a class="btn btn-primary btn-lg" href="https://github.com/btcblake2b/wallet/releases" rel="noopener">Download APK (GitHub Releases)</a>
-      <p class="small">Release <strong>v0.1.0</strong>, including the verified APK and checksum, is also available on GitHub Releases.</p>
+      <p class="small">Release <strong>v0.2.0</strong>, including the verified APK and checksum, is also available on GitHub Releases.</p>
 
       <h2>Verify the checksum (SHA-256)</h2>
-      <p>The app is available <strong>for Android only</strong>. The file <code>btc-blake2b-wallet-v0.1.0.apk</code> must have this hash:</p>
-      <pre class="checksum" aria-label="Checksum SHA-256 dell'APK"><code>SHA256(btc-blake2b-wallet-v0.1.0.apk) = <span id="checksum">956093E716C3AB05A5111D02C6EDE7D335EB9C3BCF055E7BEB51EC55B8542EAC</span></code></pre>
+      <p>The app is available <strong>for Android only</strong>. The file <code>btc-blake2b-wallet-v0.2.0.apk</code> must have this hash:</p>
+      <pre class="checksum" aria-label="Checksum SHA-256 dell'APK"><code>SHA256(btc-blake2b-wallet-v0.2.0.apk) = <span id="checksum">E89859EFAC7A23983480CAF4DFB4029679B49FEE670587D68F825AF050FA260C</span></code></pre>
       <p class="small">The commands below verify the APK on your computer (Windows, Linux or macOS) before you transfer it to an Android device. They are not app versions for those systems.</p>
 
       <h3>Verify on Windows (PowerShell)</h3>
-      <pre><code>Get-FileHash .\btc-blake2b-wallet-v0.1.0.apk -Algorithm SHA256</code></pre>
+      <pre><code>Get-FileHash .\btc-blake2b-wallet-v0.2.0.apk -Algorithm SHA256</code></pre>
       <h3>Verify on Linux / macOS</h3>
-      <pre><code>sha256sum btc-blake2b-wallet-v0.1.0.apk</code></pre>
+      <pre><code>sha256sum btc-blake2b-wallet-v0.2.0.apk</code></pre>
     </div>
 
     <h2>Installation</h2>
@@ -60,8 +61,14 @@
       <li>On first launch, the app guides you through wallet creation and <strong>seed backup</strong>: write it on paper, never in cloud storage.</li>
     </ol>
 
+    <h2>FAQ</h2>
+    <h3>Why does Android show a scan warning when I install the app?</h3>
+    <p>Apps installed outside Google Play (sideload) are always scanned by Google Play Protect: this happens to every directly-distributed app and does not mean the APK is unsafe. Verify the SHA-256 checksum above and download only from this page or the official GitHub repository. This app is registered with Google's Android Developer Verification program, so installations from this site keep working smoothly on certified devices (global rollout: 2027).</p>
+    <h3>Is the app on Google Play?</h3>
+    <p>No. The app is distributed directly from this site and from GitHub Releases, so you can always verify the exact APK and its checksum. See <a href="/legal.html">Legal</a> and <a href="/privacy.html">Privacy</a>.</p>
+
     <div class="notice">
-      <strong>⚠️ Important notice</strong> — This is an experimental minority chain. The app is provided without warranty under the MIT license: use it only after understanding the risks and verifying the APK integrity.
+      <strong>⚠️ Important notice</strong> — This is an experimental network. The app is provided without warranty under the MIT license: use it only after understanding the risks and verifying the APK integrity.
     </div>
   </main>
 

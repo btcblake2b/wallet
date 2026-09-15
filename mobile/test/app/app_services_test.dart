@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:btc_blake2b_wallet/app/app.dart';
+import 'package:btc_blake2b_wallet/core/services/app_lock_service.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/biometric_service.dart';
 import 'package:btc_blake2b_wallet/core/services/consent_service.dart';
 import 'package:btc_blake2b_wallet/core/services/crypto_service.dart';
 import 'package:btc_blake2b_wallet/core/services/device_service.dart';
+import 'package:btc_blake2b_wallet/core/services/lightning/lightning_connection_store.dart';
+import 'package:btc_blake2b_wallet/core/services/lightning/lightning_service_mock.dart';
 import 'package:btc_blake2b_wallet/core/services/wallet_repository.dart';
 
 class MockWalletRepository extends Mock implements WalletRepository {}
@@ -44,6 +47,9 @@ void main() {
         cryptoService: mockCryptoService,
         deviceService: mockDeviceService,
         consentService: mockConsentService,
+        appLockService: AppLockService.test(),
+        lightningService: LightningServiceMock(),
+        lightningConnectionStore: LightningConnectionStore(),
       );
     });
 

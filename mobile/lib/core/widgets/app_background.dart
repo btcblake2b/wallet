@@ -4,9 +4,12 @@ import '../theme/app_theme.dart';
 
 /// A widget that provides the glowing background effects, matching the website.
 class AppBackground extends StatelessWidget {
-  const AppBackground({super.key, required this.child});
+  const AppBackground({super.key, required this.child, this.accent});
 
   final Widget child;
+
+  /// Se valorizzato sostituisce i colori brand dei glow (contesto Lightning).
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
@@ -20,13 +23,13 @@ class AppBackground extends StatelessWidget {
         Container(
           color: isDark ? const Color(0xFF0B0F19) : AppTheme.lightBgColor,
         ),
-        // Top right orange glow
+        // Top right orange glow (o accent Lightning)
         Positioned(
           top: -200,
           right: -100,
           child: _GlowCircle(
             size: 600,
-            color: scheme.primary,
+            color: accent ?? scheme.primary,
             opacity: isDark ? 0.08 : 0.06,
           ),
         ),
@@ -36,7 +39,7 @@ class AppBackground extends StatelessWidget {
           left: -200,
           child: _GlowCircle(
             size: 500,
-            color: scheme.secondary,
+            color: accent ?? scheme.secondary,
             opacity: isDark ? 0.05 : 0.04,
           ),
         ),

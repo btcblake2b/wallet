@@ -66,6 +66,7 @@ a:hover { color: var(--accent-strong); }
 .accent { background: linear-gradient(90deg, var(--accent), var(--orange)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lead { font-size: 1.15rem; color: var(--text-dim); max-width: 640px; margin: 0 0 26px; }
 .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.trust-badge { margin: 18px 0 0; font-size: 0.85rem; color: var(--text-dim); letter-spacing: 0.02em; }
 .disclaimer-inline { margin-top: 22px; font-size: 0.85rem; color: var(--warn); }
 
 /* Buttons */

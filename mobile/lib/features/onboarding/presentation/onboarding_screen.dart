@@ -14,48 +14,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/world_countries.dart';
 import '../../../core/services/onboarding_service.dart';
 import '../../../core/models/onboarding_data.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../wallet/presentation/legal_info_screen.dart';
-
-/// Paesi UE/SEE + Svizzera in formato ISO 3166-1 alpha-2.
-/// PERCHÉ: la reverse solicitation è rilevante per i residenti
-/// nell'Area Economica Europea. La Svizzera è inclusa per i trattati
-/// bilaterali con l'UE in materia finanziaria.
-const _euEeaCountries = <MapEntry<String, String>>[
-  MapEntry('AT', 'Austria'),
-  MapEntry('BE', 'Belgio'),
-  MapEntry('BG', 'Bulgaria'),
-  MapEntry('CH', 'Svizzera'),
-  MapEntry('CY', 'Cipro'),
-  MapEntry('CZ', 'Repubblica Ceca'),
-  MapEntry('DE', 'Germania'),
-  MapEntry('DK', 'Danimarca'),
-  MapEntry('EE', 'Estonia'),
-  MapEntry('ES', 'Spagna'),
-  MapEntry('FI', 'Finlandia'),
-  MapEntry('FR', 'Francia'),
-  MapEntry('GR', 'Grecia'),
-  MapEntry('HR', 'Croazia'),
-  MapEntry('HU', 'Ungheria'),
-  MapEntry('IE', 'Irlanda'),
-  MapEntry('IS', 'Islanda'),
-  MapEntry('IT', 'Italia'),
-  MapEntry('LI', 'Liechtenstein'),
-  MapEntry('LT', 'Lituania'),
-  MapEntry('LU', 'Lussemburgo'),
-  MapEntry('LV', 'Lettonia'),
-  MapEntry('MT', 'Malta'),
-  MapEntry('NL', 'Paesi Bassi'),
-  MapEntry('NO', 'Norvegia'),
-  MapEntry('PL', 'Polonia'),
-  MapEntry('PT', 'Portogallo'),
-  MapEntry('RO', 'Romania'),
-  MapEntry('SE', 'Svezia'),
-  MapEntry('SI', 'Slovenia'),
-  MapEntry('SK', 'Slovacchia'),
-];
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -318,18 +281,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         DropdownButtonFormField<String>(
           // ignore: deprecated_member_use
           value: _selectedCountry,
+          // PERCHÉ: 250 voci con nomi anche lunghi (es. "Saint Vincent and
+          // the Grenadines") — isExpanded evita l'overflow del campo chiuso.
+          isExpanded: true,
           decoration: InputDecoration(
             labelText: loc.onboardingResidenceLabel,
             hintText: loc.onboardingResidenceHint,
             border: const OutlineInputBorder(),
           ),
-          items: _euEeaCountries.map((entry) {
+          items: kWorldCountries.map((entry) {
             return DropdownMenuItem(
               value: entry.key,
               child: Text('${entry.value} (${entry.key})'),
             );
           }).toList(),
           onChanged: (value) {
+            // DEBUG: traccia la scelta del paese per diagnosi onboarding.
+            debugPrint('[LoopEngineer] onboarding country selected: $value');
             setState(() => _selectedCountry = value);
           },
           validator: (value) {

@@ -119,6 +119,86 @@ class AppLocalizationsFi extends AppLocalizations {
   String get homeMoreOptions => 'Lisää vaihtoehtoja';
 
   @override
+  String get homeLockVault => 'Lukitse holvi';
+
+  @override
+  String get homeVaultLocked => 'Holvi lukittu';
+
+  @override
+  String get settingsTitle => 'Asetukset';
+
+  @override
+  String get settingsSectionSecurity => 'Turvallisuus';
+
+  @override
+  String get settingsSectionAppearance => 'Ulkoasu';
+
+  @override
+  String get settingsSectionTools => 'Työkalut';
+
+  @override
+  String get settingsSectionInfo => 'Tiedot';
+
+  @override
+  String get settingsTheme => 'Tumma teema';
+
+  @override
+  String get settingsAppLock => 'Sovelluksen lukitus';
+
+  @override
+  String get settingsAppLockDesc =>
+      'Pyydä biometria tai puhelimen PIN jokaisella avauskerralla';
+
+  @override
+  String get settingsAppLockUnavailable =>
+      'Tähän laitteeseen ei ole rekisteröity biometriaa';
+
+  @override
+  String get settingsAppLockEnableFailed =>
+      'Vahvistus epäonnistui: lukitusta ei otettu käyttöön';
+
+  @override
+  String get settingsAppLockEnabled => 'Lukitus käytössä';
+
+  @override
+  String get settingsAppLockDisabled => 'Lukitus poistettu käytöstä';
+
+  @override
+  String get appLockTitle => 'Sovellus lukittu';
+
+  @override
+  String get appLockSubtitle => 'Avaa biometrialla tai puhelimen PIN-koodilla';
+
+  @override
+  String get appLockUnlock => 'Avaa';
+
+  @override
+  String get appLockReason => 'Avaa lompakko';
+
+  @override
+  String get appLockNoticeDeviceAuthRemoved =>
+      'Lukitus poistettu käytöstä: puhelimen näytön suojaus (biometria/PIN) ei ole enää käytettävissä. Ota se uudelleen käyttöön järjestelmäasetuksissa.';
+
+  @override
+  String get appLockNoticeContinue => 'Jatka';
+
+  @override
+  String get appLockPromptTitle => 'Otetaanko lukitus käyttöön?';
+
+  @override
+  String get appLockPromptMessage =>
+      'Sovelluksen avaaminen vaatii biometrian tai puhelimen PIN-koodin.';
+
+  @override
+  String get appLockPromptEnable => 'Ota käyttöön';
+
+  @override
+  String get appLockPromptLater => 'Myöhemmin';
+
+  @override
+  String get aboutLicensesOpenOnline => 'Avaa verkossa';
+
+  @override
   String homeCreated(Object date) {
     return 'Luotu: $date';
   }
@@ -486,7 +566,7 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get importScreenHintText =>
-      'Siemenlause koostuu 12 sanasta, jotka erotetaan välilyönneillä. Voit liittää sen suoraan.';
+      'Siemenlause koostuu 12, 15, 18, 21 tai 24 sanasta, jotka erotetaan välilyönneillä. Voit liittää sen suoraan.';
 
   @override
   String onboardingSubmitError(Object error) {
@@ -576,6 +656,10 @@ class AppLocalizationsFi extends AppLocalizations {
       'Skannattu koodi ei ole kelvollinen Bitcoin-osoite.';
 
   @override
+  String get scanQrInvalidInvoice =>
+      'Skannattu koodi ei ole kelvollinen Lightning-lasku.';
+
+  @override
   String get scanQrTorch => 'Vaihda taskulamppua';
 
   @override
@@ -592,11 +676,11 @@ class AppLocalizationsFi extends AppLocalizations {
   String get importScreenTitle => 'Tuo lompakko';
 
   @override
-  String get importScreenHeading => 'Anna 12 sanaa';
+  String get importScreenHeading => 'Anna siemenlause';
 
   @override
   String get importScreenSubtitle =>
-      'Anna 12 sanan muistilause välilyönneillä erotettuna ja valitse sitten alkuperäistä lompakkoa vastaava tilityyppi.';
+      'Anna 12, 15, 18, 21 tai 24 sanan muistilause välilyönneillä erotettuna ja valitse sitten alkuperäistä lompakkoa vastaava tilityyppi.';
 
   @override
   String get importScriptTypeLabel => 'Tilityyppi';
@@ -626,7 +710,7 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String importScreenValidateCount(Object count) {
-    return 'Lauseen on sisällettävä tasan 12 sanaa (havaittu: $count).';
+    return 'Lauseen on sisällettävä 12, 15, 18, 21 tai 24 sanaa (havaittu: $count).';
   }
 
   @override
@@ -869,6 +953,9 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get languageSelector => 'Kieli';
+
+  @override
+  String get languageSelectorAuto => '🌐 Automaattinen (järjestelmä)';
 
   @override
   String get languageSelectorEn => '🇬🇧 English';
@@ -1392,4 +1479,624 @@ class AppLocalizationsFi extends AppLocalizations {
   String explorerErrorGeneric(String error) {
     return 'Virhe: $error';
   }
+
+  @override
+  String get walletLayerOnchain => 'On-chain';
+
+  @override
+  String get walletLayerLightning => 'Lightning';
+
+  @override
+  String get lightningDisconnectedTitle => 'Ei Lightning-solmua yhdistetty';
+
+  @override
+  String get lightningDisconnectedBody =>
+      'Yhdistä blake2b-Lightning-solmusi lähettääksesi ja vastaanottaaksesi maksuja. Sovellus ei koskaan säilytä varojasi tai avaimiasi.';
+
+  @override
+  String get lightningConnectButton => 'Yhdistä solmu';
+
+  @override
+  String get lightningConnectTitle => 'Yhdistä Lightning-solmu';
+
+  @override
+  String get lightningConnectHint =>
+      'Liitä yhteysmerkkijono (nostr+walletconnect://…)';
+
+  @override
+  String get lightningConnectInvalidUri => 'Virheellinen yhteysmerkkijono';
+
+  @override
+  String get lightningConnectInfo =>
+      'Solmun on valtuutettava tämä sovellus (grant): tarkista solmusi hallintapaneeli.';
+
+  @override
+  String get lightningConnecting => 'Yhdistetään…';
+
+  @override
+  String get lightningConnected => 'Yhdistetty';
+
+  @override
+  String get lightningDisconnect => 'Katkaise yhteys';
+
+  @override
+  String get lightningBalance => 'Lightning-saldo';
+
+  @override
+  String get lightningChannels => 'Kanavat';
+
+  @override
+  String get lightningNoChannels => 'Ei avoimia kanavia';
+
+  @override
+  String get lightningChannelPeer => 'Vastapuoli';
+
+  @override
+  String get lightningChannelCapacity => 'Kapasiteetti';
+
+  @override
+  String get lightningChannelLocal => 'Paikallinen';
+
+  @override
+  String get lightningChannelRemote => 'Etä';
+
+  @override
+  String get lightningOpenChannel => 'Avaa kanava';
+
+  @override
+  String get lightningOpenChannelNodeId => 'Node ID (pubkey)';
+
+  @override
+  String get lightningOpenChannelHost => 'Isäntä (valinnainen, ip:portti)';
+
+  @override
+  String get lightningOpenChannelAmount => 'Määrä (sat)';
+
+  @override
+  String get lightningOpenChannelPrivate => 'Yksityinen kanava';
+
+  @override
+  String get lightningChannelOpened => 'Kanavan avaus pyydetty';
+
+  @override
+  String get lightningCloseChannel => 'Sulje kanava';
+
+  @override
+  String get lightningCloseChannelForce => 'Pakotettu sulkeminen';
+
+  @override
+  String get lightningCloseChannelForceWarning =>
+      'Pakotettu sulkeminen julkaisee kanavan viimeisimmän tilan on-chain. Voi aiheuttaa kuluja ja viiveitä. Jatketaanko?';
+
+  @override
+  String get lightningReceive => 'Vastaanota';
+
+  @override
+  String get lightningSend => 'Lähetä';
+
+  @override
+  String get lightningInvoiceAmount => 'Määrä (sat)';
+
+  @override
+  String get lightningInvoiceDescription => 'Kuvaus (valinnainen)';
+
+  @override
+  String get lightningInvoiceCreate => 'Luo lasku';
+
+  @override
+  String get lightningInvoiceTitle => 'Lightning-lasku';
+
+  @override
+  String get lightningPay => 'Maksa lasku';
+
+  @override
+  String get lightningPayHint => 'Liitä lasku (lnbc…)';
+
+  @override
+  String get lightningPayDialogTitle => 'Vahvista Lightning-maksu';
+
+  @override
+  String get lightningPayDialogBody => 'Maksetaanko tämä lasku?';
+
+  @override
+  String get lightningPaySuccess => 'Maksu lähetetty';
+
+  @override
+  String get lightningCopied => 'Kopioitu';
+
+  @override
+  String get lightningErrorRestricted =>
+      'Solmu ei ole valtuuttanut tätä sovellusta. Luo grant solmuusi tälle yhteydelle.';
+
+  @override
+  String lightningErrorGeneric(String error) {
+    return 'Lightning-virhe: $error';
+  }
+
+  @override
+  String get lightningConfirm => 'Vahvista';
+
+  @override
+  String get lightningCancel => 'Peruuta';
+
+  @override
+  String get lightningNodeOnchain => 'Noden on-chain';
+
+  @override
+  String get lightningDeposit => 'Talleta';
+
+  @override
+  String get lightningWithdraw => 'Lähetä on-chain';
+
+  @override
+  String get lightningDepositTitle => 'On-chain-talletus';
+
+  @override
+  String get lightningDepositHint =>
+      'Lähetä blake2b-varoja tähän noden osoitteeseen.';
+
+  @override
+  String get lightningDepositNewAddress => 'Uusi osoite';
+
+  @override
+  String get lightningDepositWarning =>
+      'Lähetä vain blake2b-verkossa. Väärässä verkossa lähetetyt varat menetetään.';
+
+  @override
+  String get lightningOnchainSendTitle => 'On-chain-lähetys';
+
+  @override
+  String get lightningOnchainAddressLabel => 'Vastaanottajan osoite';
+
+  @override
+  String get lightningOnchainAmountLabel => 'Summa (sat)';
+
+  @override
+  String get lightningOnchainFeeLabel => 'Verkkokulu';
+
+  @override
+  String get lightningOnchainFeeMin => 'Minimi';
+
+  @override
+  String get lightningOnchainFeeEconomical => 'Edullinen';
+
+  @override
+  String get lightningOnchainFeePriority => 'Prioriteetti';
+
+  @override
+  String get lightningOnchainConfirm => 'Vahvista lähetys';
+
+  @override
+  String get lightningOnchainConfirmTitle => 'Vahvistetaanko on-chain-lähetys?';
+
+  @override
+  String get lightningOnchainWarning =>
+      'Peruuttamaton toiminto: varat poistuvat nodesta.';
+
+  @override
+  String get lightningOnchainSuccess => 'Tapahtuma lähetetty';
+
+  @override
+  String get lightningOnchainInvalidAddress => 'Virheellinen blake2b-osoite';
+
+  @override
+  String get lightningOnchainInsufficient => 'On-chain-varat riittämättömät';
+
+  @override
+  String get lightningFeesUnavailable =>
+      'Kuluarviot eivät saatavilla: node valitsee kulun';
+
+  @override
+  String get lightningOpenChannelHint =>
+      'Pubkey tai pubkey@host:port (onion vaatii Torin nodessa)';
+
+  @override
+  String get lightningOpenChannelInvalid =>
+      'Virheellinen node-ID tai host (66 hex, host:port)';
+
+  @override
+  String get lightningActivityDetected => 'Aktiviteettia havaittu nodessa';
+
+  @override
+  String get lightningPeers => 'Peerit';
+
+  @override
+  String get lightningPeersEmpty => 'Ei peer-yhteyksiä';
+
+  @override
+  String get lightningConnectPeer => 'Yhdistä peer';
+
+  @override
+  String get lightningDisconnectPeer => 'Katkaise';
+
+  @override
+  String get lightningPeerDisconnected => 'Katkaistu';
+
+  @override
+  String get lightningPeerId => 'Peer-ID';
+
+  @override
+  String get lightningPeerAddresses => 'Osoitteet';
+
+  @override
+  String get lightningDisconnectPeerConfirm =>
+      'Katkaistaanko tämä peer? Avoimet kanavat pysyvät aktiivisina.';
+
+  @override
+  String get lightningChannelDetail => 'Kanavan tiedot';
+
+  @override
+  String get lightningChannelShortId => 'Short channel ID';
+
+  @override
+  String get lightningChannelState => 'Noden tila';
+
+  @override
+  String get lightningChannelFee => 'Kulu';
+
+  @override
+  String get lightningChannelSpendable => 'Käytettävissä';
+
+  @override
+  String get lightningChannelReceivable => 'Vastaanotettavissa';
+
+  @override
+  String get lightningChannelHtlcs => 'HTLC';
+
+  @override
+  String get lightningChannelFundingTxid => 'Funding-txid';
+
+  @override
+  String get lightningNodeManagement => 'Solmun hallinta';
+
+  @override
+  String lightningNodeManagementSubtitle(int peers, int channels) {
+    return '$peers peeriä · $channels kanavaa';
+  }
+
+  @override
+  String get lightningNodeIdentity => 'Solmun identiteetti';
+
+  @override
+  String get lightningNodePubkey => 'Julkinen avain';
+
+  @override
+  String get lightningNodeVersion => 'Versio';
+
+  @override
+  String get lightningNodePeersCount => 'Peerit';
+
+  @override
+  String get lightningNodeChannelsActive => 'Aktiiviset kanavat';
+
+  @override
+  String get lightningNodeChannelsPending => 'Odottavat kanavat';
+
+  @override
+  String get lightningNodeLiquidityAdsUnsupported =>
+      'Ei saatavilla tässä solmussa: leasing-ehtojen julkaisu vaatii liquidity-ads-lisäosan.';
+
+  @override
+  String get lightningLiquidity => 'Likviditeetti';
+
+  @override
+  String get lightningLiquidityTotal => 'Kokonaiskapasiteetti';
+
+  @override
+  String get lightningLiquidityOutbound => 'Lähtevä';
+
+  @override
+  String get lightningLiquidityInbound => 'Saapuva';
+
+  @override
+  String get lightningLiquidityWarning =>
+      'Ei saapuvaa likviditeettiä: maksuja ei voi vastaanottaa ennen kuin peer avaa kanavan tähän solmuun.';
+
+  @override
+  String get lightningMovements => 'Tapahtumat';
+
+  @override
+  String get lightningMovementsEmpty => 'Ei tapahtumia';
+
+  @override
+  String get lightningMovementsAll => 'Kaikki tapahtumat';
+
+  @override
+  String get lightningMovementsLoadMore => 'Lataa lisää';
+
+  @override
+  String get lightningMovementDeposit => 'On-chain-talletus';
+
+  @override
+  String get lightningMovementWithdrawal => 'On-chain-lähetys';
+
+  @override
+  String get lightningMovementChannelOpen => 'Kanavan avaus';
+
+  @override
+  String get lightningMovementChannelClose => 'Kanavan sulkeminen';
+
+  @override
+  String get lightningMovementInvoice => 'Lightning-maksu';
+
+  @override
+  String get lightningMovementOnchainFee => 'On-chain-kulu';
+
+  @override
+  String get lightningMovementForward => 'Välitys';
+
+  @override
+  String get lightningMovementOther => 'Tapahtuma';
+
+  @override
+  String lightningChannelsAll(int count) {
+    return 'Kaikki kanavat ($count)';
+  }
+
+  @override
+  String get lightningOnchainNode => 'Solmun on-chain';
+
+  @override
+  String get lightningOnchainBalance => 'On-chain-saldo';
+
+  @override
+  String get lightningOnchainConfirmed => 'Vahvistetut';
+
+  @override
+  String get lightningOnchainPending => 'Odottaa';
+
+  @override
+  String get lightningOnchainUtxos => 'UTXO:t';
+
+  @override
+  String get lightningOnchainUtxosEmpty => 'Ei UTXO:ita';
+
+  @override
+  String get lightningOnchainAddresses => 'Solmun osoitteet';
+
+  @override
+  String get lightningOnchainNewAddress => 'Uusi osoite';
+
+  @override
+  String get lightningOnchainAddressType => 'Osoitetyyppi';
+
+  @override
+  String get lightningOnchainTypeBech32 => 'Bech32 (bc1q)';
+
+  @override
+  String get lightningOnchainTypeTaproot => 'Taproot (bc1p)';
+
+  @override
+  String get lightningOnchainHasFunds => 'Saldolla';
+
+  @override
+  String get lightningOnchainReserved => 'Varattu';
+
+  @override
+  String get lightningOnchainBlockHeight => 'Lohko';
+
+  @override
+  String get lightningPayments => 'Maksut';
+
+  @override
+  String get lightningInvoices => 'Laskut';
+
+  @override
+  String get lightningInvoicesEmpty => 'Ei laskuja';
+
+  @override
+  String get lightningInvoiceStatusPaid => 'Maksettu';
+
+  @override
+  String get lightningInvoiceStatusPending => 'Odottaa maksua';
+
+  @override
+  String get lightningInvoiceStatusExpired => 'Vanhentunut';
+
+  @override
+  String lightningInvoicePaidOn(String date) {
+    return 'Maksettu $date';
+  }
+
+  @override
+  String lightningInvoiceExpiresOn(String date) {
+    return 'Vanhenee $date';
+  }
+
+  @override
+  String get lightningReceivePaid => 'Lasku maksettu';
+
+  @override
+  String lightningPaymentsSummary(int total, int pending) {
+    return '$total laskua · $pending odottaa';
+  }
+
+  @override
+  String get lightningPays => 'Lähetetyt maksut';
+
+  @override
+  String get lightningPaysEmpty => 'Ei maksuja';
+
+  @override
+  String get lightningPaymentFee => 'Kulu';
+
+  @override
+  String get lightningPaymentCompleted => 'Valmis';
+
+  @override
+  String get lightningPaymentPending => 'Kesken';
+
+  @override
+  String get lightningPaymentFailed => 'Epäonnistui';
+
+  @override
+  String get lightningHtlcsEmpty => 'Ei HTLC:ita';
+
+  @override
+  String get lightningHtlcInProgress => 'Matkalla';
+
+  @override
+  String get lightningHtlcIncoming => 'Saapuva';
+
+  @override
+  String get lightningHtlcOutgoing => 'Lähtevä';
+
+  @override
+  String get lightningChannelFees => 'Reitityskulut';
+
+  @override
+  String get lightningFeeEdit => 'Muokkaa kuluja';
+
+  @override
+  String get lightningFeeBefore => 'Nykyiset';
+
+  @override
+  String get lightningFeeAfter => 'Uudet';
+
+  @override
+  String get lightningFeeBaseLabel => 'Perus (sat)';
+
+  @override
+  String get lightningFeePpmLabel => 'Hinta (ppm)';
+
+  @override
+  String get lightningHtlcMinLabel => 'Min HTLC (sat)';
+
+  @override
+  String get lightningHtlcMaxLabel => 'Max HTLC (sat)';
+
+  @override
+  String get lightningCltvLabel => 'CLTV-delta';
+
+  @override
+  String get lightningChannelReserve => 'Oma varaus';
+
+  @override
+  String get lightningChannelToSelfDelay => 'To-self-viive';
+
+  @override
+  String get lightningFeeConfirmTitle =>
+      'Otetaanko nämä reitityskulut käyttöön?';
+
+  @override
+  String get lightningFeeWarning =>
+      'Kulut koskevat reititettyjä maksuja. Verkko hyväksyy vain muutaman muutoksen päivässä ja peerit voivat viivästyä.';
+
+  @override
+  String get lightningFeeUpdated => 'Kulupolitiikka päivitetty';
+
+  @override
+  String get lightningDiagnostics => 'Diagnostiikka';
+
+  @override
+  String get lightningDiagnosticsSubtitle =>
+      'Kirjanpito, liitännäiset ja välitys';
+
+  @override
+  String get lightningStatsEconomy => 'Talous';
+
+  @override
+  String get lightningStatsNet => 'Netto';
+
+  @override
+  String get lightningStatsSource => 'Noden kirjanpidosta (bookkeeper)';
+
+  @override
+  String get lightningStatsEmpty => 'Ei vielä kirjanpitotietoja';
+
+  @override
+  String get lightningStatsTagDeposit => 'Talletukset';
+
+  @override
+  String get lightningStatsTagInvoice => 'Laskut';
+
+  @override
+  String get lightningStatsTagWithdrawal => 'Nostot';
+
+  @override
+  String get lightningStatsTagOnchainFee => 'On-chain-kulut';
+
+  @override
+  String get lightningStatsTagChannelOpen => 'Kanavien avaukset';
+
+  @override
+  String get lightningStatsTagChannelClose => 'Kanavien sulkemiset';
+
+  @override
+  String get lightningStatsTagRouted => 'Ansaitut reitityskulut';
+
+  @override
+  String lightningStatsEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tapahtumaa',
+      one: '1 tapahtuma',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lightningPluginsTitle => 'Liitännäiset';
+
+  @override
+  String lightningPluginsActiveCount(int count) {
+    return '$count aktiivista';
+  }
+
+  @override
+  String get lightningPluginInactive => 'ei aktiivinen';
+
+  @override
+  String get lightningForwardsTitle => 'Välitys';
+
+  @override
+  String get lightningForwardsEmpty => 'Ei vielä välitettyjä maksuja';
+
+  @override
+  String get lightningForwardSettled => 'Toteutunut';
+
+  @override
+  String get lightningForwardFailed => 'Epäonnistui';
+
+  @override
+  String get lightningForwardOffered => 'Käynnissä';
+
+  @override
+  String get lightningKeysendTitle => 'Lähetä nodelle (keysend)';
+
+  @override
+  String get lightningKeysendHint => 'Vastaanottavan noden pubkey (66 hex)';
+
+  @override
+  String get lightningKeysendAmountLabel => 'Summa (sat)';
+
+  @override
+  String get lightningKeysendMaxFeeLabel => 'Enimmäiskulu (sat)';
+
+  @override
+  String get lightningKeysendMaxFeeHelp =>
+      'Jätä tyhjäksi käyttääksesi noden oletusta (0,5 %)';
+
+  @override
+  String get lightningKeysendWarning =>
+      'Keysend maksaa nodelle ilman laskua: varat siirtyvät heti eikä niitä voi peruuttaa.';
+
+  @override
+  String get lightningKeysendConfirmTitle => 'Lähetetäänkö tämä keysend-maksu?';
+
+  @override
+  String get lightningKeysendDestination => 'Kohde';
+
+  @override
+  String get lightningKeysendSent => 'Keysend lähetetty';
+
+  @override
+  String get lightningKeysendInvalidPubkey => 'Virheellinen noden pubkey';
+
+  @override
+  String get lightningKeysendInvalidAmount => 'Syötä nollaa suurempi summa';
+
+  @override
+  String get lightningKeysendSend => 'Lähetä';
 }

@@ -40,15 +40,14 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icons/Icon-512.png">
 
-  <!-- Google Fonts for PWA -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <!-- PERCHÉ (hardening 2.4): nessun font da CDN di terze parti — l'IP
+       dell'utente non viene inviato a Google e la privacy policy resta vera.
+       Il font Outfit è bundlato nell'app Flutter (assets/fonts). -->
 
   <title>Btc Blake2b Wallet</title>
   <link rel="manifest" href="manifest.json">
 </head>
-<body style="background:#0b0f19;color:#f8fafc;font-family:'Outfit',sans-serif;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh">
+<body style="background:#0b0f19;color:#f8fafc;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh">
   <!-- Loading / error fallback shown while Flutter boots -->
   <div id="loading" style="text-align:center;padding:2rem">
     <div style="font-size:2rem;margin-bottom:1rem">⚡</div>
@@ -63,64 +62,15 @@
   <div id="error" style="display:none;text-align:center;padding:2rem;max-width:420px">
     <p style="font-size:1.2rem;color:#f87171;font-weight:600">⚠️ Impossibile avviare l'app</p>
     <p style="color:#94a3b8;font-size:0.9rem" id="error-msg"></p>
-    <button onclick="location.reload()" style="margin-top:1rem;padding:0.6rem 1.5rem;background:#f7931a;color:#0b0f19;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif">
+    <button id="retry-btn" style="margin-top:1rem;padding:0.6rem 1.5rem;background:#f7931a;color:#0b0f19;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
       Riprova
     </button>
   </div>
 
-  <script>
-    (function() {
-      var loadingEl = document.getElementById('loading');
-      var errorEl = document.getElementById('error');
-      var hintEl = document.getElementById('loading-hint');
-      var errorMsgEl = document.getElementById('error-msg');
-      var started = false;
-
-      function fail(msg) {
-        loadingEl.style.display = 'none';
-        errorEl.style.display = 'block';
-        errorMsgEl.textContent = msg;
-      }
-
-      // Detect browser issues early
-      try {
-        var c = document.createElement('canvas');
-        var gl = c.getContext('webgl2') || c.getContext('webgl');
-        if (!gl) fail('Il tuo browser non supporta WebGL, necessario per eseguire l\'app. Prova con Chrome, Edge o Firefox aggiornato.');
-
-        if (typeof WebAssembly !== 'object') fail('Il tuo browser non supporta WebAssembly. Aggiorna il browser all\'ultima versione.');
-      } catch(e) {
-        fail('Errore durante il controllo di compatibilità del browser: ' + e.message);
-      }
-
-      // Show progress
-      var steps = ['Connessione al server…', 'Preparazione dell\'app…', 'Caricamento in corso…'];
-      var stepIdx = 0;
-      var interval = setInterval(function() {
-        stepIdx = (stepIdx + 1) % steps.length;
-        hintEl.textContent = steps[stepIdx];
-      }, 2000);
-
-      // Hide loader when Flutter takes over
-      var observer = new MutationObserver(function() {
-        if (document.querySelector('flt-glass-pane') || document.querySelector('flutter-view')) {
-          loadingEl.style.display = 'none';
-          clearInterval(interval);
-          observer.disconnect();
-          started = true;
-        }
-      });
-      observer.observe(document.body, {childList: true, subtree: true});
-
-      // Timeout fallback
-      setTimeout(function() {
-        if (!started) {
-          fail('Tempo di caricamento scaduto. Verifica la connessione a internet e riprova. Se il problema persiste, svuota la cache del browser.');
-          clearInterval(interval);
-        }
-      }, 30000);
-    })();
-  </script>
+  <!-- PERCHÉ (hardening 2.4): script ESTERNO (boot.js) e non inline — così la
+       CSP può usare `script-src 'self'` senza `unsafe-inline`; l'handler del
+       pulsante "Riprova" è registrato in boot.js, non inline. -->
+  <script src="boot.js"></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

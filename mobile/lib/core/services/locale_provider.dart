@@ -15,14 +15,34 @@ import 'locale_provider_stub.dart'
 /// 2. Browser/OS language
 /// 3. 'en' (default fallback)
 class LocaleProvider extends ChangeNotifier {
+  /// [PERCHÉ iniettabile]: i test unitari devono poter simulare storage e
+  /// lingua di sistema senza plugin nativi né dipendenza dal device.
+  LocaleProvider({
+    Future<String?> Function()? readStoredLanguage,
+    Future<void> Function(String langTag)? persistLanguage,
+    Future<void> Function()? clearStoredLanguage,
+    Future<String?> Function()? detectSystemLanguage,
+  })  : _readStoredLanguage = readStoredLanguage ?? readStoredLanguageImpl,
+        _persistLanguage = persistLanguage ?? persistLanguageImpl,
+        _clearStoredLanguage = clearStoredLanguage ?? clearStoredLanguageImpl,
+        _detectSystemLanguage =
+            detectSystemLanguage ?? detectSystemLanguageImpl;
+
   static const _defaultLocale = 'en';
 
+  final Future<String?> Function() _readStoredLanguage;
+  final Future<void> Function(String langTag) _persistLanguage;
+  final Future<void> Function() _clearStoredLanguage;
+  final Future<String?> Function() _detectSystemLanguage;
+
   /// All locales supported by the app (must match l10n.yaml and ARB files).
-  /// Note: ARB files use `zh` and `fr` (without country codes).
-  /// Flutter resolves `zh-CN` → `zh` and `fr-CA` → `fr` automatically.
+  /// Nota: `en` per prima — è il fallback per le lingue non supportate
+  /// (stessa priorità in `l10n.yaml` → `preferred-supported-locales`).
+  /// Gli ARB usano `zh` e `fr` (senza country code): Flutter risolve
+  /// `zh-CN` → `zh` e `fr-CA` → `fr` automaticamente.
   static const supportedLocales = [
-    'it',
     'en',
+    'it',
     'de',
     'fi',
     'es',
@@ -31,6 +51,11 @@ class LocaleProvider extends ChangeNotifier {
   ];
 
   Locale _locale = const Locale(_defaultLocale);
+  bool _autoMode = true;
+
+  /// True quando la lingua segue il sistema (nessuna scelta salvata).
+  /// In questa modalità il selettore mostra “Automatica” come voce attiva.
+  bool get isAutoMode => _autoMode;
 
   Locale get locale => _locale;
   String get languageCode => _locale.languageCode;
@@ -48,25 +73,41 @@ class LocaleProvider extends ChangeNotifier {
     if (!supportedLocales.contains(langTag)) return;
 
     _locale = newLocale;
+    _autoMode = false;
     if (kDebugMode) debugPrint('LocaleProvider: setLocale to $langTag');
-    await persistLanguageImpl(langTag);
+    await _persistLanguage(langTag);
+    notifyListeners();
+  }
+
+  /// Torna alla modalità automatica: rimuove la preferenza salvata e
+  /// ri-risolve la lingua dalla lingua di sistema (fallback inglese).
+  Future<void> useSystemLocale() async {
+    await _clearStoredLanguage();
+    _locale = await _resolveLocale();
+    if (kDebugMode) {
+      debugPrint(
+        'LocaleProvider: modalità automatica → ${_locale.languageCode}',
+      );
+    }
     notifyListeners();
   }
 
   /// Read the language from storage if available, otherwise detect
   /// from browser/OS, falling back to English.
   Future<Locale> _resolveLocale() async {
-    // 1. Stored preference (localStorage on web)
-    final stored = await readStoredLanguageImpl();
+    // 1. Stored preference (scelta esplicita dell'utente)
+    final stored = await _readStoredLanguage();
     if (stored != null && supportedLocales.contains(stored)) {
+      _autoMode = false;
       if (kDebugMode) {
         debugPrint('LocaleProvider: resolved from storage: $stored');
       }
       return _stringToLocale(stored);
     }
 
-    // 2. Browser/OS language
-    final detected = await detectSystemLanguageImpl();
+    // 2. Lingua di sistema (nessuna scelta esplicita → modalità automatica)
+    _autoMode = true;
+    final detected = await _detectSystemLanguage();
     if (detected != null) {
       // Exact match
       if (supportedLocales.contains(detected)) {

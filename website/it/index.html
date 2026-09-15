@@ -24,9 +24,9 @@
     "name": "Btc Blake2b Wallet",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Android",
-    "softwareVersion": "0.1.0",
+    "softwareVersion": "0.2.0",
     "url": "https://btcblake2b.org/",
-    "description": "Wallet self-custodial 100% locale per la rete bitcoin-blake2b (minority chain). Nessun server dell'autore, nessun tracking.",
+    "description": "Wallet self-custodial 100% locale per la rete bitcoin-blake2b. Nessun server dell'autore, nessun tracking.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
     "author": { "@type": "Person", "name": "Filippo Santagiuliana" }
   }
@@ -44,6 +44,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="/it/download.html">Download</a></li>
+        <li><a href="/it/node.html">Nodo</a></li>
         <li><a href="/it/privacy.html">Privacy</a></li>
         <li><a href="/it/legal.html">Note legali</a></li>
         <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Sorgente</a></li>
@@ -55,14 +56,15 @@
   <main id="contenuto">
     <section class="hero">
       <div class="container">
-        <p class="eyebrow">Bitcoin-blake2b mainnet · minority chain · self-custody</p>
+        <p class="eyebrow">Bitcoin-blake2b mainnet · BIP-110 · self-custody</p>
         <h1>I tuoi fondi.<br>Le tue chiavi. <span class="accent">Solo sul tuo device.</span></h1>
-        <p class="lead">Btc Blake2b Wallet è un wallet <strong>self-custodial e locale</strong> per bitcoin-blake2b mainnet. Le chiavi vengono gestite sul dispositivo e non vengono inviate ai server dell'autore.</p>
+        <p class="lead">Btc Blake2b Wallet è un wallet <strong>self-custodial e locale</strong> per bitcoin-blake2b mainnet. Le chiavi vengono gestite sul dispositivo e non vengono inviate ai server dell'autore. Nessun token, nessuna ICO, nessun backend: solo software open source che controlli tu.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="/it/download.html">Scarica l'APK</a>
           <a class="btn btn-ghost" href="https://github.com/btcblake2b/wallet" rel="noopener">Codice sorgente</a>
         </div>
-        <p class="disclaimer-inline">⚠️ Rete sperimentale di minoranza: informati sui rischi prima di usarla.</p>
+        <p class="trust-badge">Licenza MIT · APK firmato · SHA-256 pubblicato</p>
+        <p class="disclaimer-inline">⚠️ Rete sperimentale: informati sui rischi prima di usarla.</p>
       </div>
     </section>
 
@@ -88,7 +90,7 @@
           </article>
           <article class="card">
             <h3>🎯 UX di livello professionale</h3>
-            <p>Onboarding guidato, backup confermato, coin control e 7 lingue. Pensato sia per chi inizia sia per chi vuole controllare direttamente le proprie chiavi.</p>
+            <p>Onboarding guidato, backup confermato, coin control, RBF (bump fee), QR per invio e ricezione e 7 lingue. Pensato sia per chi inizia sia per chi vuole controllare direttamente le proprie chiavi.</p>
           </article>
           <article class="card">
             <h3>🕊️ Gratis e open source</h3>
@@ -102,8 +104,9 @@
       <div class="container">
         <h2>Onestà sulla rete</h2>
         <ul>
-          <li><strong>Minority chain</strong>: bitcoin-blake2b è una rete sperimentale separata da Bitcoin. Informati prima di usarla.</li>
+          <li><strong>Rete separata</strong>: bitcoin-blake2b è una rete sperimentale separata da Bitcoin. Informati prima di usarla.</li>
           <li><strong>Nessuna replay protection di rete</strong>: l'app firma con SIGHASH_UNIFIED per ridurre il rischio, ma verifica sempre gli indirizzi.</li>
+          <li><strong>Niente token, niente da comprare</strong>: nessuna ICO, nessuna prevendita, nessuna funzione a pagamento.</li>
           <li><strong>Fee realistiche</strong> e fallback API automatico per saldo e storico.</li>
           <li>Questo progetto <strong>non è affiliato</strong> a Bitcoin, bitcoin.org o al progetto bitcoin-blake2b.</li>
         </ul>
@@ -148,7 +151,11 @@
         </details>
         <details>
           <summary>Quali dati vengono trasmessi?</summary>
-          <p>Per saldo, fee e storico l'app interroga API pubbliche. Queste richieste possono esporre al provider l'indirizzo IP e l'indirizzo pubblico interrogato.</p>
+          <p>Per saldo, fee e storico l'app interroga una API pubblica (<code>mempool.guide</code>). Queste richieste possono esporre al provider l'indirizzo IP e l'indirizzo pubblico interrogato.</p>
+        </details>
+        <details>
+          <summary>C'è protezione anti-replay?</summary>
+          <p>No, non a livello di consenso. L'app firma con SIGHASH_UNIFIED per ridurre il rischio, ma verifica sempre rete e indirizzi.</p>
         </details>
       </div>
     </section>
@@ -158,6 +165,7 @@
     <div class="container footer-grid">
       <div>
         <p><strong>Btc Blake2b Wallet</strong> — licenza <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT</a>.</p>
+        <p>Non affiliato a Bitcoin, bitcoin.org o al progetto bitcoin-blake2b.</p>
         <p>Sito statico: nessun analytics né cookie di profilazione. Hosting: Cloudflare.</p>
       </div>
       <ul class="footer-links">

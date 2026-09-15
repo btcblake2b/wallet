@@ -87,8 +87,18 @@ class CryptoService {
     }
   }
 
-  /// Web (audit F1): rimuove le chiavi dalla memoria (lock/logout).
+  /// Web (audit F1 + hardening 2.4): rimuove le chiavi dalla memoria
+  /// (lock/logout/auto-lock per inattività o pagina nascosta).
   void lockWebStorage() {
+    // PERCHÉ (hardening 2.4): best-effort wipe dei buffer prima del drop —
+    // Dart non garantisce lo zeroing della memoria, ma azzerare riduce la
+    // finestra in cui il seed ED25519 resta leggibile in un heap dump.
+    final edSeed = _cachedWebEd25519Seed;
+    if (edSeed != null) {
+      edSeed.fillRange(0, edSeed.length, 0);
+    }
+    // NOTA: SecretKey incapsula i byte e le String Dart sono immutabili:
+    // non azzerabili — l'unica opzione è eliminare il riferimento.
     _cachedWebMasterKey = null;
     _cachedWebEd25519Seed = null;
   }

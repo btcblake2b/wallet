@@ -119,6 +119,86 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeMoreOptions => 'Weitere Optionen';
 
   @override
+  String get homeLockVault => 'Tresor sperren';
+
+  @override
+  String get homeVaultLocked => 'Tresor gesperrt';
+
+  @override
+  String get settingsTitle => 'Einstellungen';
+
+  @override
+  String get settingsSectionSecurity => 'Sicherheit';
+
+  @override
+  String get settingsSectionAppearance => 'Darstellung';
+
+  @override
+  String get settingsSectionTools => 'Werkzeuge';
+
+  @override
+  String get settingsSectionInfo => 'Informationen';
+
+  @override
+  String get settingsTheme => 'Dunkles Design';
+
+  @override
+  String get settingsAppLock => 'App-Sperre';
+
+  @override
+  String get settingsAppLockDesc =>
+      'Biometrie oder Telefon-PIN bei jedem Öffnen verlangen';
+
+  @override
+  String get settingsAppLockUnavailable =>
+      'Auf diesem Gerät ist keine Biometrie registriert';
+
+  @override
+  String get settingsAppLockEnableFailed =>
+      'Überprüfung fehlgeschlagen: Sperre nicht aktiviert';
+
+  @override
+  String get settingsAppLockEnabled => 'App-Sperre aktiviert';
+
+  @override
+  String get settingsAppLockDisabled => 'App-Sperre deaktiviert';
+
+  @override
+  String get appLockTitle => 'App gesperrt';
+
+  @override
+  String get appLockSubtitle => 'Mit Biometrie oder Telefon-PIN entsperren';
+
+  @override
+  String get appLockUnlock => 'Entsperren';
+
+  @override
+  String get appLockReason => 'Wallet entsperren';
+
+  @override
+  String get appLockNoticeDeviceAuthRemoved =>
+      'Sperre deaktiviert: Der Displayschutz (Biometrie/PIN) des Telefons ist nicht mehr verfügbar. Aktiviere ihn in den Systemeinstellungen, um die App-Sperre wieder zu nutzen.';
+
+  @override
+  String get appLockNoticeContinue => 'Weiter';
+
+  @override
+  String get appLockPromptTitle => 'App-Sperre aktivieren?';
+
+  @override
+  String get appLockPromptMessage =>
+      'Beim Öffnen des Wallets werden Biometrie oder Telefon-PIN verlangt.';
+
+  @override
+  String get appLockPromptEnable => 'Aktivieren';
+
+  @override
+  String get appLockPromptLater => 'Später';
+
+  @override
+  String get aboutLicensesOpenOnline => 'Online öffnen';
+
+  @override
   String homeCreated(Object date) {
     return 'Erstellt: $date';
   }
@@ -487,7 +567,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get importScreenHintText =>
-      'Die Seed-Phrase besteht aus 12 durch Leerzeichen getrennten Wörtern. Sie können sie direkt einfügen.';
+      'Die Seed-Phrase besteht aus 12, 15, 18, 21 oder 24 durch Leerzeichen getrennten Wörtern. Sie können sie direkt einfügen.';
 
   @override
   String onboardingSubmitError(Object error) {
@@ -577,6 +657,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der gescannte Code ist keine gültige Bitcoin-Adresse.';
 
   @override
+  String get scanQrInvalidInvoice =>
+      'Der gescannte Code ist keine gültige Lightning-Rechnung.';
+
+  @override
   String get scanQrTorch => 'Taschenlampe umschalten';
 
   @override
@@ -593,11 +677,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get importScreenTitle => 'Wallet importieren';
 
   @override
-  String get importScreenHeading => 'Die 12 Wörter eingeben';
+  String get importScreenHeading => 'Seed-Phrase eingeben';
 
   @override
   String get importScreenSubtitle =>
-      'Gib die durch Leerzeichen getrennte 12-Wort-Mnemonik-Phrase ein und wähle dann den Account-Typ, der zur ursprünglichen Wallet passt.';
+      'Gib die durch Leerzeichen getrennte Mnemonik-Phrase (12, 15, 18, 21 oder 24 Wörter) ein und wähle dann den Account-Typ, der zur ursprünglichen Wallet passt.';
 
   @override
   String get importScriptTypeLabel => 'Account-Typ';
@@ -627,7 +711,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String importScreenValidateCount(Object count) {
-    return 'Die Phrase muss genau 12 Wörter enthalten (erkannt: $count).';
+    return 'Die Phrase muss 12, 15, 18, 21 oder 24 Wörter enthalten (erkannt: $count).';
   }
 
   @override
@@ -872,6 +956,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get languageSelector => 'Sprache';
+
+  @override
+  String get languageSelectorAuto => '🌐 Automatisch (System)';
 
   @override
   String get languageSelectorEn => '🇬🇧 English';
@@ -1398,4 +1485,624 @@ class AppLocalizationsDe extends AppLocalizations {
   String explorerErrorGeneric(String error) {
     return 'Fehler: $error';
   }
+
+  @override
+  String get walletLayerOnchain => 'On-chain';
+
+  @override
+  String get walletLayerLightning => 'Lightning';
+
+  @override
+  String get lightningDisconnectedTitle => 'Kein Lightning-Node verbunden';
+
+  @override
+  String get lightningDisconnectedBody =>
+      'Verbinde deinen blake2b-Lightning-Node, um Zahlungen zu senden und zu empfangen. Die App verwahrt niemals deine Fonds oder Schlüssel.';
+
+  @override
+  String get lightningConnectButton => 'Node verbinden';
+
+  @override
+  String get lightningConnectTitle => 'Lightning-Node verbinden';
+
+  @override
+  String get lightningConnectHint =>
+      'Verbindungszeichenfolge einfügen (nostr+walletconnect://…)';
+
+  @override
+  String get lightningConnectInvalidUri => 'Ungültige Verbindungszeichenfolge';
+
+  @override
+  String get lightningConnectInfo =>
+      'Der Node muss diese App autorisieren (Grant): prüfe das Kontrollpanel deines Nodes.';
+
+  @override
+  String get lightningConnecting => 'Verbindung…';
+
+  @override
+  String get lightningConnected => 'Verbunden';
+
+  @override
+  String get lightningDisconnect => 'Trennen';
+
+  @override
+  String get lightningBalance => 'Lightning-Guthaben';
+
+  @override
+  String get lightningChannels => 'Kanäle';
+
+  @override
+  String get lightningNoChannels => 'Keine offenen Kanäle';
+
+  @override
+  String get lightningChannelPeer => 'Peer';
+
+  @override
+  String get lightningChannelCapacity => 'Kapazität';
+
+  @override
+  String get lightningChannelLocal => 'Lokal';
+
+  @override
+  String get lightningChannelRemote => 'Remote';
+
+  @override
+  String get lightningOpenChannel => 'Kanal öffnen';
+
+  @override
+  String get lightningOpenChannelNodeId => 'Node-ID (Pubkey)';
+
+  @override
+  String get lightningOpenChannelHost => 'Host (optional, ip:port)';
+
+  @override
+  String get lightningOpenChannelAmount => 'Betrag (Sat)';
+
+  @override
+  String get lightningOpenChannelPrivate => 'Privater Kanal';
+
+  @override
+  String get lightningChannelOpened => 'Kanalöffnung angefordert';
+
+  @override
+  String get lightningCloseChannel => 'Kanal schließen';
+
+  @override
+  String get lightningCloseChannelForce => 'Erzwungene Schließung';
+
+  @override
+  String get lightningCloseChannelForceWarning =>
+      'Die erzwungene Schließung veröffentlicht den letzten Kanalzustand on-chain. Es können Gebühren und Verzögerungen anfallen. Fortfahren?';
+
+  @override
+  String get lightningReceive => 'Empfangen';
+
+  @override
+  String get lightningSend => 'Senden';
+
+  @override
+  String get lightningInvoiceAmount => 'Betrag (Sat)';
+
+  @override
+  String get lightningInvoiceDescription => 'Beschreibung (optional)';
+
+  @override
+  String get lightningInvoiceCreate => 'Rechnung erstellen';
+
+  @override
+  String get lightningInvoiceTitle => 'Lightning-Rechnung';
+
+  @override
+  String get lightningPay => 'Rechnung bezahlen';
+
+  @override
+  String get lightningPayHint => 'Rechnung einfügen (lnbc…)';
+
+  @override
+  String get lightningPayDialogTitle => 'Lightning-Zahlung bestätigen';
+
+  @override
+  String get lightningPayDialogBody => 'Diese Rechnung bezahlen?';
+
+  @override
+  String get lightningPaySuccess => 'Zahlung gesendet';
+
+  @override
+  String get lightningCopied => 'Kopiert';
+
+  @override
+  String get lightningErrorRestricted =>
+      'Der Node hat diese App nicht autorisiert. Erstelle einen Grant auf deinem Node für diese Verbindung.';
+
+  @override
+  String lightningErrorGeneric(String error) {
+    return 'Lightning-Fehler: $error';
+  }
+
+  @override
+  String get lightningConfirm => 'Bestätigen';
+
+  @override
+  String get lightningCancel => 'Abbrechen';
+
+  @override
+  String get lightningNodeOnchain => 'Node On-Chain';
+
+  @override
+  String get lightningDeposit => 'Einzahlen';
+
+  @override
+  String get lightningWithdraw => 'On-Chain senden';
+
+  @override
+  String get lightningDepositTitle => 'On-Chain-Einzahlung';
+
+  @override
+  String get lightningDepositHint =>
+      'Sende blake2b-Guthaben an diese Node-Adresse.';
+
+  @override
+  String get lightningDepositNewAddress => 'Neue Adresse';
+
+  @override
+  String get lightningDepositWarning =>
+      'Nur im blake2b-Netz senden. Auf dem falschen Netz gesendete Beträge sind verloren.';
+
+  @override
+  String get lightningOnchainSendTitle => 'On-Chain-Sendung';
+
+  @override
+  String get lightningOnchainAddressLabel => 'Empfängeradresse';
+
+  @override
+  String get lightningOnchainAmountLabel => 'Betrag (sat)';
+
+  @override
+  String get lightningOnchainFeeLabel => 'Netzwerkgebühr';
+
+  @override
+  String get lightningOnchainFeeMin => 'Minimal';
+
+  @override
+  String get lightningOnchainFeeEconomical => 'Günstig';
+
+  @override
+  String get lightningOnchainFeePriority => 'Priorität';
+
+  @override
+  String get lightningOnchainConfirm => 'Senden bestätigen';
+
+  @override
+  String get lightningOnchainConfirmTitle => 'On-Chain-Sendung bestätigen?';
+
+  @override
+  String get lightningOnchainWarning =>
+      'Unwiderrufliche Aktion: Die Beträge verlassen die Node.';
+
+  @override
+  String get lightningOnchainSuccess => 'Transaktion gesendet';
+
+  @override
+  String get lightningOnchainInvalidAddress => 'Ungültige blake2b-Adresse';
+
+  @override
+  String get lightningOnchainInsufficient => 'Nicht genügend On-Chain-Guthaben';
+
+  @override
+  String get lightningFeesUnavailable =>
+      'Gebührenschätzung nicht verfügbar: Die Node wählt die Gebühr';
+
+  @override
+  String get lightningOpenChannelHint =>
+      'Pubkey oder pubkey@host:port (Onion braucht Tor auf der Node)';
+
+  @override
+  String get lightningOpenChannelInvalid =>
+      'Ungültige Node-ID oder Host (66 Hex, host:port)';
+
+  @override
+  String get lightningActivityDetected => 'Aktivität auf der Node erkannt';
+
+  @override
+  String get lightningPeers => 'Peers';
+
+  @override
+  String get lightningPeersEmpty => 'Keine Peers verbunden';
+
+  @override
+  String get lightningConnectPeer => 'Peer verbinden';
+
+  @override
+  String get lightningDisconnectPeer => 'Trennen';
+
+  @override
+  String get lightningPeerDisconnected => 'Getrennt';
+
+  @override
+  String get lightningPeerId => 'Peer-ID';
+
+  @override
+  String get lightningPeerAddresses => 'Adressen';
+
+  @override
+  String get lightningDisconnectPeerConfirm =>
+      'Diesen Peer trennen? Offene Kanäle bleiben aktiv.';
+
+  @override
+  String get lightningChannelDetail => 'Kanal-Details';
+
+  @override
+  String get lightningChannelShortId => 'Short-Channel-ID';
+
+  @override
+  String get lightningChannelState => 'Node-Status';
+
+  @override
+  String get lightningChannelFee => 'Gebühr';
+
+  @override
+  String get lightningChannelSpendable => 'Ausgebbar';
+
+  @override
+  String get lightningChannelReceivable => 'Empfangbar';
+
+  @override
+  String get lightningChannelHtlcs => 'HTLCs';
+
+  @override
+  String get lightningChannelFundingTxid => 'Funding-Txid';
+
+  @override
+  String get lightningNodeManagement => 'Knotenverwaltung';
+
+  @override
+  String lightningNodeManagementSubtitle(int peers, int channels) {
+    return '$peers Peers · $channels Kanäle';
+  }
+
+  @override
+  String get lightningNodeIdentity => 'Knoten-Identität';
+
+  @override
+  String get lightningNodePubkey => 'Öffentlicher Schlüssel';
+
+  @override
+  String get lightningNodeVersion => 'Version';
+
+  @override
+  String get lightningNodePeersCount => 'Peers';
+
+  @override
+  String get lightningNodeChannelsActive => 'Aktive Kanäle';
+
+  @override
+  String get lightningNodeChannelsPending => 'Ausstehende Kanäle';
+
+  @override
+  String get lightningNodeLiquidityAdsUnsupported =>
+      'Auf diesem Knoten nicht verfügbar: für Leasing-Bedingungen wird das Plugin liquidity-ads benötigt.';
+
+  @override
+  String get lightningLiquidity => 'Liquidität';
+
+  @override
+  String get lightningLiquidityTotal => 'Gesamtkapazität';
+
+  @override
+  String get lightningLiquidityOutbound => 'Ausgehend';
+
+  @override
+  String get lightningLiquidityInbound => 'Eingehend';
+
+  @override
+  String get lightningLiquidityWarning =>
+      'Keine eingehende Liquidität: Zahlungen können erst ankommen, wenn ein Peer einen Kanal zu diesem Knoten öffnet.';
+
+  @override
+  String get lightningMovements => 'Bewegungen';
+
+  @override
+  String get lightningMovementsEmpty => 'Keine Bewegungen';
+
+  @override
+  String get lightningMovementsAll => 'Alle Bewegungen';
+
+  @override
+  String get lightningMovementsLoadMore => 'Mehr laden';
+
+  @override
+  String get lightningMovementDeposit => 'On-Chain-Einzahlung';
+
+  @override
+  String get lightningMovementWithdrawal => 'On-Chain-Sendung';
+
+  @override
+  String get lightningMovementChannelOpen => 'Kanaleröffnung';
+
+  @override
+  String get lightningMovementChannelClose => 'Kanalschließung';
+
+  @override
+  String get lightningMovementInvoice => 'Lightning-Zahlung';
+
+  @override
+  String get lightningMovementOnchainFee => 'On-Chain-Gebühr';
+
+  @override
+  String get lightningMovementForward => 'Weiterleitung';
+
+  @override
+  String get lightningMovementOther => 'Bewegung';
+
+  @override
+  String lightningChannelsAll(int count) {
+    return 'Alle Kanäle ($count)';
+  }
+
+  @override
+  String get lightningOnchainNode => 'On-Chain des Knotens';
+
+  @override
+  String get lightningOnchainBalance => 'On-Chain-Guthaben';
+
+  @override
+  String get lightningOnchainConfirmed => 'Bestätigt';
+
+  @override
+  String get lightningOnchainPending => 'Ausstehend';
+
+  @override
+  String get lightningOnchainUtxos => 'UTXOs';
+
+  @override
+  String get lightningOnchainUtxosEmpty => 'Keine UTXOs';
+
+  @override
+  String get lightningOnchainAddresses => 'Adressen des Knotens';
+
+  @override
+  String get lightningOnchainNewAddress => 'Neue Adresse';
+
+  @override
+  String get lightningOnchainAddressType => 'Adresstyp';
+
+  @override
+  String get lightningOnchainTypeBech32 => 'Bech32 (bc1q)';
+
+  @override
+  String get lightningOnchainTypeTaproot => 'Taproot (bc1p)';
+
+  @override
+  String get lightningOnchainHasFunds => 'Mit Guthaben';
+
+  @override
+  String get lightningOnchainReserved => 'Reserviert';
+
+  @override
+  String get lightningOnchainBlockHeight => 'Block';
+
+  @override
+  String get lightningPayments => 'Zahlungen';
+
+  @override
+  String get lightningInvoices => 'Rechnungen';
+
+  @override
+  String get lightningInvoicesEmpty => 'Noch keine Rechnungen';
+
+  @override
+  String get lightningInvoiceStatusPaid => 'Bezahlt';
+
+  @override
+  String get lightningInvoiceStatusPending => 'Wartet auf Zahlung';
+
+  @override
+  String get lightningInvoiceStatusExpired => 'Abgelaufen';
+
+  @override
+  String lightningInvoicePaidOn(String date) {
+    return 'Bezahlt am $date';
+  }
+
+  @override
+  String lightningInvoiceExpiresOn(String date) {
+    return 'Läuft ab am $date';
+  }
+
+  @override
+  String get lightningReceivePaid => 'Rechnung bezahlt';
+
+  @override
+  String lightningPaymentsSummary(int total, int pending) {
+    return '$total Rechnungen · $pending offen';
+  }
+
+  @override
+  String get lightningPays => 'Gesendete Zahlungen';
+
+  @override
+  String get lightningPaysEmpty => 'Noch keine Zahlungen';
+
+  @override
+  String get lightningPaymentFee => 'Gebühr';
+
+  @override
+  String get lightningPaymentCompleted => 'Abgeschlossen';
+
+  @override
+  String get lightningPaymentPending => 'Ausstehend';
+
+  @override
+  String get lightningPaymentFailed => 'Fehlgeschlagen';
+
+  @override
+  String get lightningHtlcsEmpty => 'Keine HTLCs';
+
+  @override
+  String get lightningHtlcInProgress => 'Unterwegs';
+
+  @override
+  String get lightningHtlcIncoming => 'Eingehend';
+
+  @override
+  String get lightningHtlcOutgoing => 'Ausgehend';
+
+  @override
+  String get lightningChannelFees => 'Routing-Gebühren';
+
+  @override
+  String get lightningFeeEdit => 'Gebühren ändern';
+
+  @override
+  String get lightningFeeBefore => 'Aktuell';
+
+  @override
+  String get lightningFeeAfter => 'Neu';
+
+  @override
+  String get lightningFeeBaseLabel => 'Basis (sat)';
+
+  @override
+  String get lightningFeePpmLabel => 'Satz (ppm)';
+
+  @override
+  String get lightningHtlcMinLabel => 'Min. HTLC (sat)';
+
+  @override
+  String get lightningHtlcMaxLabel => 'Max. HTLC (sat)';
+
+  @override
+  String get lightningCltvLabel => 'CLTV-Delta';
+
+  @override
+  String get lightningChannelReserve => 'Unsere Reserve';
+
+  @override
+  String get lightningChannelToSelfDelay => 'To-self-Delay';
+
+  @override
+  String get lightningFeeConfirmTitle => 'Diese Routing-Gebühren anwenden?';
+
+  @override
+  String get lightningFeeWarning =>
+      'Gebühren gelten für geroutete Zahlungen. Das Netzwerk akzeptiert nur wenige Änderungen pro Tag und Peers brauchen Zeit.';
+
+  @override
+  String get lightningFeeUpdated => 'Gebühren aktualisiert';
+
+  @override
+  String get lightningDiagnostics => 'Diagnose';
+
+  @override
+  String get lightningDiagnosticsSubtitle =>
+      'Buchhaltung, Plugins und Weiterleitung';
+
+  @override
+  String get lightningStatsEconomy => 'Bilanz';
+
+  @override
+  String get lightningStatsNet => 'Netto';
+
+  @override
+  String get lightningStatsSource =>
+      'Aus der Buchhaltung des Nodes (bookkeeper)';
+
+  @override
+  String get lightningStatsEmpty => 'Noch keine Buchhaltungsdaten';
+
+  @override
+  String get lightningStatsTagDeposit => 'Einzahlungen';
+
+  @override
+  String get lightningStatsTagInvoice => 'Rechnungen';
+
+  @override
+  String get lightningStatsTagWithdrawal => 'Auszahlungen';
+
+  @override
+  String get lightningStatsTagOnchainFee => 'On-Chain-Gebühren';
+
+  @override
+  String get lightningStatsTagChannelOpen => 'Kanal-Eröffnungen';
+
+  @override
+  String get lightningStatsTagChannelClose => 'Kanal-Schließungen';
+
+  @override
+  String get lightningStatsTagRouted => 'Verdiente Routing-Gebühren';
+
+  @override
+  String lightningStatsEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge',
+      one: '1 Eintrag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lightningPluginsTitle => 'Plugins';
+
+  @override
+  String lightningPluginsActiveCount(int count) {
+    return '$count aktiv';
+  }
+
+  @override
+  String get lightningPluginInactive => 'inaktiv';
+
+  @override
+  String get lightningForwardsTitle => 'Weiterleitung';
+
+  @override
+  String get lightningForwardsEmpty => 'Noch keine weitergeleiteten Zahlungen';
+
+  @override
+  String get lightningForwardSettled => 'Abgerechnet';
+
+  @override
+  String get lightningForwardFailed => 'Fehlgeschlagen';
+
+  @override
+  String get lightningForwardOffered => 'Läuft';
+
+  @override
+  String get lightningKeysendTitle => 'An Node senden (Keysend)';
+
+  @override
+  String get lightningKeysendHint => 'Pubkey des Ziel-Nodes (66 hex)';
+
+  @override
+  String get lightningKeysendAmountLabel => 'Betrag (sat)';
+
+  @override
+  String get lightningKeysendMaxFeeLabel => 'Max. Gebühr (sat)';
+
+  @override
+  String get lightningKeysendMaxFeeHelp =>
+      'Leer lassen für den Node-Standard (0,5%)';
+
+  @override
+  String get lightningKeysendWarning =>
+      'Keysend zahlt einen Node ohne Rechnung: das Geld bewegt sich sofort und kann nicht zurückgeholt werden.';
+
+  @override
+  String get lightningKeysendConfirmTitle => 'Diese Keysend-Zahlung senden?';
+
+  @override
+  String get lightningKeysendDestination => 'Ziel';
+
+  @override
+  String get lightningKeysendSent => 'Keysend gesendet';
+
+  @override
+  String get lightningKeysendInvalidPubkey => 'Ungültiger Node-Pubkey';
+
+  @override
+  String get lightningKeysendInvalidAmount => 'Betrag größer als null eingeben';
+
+  @override
+  String get lightningKeysendSend => 'Senden';
 }

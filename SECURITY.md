@@ -10,18 +10,18 @@ Only the latest release published on the [releases page](https://github.com/btcb
 
 Please report vulnerabilities privately using one of the following channels, in order of preference:
 
-1. **GitHub Security Advisory (consigliata)** — usa la funzionalità *"Report a vulnerability"* nella scheda *Security* del repository (privata, non richiede un dominio proprio).
-2. Email: `contact@btcblake2b.org` (dominio ufficiale `btcblake2b.org`, acquistato il 07/09/2026 — Cloudflare Email Routing verso la casella personale)
+1. **GitHub Security Advisory (recommended)** — use the *"Report a vulnerability"* feature in the repository's *Security* tab (private, no own domain required).
+2. Email: `contact@btcblake2b.org` (official domain `btcblake2b.org`, purchased on 2026-09-07 — Cloudflare Email Routing to the personal mailbox)
 
-### Cosa includere
-- Versione dell'app e piattaforma (Android/Web)
-- Passi per riprodurre il problema
-- Impatto stimato (es. esposizione di seed/chiavi, perdita fondi)
-- Eventuale proposta di fix
+### What to include
+- App version and platform (Android/Web)
+- Steps to reproduce the issue
+- Estimated impact (e.g. seed/key exposure, loss of funds)
+- Optional fix proposal
 
-### Tempi di risposta
-- Accusa di ricezione: entro **72 ore**
-- Prima valutazione: entro **7 giorni**
-- Divulgazione coordinata: **90 giorni** dalla conferma prima di qualsiasi disclosure pubblica
+### Response times
+- Acknowledgement: within **72 hours**
+- First assessment: within **7 days**
+- Coordinated disclosure: **90 days** from confirmation before any public disclosure
 
-Grazie per aver contribuito alla sicurezza del progetto.
+Thank you for contributing to the security of the project.

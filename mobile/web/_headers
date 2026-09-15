@@ -1,0 +1,27 @@
+# Cloudflare Pages headers per la PWA (build: flutter build web).
+# PERCHÉ (hardening 2.4): senza questi header un XSS nella pagina potrebbe
+# esfiltrare il materiale chiave in memoria; con CSP stretta + self-hosting
+# degli asset (--no-web-resources-cdn + --csp) la superficie si riduce.
+#
+# NOTA: `flutter build web` copia questo file nella root pubblicata (build/web);
+# Cloudflare Pages lo applica a tutte le risposte. Fuori da Pages è ignorato.
+
+/*
+  # Script: solo stessa origine + WebAssembly (CanvasKit). `--csp` elimina la
+  # generazione dinamica di codice: niente 'unsafe-eval'/'unsafe-inline'.
+  # style-src 'unsafe-inline' resta necessario perché Flutter Web inietta stili
+  # inline a runtime (non è esecuzione di codice).
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://mempool.guide; worker-src 'self' blob:; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=()
+
+# Service worker e manifest: mai cache stale dopo un deploy.
+/flutter_service_worker.js
+  Cache-Control: no-cache
+
+/manifest.json
+  Content-Type: application/manifest+json

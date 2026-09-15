@@ -5,6 +5,8 @@ import 'package:btc_blake2b_wallet/core/config/bitcoin_network_config.dart';
 import 'package:btc_blake2b_wallet/core/services/wallet_repository.dart';
 import 'package:btc_blake2b_wallet/features/wallet/presentation/import_wallet_screen.dart';
 import 'package:btc_blake2b_wallet/l10n/app_localizations.dart';
+import 'package:btc_blake2b_wallet/l10n/app_localizations_en.dart';
+import 'package:bip39/bip39.dart' as bip39;
 
 class MockWalletRepository extends Mock implements WalletRepository {}
 
@@ -138,6 +140,94 @@ void main() {
             accountXpub: any(named: 'accountXpub'),
             scriptType: any(named: 'scriptType'),
           ),
+        );
+      });
+    });
+
+    group('validazione seed BIP39 (12/15/18/21/24 parole)', () {
+      // PERCHÉ: genera vettori BIP39 validi e deterministici (entropia zero)
+      // per ogni lunghezza ammessa: 12->16B, 15->20B, 18->24B, 21->28B, 24->32B.
+      String validMnemonicFor(int entropyBytes) =>
+          bip39.entropyToMnemonic(List.filled(entropyBytes, '00').join());
+
+      // PERCHÉ: il validator è una closure privata del widget; lo estraiamo
+      // dal TextFormField per testarlo senza toccare la rete (il flusso di
+      // import reale chiama hasInternet() e il repository mockato).
+      Future<FormFieldValidator<String>?> pumpSeedAndGetValidator(
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ImportWalletScreen(
+              walletRepository: MockWalletRepository(),
+            ),
+          ),
+        );
+        return tester
+            .widget<TextFormField>(find.byType(TextFormField))
+            .validator;
+      }
+
+      testWidgets('accetta 12, 15, 18, 21 e 24 parole', (tester) async {
+        final validator = await pumpSeedAndGetValidator(tester);
+        const entropyBytesByWordCount = {
+          12: 16,
+          15: 20,
+          18: 24,
+          21: 28,
+          24: 32,
+        };
+        for (final entry in entropyBytesByWordCount.entries) {
+          final mnemonic = validMnemonicFor(entry.value);
+          expect(mnemonic.split(' ').length, entry.key);
+          expect(
+            bip39.validateMnemonic(mnemonic),
+            isTrue,
+            reason: 'vettore non valido per ${entry.key} parole',
+          );
+          expect(
+            validator!(mnemonic),
+            isNull,
+            reason: '${entry.key} parole devono passare la validazione',
+          );
+        }
+      });
+
+      testWidgets('accetta il vettore ufficiale BIP39 da 24 parole',
+          (tester) async {
+        final validator = await pumpSeedAndGetValidator(tester);
+        // Vettore ufficiale BIP39 256-bit: 23x "abandon" + "art".
+        final mnemonic = '${List.filled(23, 'abandon').join(' ')} art';
+        expect(bip39.validateMnemonic(mnemonic), isTrue);
+        expect(validator!(mnemonic), isNull);
+      });
+
+      testWidgets('continua ad accettare 12 parole valide', (tester) async {
+        final validator = await pumpSeedAndGetValidator(tester);
+        // Vettore ufficiale BIP39 128-bit: 11x "abandon" + "about".
+        final mnemonic = '${List.filled(11, 'abandon').join(' ')} about';
+        expect(validator!(mnemonic), isNull);
+      });
+
+      testWidgets('rifiuta 13 parole con messaggio sulle lunghezze ammesse',
+          (tester) async {
+        final validator = await pumpSeedAndGetValidator(tester);
+        final thirteenWords = List.filled(13, 'abandon').join(' ');
+        expect(
+          validator!(thirteenWords),
+          AppLocalizationsEn().importScreenValidateCount(13),
+        );
+      });
+
+      testWidgets('rifiuta checksum non valido su 12 parole', (tester) async {
+        final validator = await pumpSeedAndGetValidator(tester);
+        final badChecksum = List.filled(12, 'abandon').join(' ');
+        expect(
+          validator!(badChecksum),
+          AppLocalizationsEn().importScreenValidateInvalid,
         );
       });
     });

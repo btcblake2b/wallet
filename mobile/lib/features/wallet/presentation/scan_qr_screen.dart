@@ -5,14 +5,29 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/config/bitcoin_network_config.dart';
+import '../../../core/utils/lightning_invoice_utils.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// Schermata di scansione QR per il campo destinatario (SendScreen).
+/// Cosa si cerca nel QR: decide la validazione e il messaggio d'errore.
+enum ScanQrMode {
+  /// Indirizzo Bitcoin on-chain (`bc1…`, `1…`, `3…`).
+  bitcoinAddress,
+
+  /// Invoice Lightning BOLT11 (`lnbc…`).
+  lightningInvoice,
+}
+
+/// Schermata di scansione QR per il campo destinatario (SendScreen) o per
+/// l'invoice Lightning (LightningSendScreen).
 /// PERCHÉ: prima il pulsante "scanner" incollava dagli appunti — ingannevole.
-/// Ora apre la fotocamera reale (mobile_scanner) e ritorna l'indirizzo.
+/// Ora apre la fotocamera reale (mobile_scanner) e ritorna il contenuto.
 class ScanQrScreen extends StatefulWidget {
-  const ScanQrScreen({super.key});
+  const ScanQrScreen({super.key, this.mode = ScanQrMode.bitcoinAddress});
+
+  /// Modalità di scansione. Default indirizzo BTC: retrocompatibile con
+  /// l'invio on-chain che non passa nulla.
+  final ScanQrMode mode;
 
   @override
   State<ScanQrScreen> createState() => _ScanQrScreenState();
@@ -40,24 +55,39 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
     for (final barcode in capture.barcodes) {
       final raw = barcode.rawValue?.trim();
       if (raw == null || raw.isEmpty) continue;
-      if (BitcoinNetworkConfig.isValidAddress(raw)) {
+      final isInvoice = widget.mode == ScanQrMode.lightningInvoice;
+      final valid = isInvoice
+          ? isValidLightningInvoice(raw)
+          : BitcoinNetworkConfig.isValidAddress(raw);
+      if (valid) {
         _handled = true;
         _invalidDebounce?.cancel();
-        Navigator.of(context).pop(raw);
+        // PERCHÉ: in modalità invoice ripulisco l'URI `lightning:` così il
+        // campo riceve la stringa BOLT11 pura da pagare.
+        Navigator.of(context).pop(
+          isInvoice ? normalizeLightningInvoice(raw) : raw,
+        );
         return;
       }
       invalid = raw;
     }
 
-    // PERCHÉ: il QR scansionato non è un indirizzo BTC valido: avvisa ma
-    // resta in scansione (debounce per non mostrare snackbar a raffica).
+    // PERCHÉ: il QR scansionato non è valido per la modalità corrente:
+    // avvisa ma resta in scansione (debounce per non mostrare snackbar a
+    // raffica).
     if (invalid != null) {
       _invalidDebounce?.cancel();
       _invalidDebounce = Timer(const Duration(milliseconds: 1500), () {
         if (!mounted) return;
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(loc.scanQrInvalid)),
+          SnackBar(
+            content: Text(
+              widget.mode == ScanQrMode.lightningInvoice
+                  ? loc.scanQrInvalidInvoice
+                  : loc.scanQrInvalid,
+            ),
+          ),
         );
       });
     }
