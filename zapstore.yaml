@@ -1,0 +1,88 @@
+# ═══════════════════════════════════════════════════════════════════
+# SOURCE CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════
+
+# Source code repository URL (NIP-34 display in app store)
+repository: https://github.com/btcblake2b/wallet
+
+# Nostr public key for this app identity (used by Zapstore relay for whitelisting)
+pubkey: npub105qqy98hmrry33n6d342kknknx8kntvzx4xt5efzf4kgyn9rsgvq75xu6e
+
+# APK is fetched from GitHub Releases assets automatically
+# (zsp selects the best arm64-v8a APK from release assets)
+
+# ═══════════════════════════════════════════════════════════════════
+# APP METADATA
+# ═══════════════════════════════════════════════════════════════════
+
+# App name (overrides APK label)
+name: Btc Blake2b Wallet
+
+# Short one-line description
+summary: Bitcoin Lightning wallet with the Blake2b node ecosystem
+
+# Full description (supports markdown)
+description: |
+  A self-custodial Bitcoin Lightning wallet designed for the Blake2b CLN node ecosystem.
+  
+  Features:
+  - Send & receive Bitcoin via Lightning Network (keysend)
+  - Taproot address support (bech32m)
+  - Hardware-backed seed storage (Android Keystore)
+  - Multi-language: EN, IT, DE, FR, ES, FI, ZH
+  - Open source (MIT license)
+  
+  Built for users who run their own Lightning node and want a seamless wallet experience.
+
+# Category tags
+tags:
+  - bitcoin
+  - wallet
+  - lightning
+  - nostr
+  - finance
+
+# SPDX license identifier
+license: MIT
+
+# App homepage
+website: https://btcblake2b.org
+
+# Application ID (matches build.gradle.kts)
+# Used as the unique identifier for this app on Zapstore
+app_id: com.btcblake2b.wallet
+
+# ═══════════════════════════════════════════════════════════════════
+# MEDIA
+# ═══════════════════════════════════════════════════════════════════
+
+# App icon (local path or URL; zsp will resize to 512x512 if needed)
+icon: ./btc_blake2b_logo/export/icon-1024.png
+
+# Screenshots (local paths or URLs)
+images: []
+
+# ═══════════════════════════════════════════════════════════════════
+# RELEASE CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════
+
+# Release notes file or URL (extracts section matching version if Keep a Changelog format)
+release_notes: null
+
+# ═══════════════════════════════════════════════════════════════════
+# NOSTR-SPECIFIC
+# ═══════════════════════════════════════════════════════════════════
+
+# Nostr NIPs supported by this app (for Nostr clients)
+supported_nips: []
+
+# Minimum version code users should update to
+min_allowed_version_code: 1
+
+# ═══════════════════════════════════════════════════════════════════
+# METADATA SOURCES
+# ═══════════════════════════════════════════════════════════════════
+
+# External sources for metadata enrichment
+metadata_sources:
+  - github
