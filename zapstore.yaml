@@ -11,7 +11,7 @@
 repository: https://github.com/btcblake2b/wallet
 
 # Nostr identity of this app (see docs/zapstore-publish-guide.md)
-pubkey: npub1ds3p2e0hf05wzxn92wpat49x47pcqd308ju7wu0qqma3j8yn206q8ytm0y
+pubkey: npub1739l83x5lfjgq06t0tlhg4jgkq6d4hvt7kpj7ecg7la9esmh7als56rjy7
 
 # ── Metadata ───────────────────────────────────────────────────────────
 name: Btc Blake2b Wallet
