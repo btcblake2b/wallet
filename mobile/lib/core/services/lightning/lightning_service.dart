@@ -108,6 +108,12 @@ abstract class LightningService {
     String? label,
   });
 
+  /// Cancella una fattura NON pagata (in attesa o scaduta) dal nodo.
+  ///
+  /// // PERCHÉ: tiene pulito lo storico. Le fatture PAGATE non sono
+  /// // cancellabili (ricevuta contabile del nodo): il bridge rifiuta.
+  Future<void> deleteInvoice({String? paymentHash, String? label});
+
   /// Pagamenti in uscita del nodo (con fee), dal più recente.
   Future<List<LightningPaymentRecord>> listPays({
     int limit = 25,

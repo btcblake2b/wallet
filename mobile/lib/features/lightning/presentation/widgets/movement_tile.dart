@@ -16,8 +16,7 @@ class LightningMovementTile extends StatelessWidget {
   static String _fmt(int sats) => NumberFormat.decimalPattern().format(sats);
 
   /// PERCHÉ: formato numerico (non nomi di mese) → identico in 7 lingue.
-  static String _date(DateTime d) =>
-      DateFormat('dd/MM/yyyy · HH:mm').format(d);
+  static String _date(DateTime d) => DateFormat('dd/MM/yyyy · HH:mm').format(d);
 
   static IconData _icon(LightningMovement m) {
     switch (m.type) {

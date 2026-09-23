@@ -11,7 +11,15 @@
   # generazione dinamica di codice: niente 'unsafe-eval'/'unsafe-inline'.
   # style-src 'unsafe-inline' resta necessario perché Flutter Web inietta stili
   # inline a runtime (non è esecuzione di codice).
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://mempool.guide; worker-src 'self' blob:; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  # connect-src: solo gli host Esplora della rete blake2b (primario + mirror
+  # comunitari di fallback, vedi BitcoinNetworkConfig.explorerApiBaseUrls).
+  # PERCHÉ (2026-09-16): senza i mirror qui il failover è bloccato dal browser.
+  # PERCHÉ (2026-09-18): + il relay dello swap (P9). Allowlist ESPLICITA e NON
+  # `wss:` generico: sulla PWA la Lightning si paga solo via provider di swap, e
+  # un `wss:` generico sarebbe un canale di esfiltrazione per un XSS attivo.
+  # ⚠️ La lista DEVE restare allineata a `kWebAllowedSwapRelays` in
+  # mobile/lib/core/services/swap/swap_web_policy.dart.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://mempool.guide https://mempool.kilombino.com https://mempool.maveth.ca wss://relay.primal.net; worker-src 'self' blob:; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

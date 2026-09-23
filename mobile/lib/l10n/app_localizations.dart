@@ -114,18 +114,6 @@ abstract class AppLocalizations {
   /// **'Btc Blake2b Wallet'**
   String get appTitle;
 
-  /// No description provided for @appErrorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Unable to start the app'**
-  String get appErrorTitle;
-
-  /// No description provided for @appReload.
-  ///
-  /// In en, this message translates to:
-  /// **'Reload page'**
-  String get appReload;
-
   /// No description provided for @homeScreenTitle.
   ///
   /// In en, this message translates to:
@@ -180,18 +168,6 @@ abstract class AppLocalizations {
   /// **'Create wallet'**
   String get homeCreateWallet;
 
-  /// No description provided for @homeReceiveWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'Receive'**
-  String get homeReceiveWallet;
-
-  /// No description provided for @homeMultiTransfer.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-Send'**
-  String get homeMultiTransfer;
-
   /// No description provided for @homeSelected.
   ///
   /// In en, this message translates to:
@@ -215,12 +191,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} wallets deleted successfully.'**
   String homeDeleted(Object count);
-
-  /// No description provided for @homeDeleteMultiError.
-  ///
-  /// In en, this message translates to:
-  /// **'{message}'**
-  String homeDeleteMultiError(Object message);
 
   /// No description provided for @homeWalletImported.
   ///
@@ -293,12 +263,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backup not verified'**
   String get homeBackupNotVerified;
-
-  /// No description provided for @homeMoreOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'More options'**
-  String get homeMoreOptions;
 
   /// No description provided for @homeLockVault.
   ///
@@ -384,6 +348,252 @@ abstract class AppLocalizations {
   /// **'App lock disabled'**
   String get settingsAppLockDisabled;
 
+  /// No description provided for @settingsExplorerMirrors.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup explorers'**
+  String get settingsExplorerMirrors;
+
+  /// No description provided for @settingsExplorerMirrorsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'If mempool.guide does not respond, the app queries two community mirrors. Turn off to use mempool.guide only.'**
+  String get settingsExplorerMirrorsDesc;
+
+  /// No description provided for @settingsSectionInterface.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface'**
+  String get settingsSectionInterface;
+
+  /// No description provided for @settingsInfoDots.
+  ///
+  /// In en, this message translates to:
+  /// **'Info hints'**
+  String get settingsInfoDots;
+
+  /// No description provided for @settingsInfoDotsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the small info buttons that explain each feature'**
+  String get settingsInfoDotsDesc;
+
+  /// No description provided for @infoCoinControlTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coin control (UTXO selection)'**
+  String get infoCoinControlTitle;
+
+  /// No description provided for @infoCoinControlBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your balance is made of UTXOs, the pieces you received. Here you can pick which ones to spend: the transaction will use only those, letting you keep small or inactive pieces aside.'**
+  String get infoCoinControlBody;
+
+  /// No description provided for @infoDustLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum amount (dust)'**
+  String get infoDustLimitTitle;
+
+  /// No description provided for @infoDustLimitBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Outputs below 546 sat are rejected by the network as \'dust\'. Amounts under that limit cannot be sent.'**
+  String get infoDustLimitBody;
+
+  /// No description provided for @infoFeeRateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction fee'**
+  String get infoFeeRateTitle;
+
+  /// No description provided for @infoFeeRateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The fee is paid per unit of transaction size (sat/vB): the faster you want the confirmation, the more you pay. \'Economical\' can take hours, \'Priority\' a few minutes. \'Custom\' is for when you know the current mempool rate.'**
+  String get infoFeeRateBody;
+
+  /// No description provided for @infoBatchSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple recipients (batch)'**
+  String get infoBatchSendTitle;
+
+  /// No description provided for @infoBatchSendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In a single transaction you can pay up to 5 addresses, sharing the fee instead of paying it once per transfer. All recipients are shown in the confirmation before signing.'**
+  String get infoBatchSendBody;
+
+  /// No description provided for @infoBumpFeeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase fee (RBF)'**
+  String get infoBumpFeeTitle;
+
+  /// No description provided for @infoBumpFeeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A pending transaction can be replaced by a new one paying a higher fee (BIP125). The original is cancelled and only the replacement can confirm — the destination address and amount stay the same.'**
+  String get infoBumpFeeBody;
+
+  /// No description provided for @infoXpubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account public key (xpub)'**
+  String get infoXpubTitle;
+
+  /// No description provided for @infoXpubBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The xpub generates all your receiving addresses. It cannot move funds, but it reveals the whole balance and history: share it only with apps you trust (e.g. a watch-only wallet).'**
+  String get infoXpubBody;
+
+  /// No description provided for @infoReceiveAddressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving address'**
+  String get infoReceiveAddressTitle;
+
+  /// No description provided for @infoReceiveAddressBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Each \'Receive\' shows a fresh address, chosen from those never used: this keeps payments unlinkable. Reusing an address is not an error, it just makes your transactions easier to trace.'**
+  String get infoReceiveAddressBody;
+
+  /// No description provided for @infoWatchOnlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch-only wallet'**
+  String get infoWatchOnlyTitle;
+
+  /// No description provided for @infoWatchOnlyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You imported only the xpub: the app sees balance and history but holds no private key, so it cannot sign. To spend from this wallet you need the device that holds the seed.'**
+  String get infoWatchOnlyBody;
+
+  /// No description provided for @infoSignVerifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign / verify message'**
+  String get infoSignVerifyTitle;
+
+  /// No description provided for @infoSignVerifyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing proves that an address is yours without moving funds. Anyone can then verify the signature against that address and the same message.'**
+  String get infoSignVerifyBody;
+
+  /// No description provided for @infoChannelCapacityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel capacity'**
+  String get infoChannelCapacityTitle;
+
+  /// No description provided for @infoChannelCapacityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The total amount of satoshis in the channel, split between you and your peer. The more capacity, the larger payments it can handle. Capacity = local balance + remote balance.'**
+  String get infoChannelCapacityBody;
+
+  /// No description provided for @infoChannelReserveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel reserve'**
+  String get infoChannelReserveTitle;
+
+  /// No description provided for @infoChannelReserveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A small portion of your funds must stay locked as a security deposit (the \'reserve\'). It ensures both parties have skin in the game — if the other side goes offline maliciously, the reserve can be used to penalize them on-chain.'**
+  String get infoChannelReserveBody;
+
+  /// No description provided for @infoToSelfDelayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'To-self delay'**
+  String get infoToSelfDelayTitle;
+
+  /// No description provided for @infoToSelfDelayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When a force close happens, your on-chain output is delayed by this many blocks (typically 144 = ~1 day). This gives your peer time to claim their funds first, preventing double-spend attacks on the channel state.'**
+  String get infoToSelfDelayBody;
+
+  /// No description provided for @infoHtlcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HTLC (Hashed Time-Locked Contract)'**
+  String get infoHtlcTitle;
+
+  /// No description provided for @infoHtlcBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An HTLC is a conditional payment: funds are locked until the recipient reveals a secret hash preimage. In Lightning, HTLCs enable instant off-chain routing — your payment hops through multiple channels without trusting any intermediary.'**
+  String get infoHtlcBody;
+
+  /// No description provided for @infoOpenChannelPrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private channel'**
+  String get infoOpenChannelPrivateTitle;
+
+  /// No description provided for @infoOpenChannelPrivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A private channel is not announced to the network. Only you and your peer know it exists. Use it when you don\'\'t want others to route through it (privacy) or when the channel is too small to be useful for routing.'**
+  String get infoOpenChannelPrivateBody;
+
+  /// No description provided for @infoRoutingFeesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing fees'**
+  String get infoRoutingFeesTitle;
+
+  /// No description provided for @infoRoutingFeesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When other nodes route payments through your channel, you earn fees. Base fee (sat) is charged per payment; rate (ppm) is proportional to the amount. CLTV delta limits how long a forwarded HTLC can take to settle.'**
+  String get infoRoutingFeesBody;
+
+  /// No description provided for @infoForceCloseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force close'**
+  String get infoForceCloseTitle;
+
+  /// No description provided for @infoForceCloseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcasts your latest channel state on-chain. This is irreversible and requires waiting for the to-self delay before you can spend your funds. Use only if your peer is unresponsive or malicious — cooperative close is always faster and cheaper.'**
+  String get infoForceCloseBody;
+
+  /// No description provided for @infoPeersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected peers'**
+  String get infoPeersTitle;
+
+  /// No description provided for @infoPeersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Peers are other Lightning nodes you\'\'re directly connected to via TCP/Tor. Each peer can hold one or more channels. You can connect to new peers to open channels and increase your node\'\'s liquidity and routing capability.'**
+  String get infoPeersBody;
+
+  /// No description provided for @infoNodeManagementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Node management'**
+  String get infoNodeManagementTitle;
+
+  /// No description provided for @infoNodeManagementBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Lightning node identity: pubkey, version, number of active/pending channels and peers. This screen shows accounting data from the node\'\'s bookkeeper plugin and forwarding statistics.'**
+  String get infoNodeManagementBody;
+
   /// No description provided for @appLockTitle.
   ///
   /// In en, this message translates to:
@@ -450,18 +660,6 @@ abstract class AppLocalizations {
   /// **'Open online'**
   String get aboutLicensesOpenOnline;
 
-  /// No description provided for @homeCreated.
-  ///
-  /// In en, this message translates to:
-  /// **'Created: {date}'**
-  String homeCreated(Object date);
-
-  /// No description provided for @homeLastTransfer.
-  ///
-  /// In en, this message translates to:
-  /// **'Last transfer: {date}'**
-  String homeLastTransfer(Object date);
-
   /// No description provided for @homeWalletSemantics.
   ///
   /// In en, this message translates to:
@@ -480,53 +678,11 @@ abstract class AppLocalizations {
   /// **'{label} copied. Will be removed after 60s.'**
   String walletDetailCopied(Object label);
 
-  /// No description provided for @walletDetailNoConnection.
-  ///
-  /// In en, this message translates to:
-  /// **'No connection'**
-  String get walletDetailNoConnection;
-
-  /// No description provided for @walletDetailTransferSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet successfully transferred. Local seed has been deleted.'**
-  String get walletDetailTransferSuccess;
-
-  /// No description provided for @walletDetailTransferError.
-  ///
-  /// In en, this message translates to:
-  /// **'Transfer error: {error}'**
-  String walletDetailTransferError(Object error);
-
-  /// No description provided for @walletDetailSeedCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Seed phrase copied. Will be removed after 60s.'**
-  String get walletDetailSeedCopied;
-
-  /// No description provided for @walletDetailSeedWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'Store it safely! This is the ONLY way to recover your funds.'**
-  String get walletDetailSeedWarning;
-
   /// No description provided for @walletDetailAddress.
   ///
   /// In en, this message translates to:
   /// **'Address'**
   String get walletDetailAddress;
-
-  /// No description provided for @walletDetailName.
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get walletDetailName;
-
-  /// No description provided for @walletDetailBalance.
-  ///
-  /// In en, this message translates to:
-  /// **'Balance'**
-  String get walletDetailBalance;
 
   /// No description provided for @walletDetailTransactions.
   ///
@@ -570,6 +726,42 @@ abstract class AppLocalizations {
   /// **'Failed to load transactions'**
   String get walletDetailTxError;
 
+  /// No description provided for @walletDetailTxExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get walletDetailTxExport;
+
+  /// No description provided for @walletDetailTxExportCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'CSV (spreadsheet)'**
+  String get walletDetailTxExportCsv;
+
+  /// No description provided for @walletDetailTxExportCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard ({fileName})'**
+  String walletDetailTxExportCopied(String fileName);
+
+  /// No description provided for @walletDetailTxExportDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Download started ({fileName})'**
+  String walletDetailTxExportDownloaded(String fileName);
+
+  /// No description provided for @walletDetailTxExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get walletDetailTxExportFailed;
+
+  /// No description provided for @walletDetailTxExportJson.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON (complete)'**
+  String get walletDetailTxExportJson;
+
   /// No description provided for @walletDetailTxFee.
   ///
   /// In en, this message translates to:
@@ -581,6 +773,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Received'**
   String get walletDetailTxIncoming;
+
+  /// No description provided for @walletDetailTxNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get walletDetailTxNote;
+
+  /// No description provided for @walletDetailTxNoteAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get walletDetailTxNoteAdd;
+
+  /// No description provided for @walletDetailTxNoteEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get walletDetailTxNoteEdit;
+
+  /// No description provided for @walletDetailTxNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Private note, saved on this device only'**
+  String get walletDetailTxNoteHint;
+
+  /// No description provided for @walletDetailTxNoteRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get walletDetailTxNoteRemove;
 
   /// No description provided for @walletDetailTxOrphan.
   ///
@@ -611,12 +833,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get walletDetailTxRetry;
-
-  /// No description provided for @themeToggle.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle theme'**
-  String get themeToggle;
 
   /// No description provided for @backupSeedTitle.
   ///
@@ -708,36 +924,6 @@ abstract class AppLocalizations {
   /// **'Receive'**
   String get walletDetailReceive;
 
-  /// No description provided for @walletDetailTransfer.
-  ///
-  /// In en, this message translates to:
-  /// **'Transfer'**
-  String get walletDetailTransfer;
-
-  /// No description provided for @walletDetailTransferred.
-  ///
-  /// In en, this message translates to:
-  /// **'TRANSFERRED'**
-  String get walletDetailTransferred;
-
-  /// No description provided for @walletDetailPending.
-  ///
-  /// In en, this message translates to:
-  /// **'PENDING TRANSFER'**
-  String get walletDetailPending;
-
-  /// No description provided for @walletDetailNoName.
-  ///
-  /// In en, this message translates to:
-  /// **'Unnamed wallet'**
-  String get walletDetailNoName;
-
-  /// No description provided for @walletDetailTransferredDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'This wallet has been transferred. Read-only mode.'**
-  String get walletDetailTransferredDesc;
-
   /// No description provided for @sendScreenTitle.
   ///
   /// In en, this message translates to:
@@ -750,23 +936,11 @@ abstract class AppLocalizations {
   /// **'Recipient address'**
   String get sendScreenAddressLabel;
 
-  /// No description provided for @sendScreenAddressHint.
-  ///
-  /// In en, this message translates to:
-  /// **'bc1...'**
-  String get sendScreenAddressHint;
-
   /// No description provided for @sendScreenAmountLabel.
   ///
   /// In en, this message translates to:
   /// **'Amount (BTC)'**
   String get sendScreenAmountLabel;
-
-  /// No description provided for @sendScreenAmountHint.
-  ///
-  /// In en, this message translates to:
-  /// **'0.00'**
-  String get sendScreenAmountHint;
 
   /// No description provided for @sendScreenFeeLabel.
   ///
@@ -930,12 +1104,6 @@ abstract class AppLocalizations {
   /// **'Clear selection'**
   String get walletDetailUtxoClearSelection;
 
-  /// No description provided for @walletDetailFirst100Addresses.
-  ///
-  /// In en, this message translates to:
-  /// **'First 100 Addresses'**
-  String get walletDetailFirst100Addresses;
-
   /// No description provided for @walletDetailPasswordSeedReason.
   ///
   /// In en, this message translates to:
@@ -1038,6 +1206,78 @@ abstract class AppLocalizations {
   /// **'~2 h'**
   String get sendScreenFeeTime2h;
 
+  /// No description provided for @sendBatchToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple recipients'**
+  String get sendBatchToggle;
+
+  /// No description provided for @sendBatchToggleSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single recipient'**
+  String get sendBatchToggleSingle;
+
+  /// No description provided for @sendBatchRecipientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient {index}'**
+  String sendBatchRecipientLabel(int index);
+
+  /// No description provided for @sendBatchAddRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Add recipient'**
+  String get sendBatchAddRecipient;
+
+  /// No description provided for @sendBatchRemoveRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get sendBatchRemoveRecipient;
+
+  /// No description provided for @sendBatchMaxRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum 20 recipients'**
+  String get sendBatchMaxRecipients;
+
+  /// No description provided for @sendBatchTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total to recipients'**
+  String get sendBatchTotalLabel;
+
+  /// No description provided for @sendBatchDustError.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum 546 sat per recipient'**
+  String get sendBatchDustError;
+
+  /// No description provided for @sendBatchDuplicateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate address'**
+  String get sendBatchDuplicateError;
+
+  /// No description provided for @sendBatchMinRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least 2 recipients to send a batch'**
+  String get sendBatchMinRecipients;
+
+  /// No description provided for @sendBatchConfirmRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} recipients'**
+  String sendBatchConfirmRecipients(int count);
+
+  /// No description provided for @sendBatchConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm multiple payment'**
+  String get sendBatchConfirmTitle;
+
   /// No description provided for @sendScreenFeeTime1h.
   ///
   /// In en, this message translates to:
@@ -1113,7 +1353,7 @@ abstract class AppLocalizations {
   /// No description provided for @legalPrivacyContent.
   ///
   /// In en, this message translates to:
-  /// **'This Privacy Policy is provisional and will be replaced by the final version published on the official website when available.\n\n1) DATA ON YOUR DEVICE. The app does not require an account and does not store personal data on servers operated by the author. The encrypted seed (AES-256-GCM), preferences and consents remain ONLY on your device.\n\n2) DATA SENT TO THIRD PARTIES FOR OPERATION. To display balance and fees the app queries public third-party APIs:\n• mempool.guide (blockchain explorer).\nEach request transmits your IP address and the public address of the queried wallet. Private keys and the seed are NEVER transmitted.\n\n3) NO TRACKERS. No analytics, no advertising, no cookies inside the app.\n\n4) RIGHTS (GDPR arts. 13-14). You have the right of access, rectification, erasure and objection by writing to the data controller: {holder} — {email}. Since we do not store personal data, these rights are already largely guaranteed by the fact that the data stays on your device.'**
+  /// **'This Privacy Policy is provisional and will be replaced by the final version published on the official website when available.\n\n1) DATA ON YOUR DEVICE. The app does not require an account and does not store personal data on servers operated by the author. The encrypted seed (AES-256-GCM), preferences and consents remain ONLY on your device.\n\n2) DATA SENT TO THIRD PARTIES FOR OPERATION. To display balance and fees the app queries public third-party APIs:\n• mempool.guide (blockchain explorer).\n• If mempool.guide is unavailable, the app may query two community Esplora-compatible mirrors (mempool.kilombino.com, mempool.maveth.ca). This can be turned off in Settings.\nEach request transmits your IP address and the public address of the queried wallet. Private keys and the seed are NEVER transmitted.\n\n3) NO TRACKERS. No analytics, no advertising, no cookies inside the app.\n\n4) RIGHTS (GDPR arts. 13-14). You have the right of access, rectification, erasure and objection by writing to the data controller: {holder} — {email}. Since we do not store personal data, these rights are already largely guaranteed by the fact that the data stays on your device.'**
   String legalPrivacyContent(String holder, String email);
 
   /// No description provided for @legalSecurityContact.
@@ -1133,12 +1373,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TXID: {txid}'**
   String sendScreenSuccessTxid(Object txid);
-
-  /// No description provided for @sendScreenError.
-  ///
-  /// In en, this message translates to:
-  /// **'Send error: {error}'**
-  String sendScreenError(Object error);
 
   /// No description provided for @sendScreenValidateAddress.
   ///
@@ -1326,23 +1560,11 @@ abstract class AppLocalizations {
   /// **'Invalid mnemonic phrase. Check the spelling of the words.'**
   String get importScreenValidateInvalid;
 
-  /// No description provided for @importScreenImporting.
-  ///
-  /// In en, this message translates to:
-  /// **'Importing...'**
-  String get importScreenImporting;
-
   /// No description provided for @importScreenImport.
   ///
   /// In en, this message translates to:
   /// **'Import'**
   String get importScreenImport;
-
-  /// No description provided for @importScreenError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error importing wallet: {error}'**
-  String importScreenError(Object error);
 
   /// No description provided for @importModeSeed.
   ///
@@ -1392,263 +1614,11 @@ abstract class AppLocalizations {
   /// **'Watch-only'**
   String get watchOnlyBadge;
 
-  /// No description provided for @transferScreenTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Transfer Wallet'**
-  String get transferScreenTitle;
-
-  /// No description provided for @transferScreenScanning.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan the receiver\'\'s QR Code.'**
-  String get transferScreenScanning;
-
-  /// No description provided for @transferScreenProcessing.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing and encrypting data...'**
-  String get transferScreenProcessing;
-
-  /// No description provided for @transferScreenScanError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error during scan or encryption: {error}'**
-  String transferScreenScanError(Object error);
-
-  /// No description provided for @transferScreenNearbyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan to receive'**
-  String get transferScreenNearbyTitle;
-
-  /// No description provided for @transferScreenNearbySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Have the receiver scan this QR Code.'**
-  String get transferScreenNearbySubtitle;
-
-  /// No description provided for @transferScreenNearbyCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Manual code: {code}'**
-  String transferScreenNearbyCode(Object code);
-
-  /// No description provided for @transferScreenNearbyCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get transferScreenNearbyCancel;
-
-  /// No description provided for @transferScreenNearbySuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet successfully transferred via Bluetooth. The local seed has been deleted.'**
-  String get transferScreenNearbySuccess;
-
-  /// No description provided for @transferScreenNearbyError.
-  ///
-  /// In en, this message translates to:
-  /// **'Transfer error: {error}'**
-  String transferScreenNearbyError(Object error);
-
-  /// No description provided for @transferScreenWebRtcConnecting.
-  ///
-  /// In en, this message translates to:
-  /// **'Starting WebRTC connection...'**
-  String get transferScreenWebRtcConnecting;
-
-  /// No description provided for @transferScreenWebRtcTransferring.
-  ///
-  /// In en, this message translates to:
-  /// **'Transferring via WebRTC...'**
-  String get transferScreenWebRtcTransferring;
-
-  /// No description provided for @transferScreenTransferComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Transfer completed!'**
-  String get transferScreenTransferComplete;
-
-  /// No description provided for @transferScreenMethodTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose transfer method'**
-  String get transferScreenMethodTitle;
-
-  /// No description provided for @transferScreenMethodQr.
-  ///
-  /// In en, this message translates to:
-  /// **'QR Code (2-Phase)'**
-  String get transferScreenMethodQr;
-
-  /// No description provided for @transferScreenMethodQrDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan the receiver\'\'s QR code, then generate a QR code with the encrypted seed.'**
-  String get transferScreenMethodQrDesc;
-
-  /// No description provided for @transferScreenMethodNearby.
-  ///
-  /// In en, this message translates to:
-  /// **'Bluetooth P2P'**
-  String get transferScreenMethodNearby;
-
-  /// No description provided for @transferScreenMethodNearbyDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Direct device-to-device transfer. Requires Bluetooth.'**
-  String get transferScreenMethodNearbyDesc;
-
-  /// No description provided for @transferScreenMethodWebRtc.
-  ///
-  /// In en, this message translates to:
-  /// **'WebRTC (Internet)'**
-  String get transferScreenMethodWebRtc;
-
-  /// No description provided for @transferScreenMethodWebRtcDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'P2P via browser. Requires internet on both devices.'**
-  String get transferScreenMethodWebRtcDesc;
-
-  /// No description provided for @transferScreenWebRtcQrDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'The receiver must scan this QR. Transfer will happen via WebRTC (no size limit).'**
-  String get transferScreenWebRtcQrDescription;
-
-  /// No description provided for @transferScreenEncryptedQrDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show this QR Code to the receiving device. Once scanned and reception is complete, the wallet will be automatically removed from this device.'**
-  String get transferScreenEncryptedQrDescription;
-
-  /// No description provided for @transferScreenWebRtcTimeout.
-  ///
-  /// In en, this message translates to:
-  /// **'WebRTC connection failed after 30 seconds. Try again or use the 2-phase QR Code method.'**
-  String get transferScreenWebRtcTimeout;
-
-  /// No description provided for @receiveScreenTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Receive Wallet'**
-  String get receiveScreenTitle;
-
-  /// No description provided for @receiveScreenInit.
-  ///
-  /// In en, this message translates to:
-  /// **'Initializing asymmetric key...'**
-  String get receiveScreenInit;
-
-  /// No description provided for @receiveScreenShowQr.
-  ///
-  /// In en, this message translates to:
-  /// **'Show this QR Code to the sender.'**
-  String get receiveScreenShowQr;
-
-  /// No description provided for @receiveScreenScanSender.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan the QR Code on the sender\'\'s device.'**
-  String get receiveScreenScanSender;
-
-  /// No description provided for @receiveScreenAutoDetectMethod.
-  ///
-  /// In en, this message translates to:
-  /// **'The app automatically detects the transfer method used by the sender.'**
-  String get receiveScreenAutoDetectMethod;
-
-  /// No description provided for @receiveScreenKeyError.
-  ///
-  /// In en, this message translates to:
-  /// **'Key generation error: {error}'**
-  String receiveScreenKeyError(Object error);
-
-  /// No description provided for @receiveScreenDecrypting.
-  ///
-  /// In en, this message translates to:
-  /// **'Data received. Decrypting and server validation in progress...'**
-  String get receiveScreenDecrypting;
-
-  /// No description provided for @receiveScreenSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet received and imported successfully.'**
-  String get receiveScreenSuccess;
-
-  /// No description provided for @receiveScreenQrSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet received via QR Code.'**
-  String get receiveScreenQrSuccess;
-
-  /// No description provided for @receiveScreenNearbyConnecting.
-  ///
-  /// In en, this message translates to:
-  /// **'Code {code} read. Connecting...'**
-  String receiveScreenNearbyConnecting(Object code);
-
-  /// No description provided for @receiveScreenNearbySuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet received via Bluetooth P2P.'**
-  String get receiveScreenNearbySuccess;
-
-  /// No description provided for @receiveScreenError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String receiveScreenError(Object error);
-
-  /// No description provided for @receiveScreenWebRtcTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'WebRTC Room'**
-  String get receiveScreenWebRtcTitle;
-
-  /// No description provided for @receiveScreenWebRtcConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to Room'**
-  String get receiveScreenWebRtcConnect;
-
-  /// No description provided for @receiveScreenWebRtcShareQr.
-  ///
-  /// In en, this message translates to:
-  /// **'Share this QR Code with the sender'**
-  String get receiveScreenWebRtcShareQr;
-
-  /// No description provided for @receiveScreenWebRtcScanQr.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan the sender\'\'s room QR Code'**
-  String get receiveScreenWebRtcScanQr;
-
-  /// No description provided for @receiveScreenWebRtcWait.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for sender connection...'**
-  String get receiveScreenWebRtcWait;
-
-  /// No description provided for @receiveScreenRoomId.
-  ///
-  /// In en, this message translates to:
-  /// **'Room ID: {roomId}'**
-  String receiveScreenRoomId(Object roomId);
-
   /// No description provided for @passwordDialogCreateTitle.
   ///
   /// In en, this message translates to:
   /// **'Create Security Password'**
   String get passwordDialogCreateTitle;
-
-  /// No description provided for @passwordDialogCreateContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Set a password to protect sensitive operations on this browser. This password will be stored locally and used to encrypt your data.'**
-  String get passwordDialogCreateContent;
 
   /// No description provided for @passwordDialogCreateHint.
   ///
@@ -1661,24 +1631,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm password'**
   String get passwordDialogCreateConfirm;
-
-  /// No description provided for @passwordDialogCreateConfirmHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Re-enter the password'**
-  String get passwordDialogCreateConfirmHint;
-
-  /// No description provided for @passwordDialogCreateMismatch.
-  ///
-  /// In en, this message translates to:
-  /// **'Passwords do not match'**
-  String get passwordDialogCreateMismatch;
-
-  /// No description provided for @passwordDialogCreateTooShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Password must be at least 8 characters'**
-  String get passwordDialogCreateTooShort;
 
   /// No description provided for @passwordDialogCreate.
   ///
@@ -1697,12 +1649,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter Password'**
   String get passwordDialogEnterTitle;
-
-  /// No description provided for @passwordDialogEnterContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your security password to continue.'**
-  String get passwordDialogEnterContent;
 
   /// No description provided for @passwordDialogEnterHint.
   ///
@@ -1823,12 +1769,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type'**
   String get walletDetailType;
-
-  /// No description provided for @walletDetailTypeValue.
-  ///
-  /// In en, this message translates to:
-  /// **'HD SegWit (BIP84 Bech32 Native)'**
-  String get walletDetailTypeValue;
 
   /// No description provided for @walletTypeNativeSegwit.
   ///
@@ -2004,12 +1944,6 @@ abstract class AppLocalizations {
   /// **'Created'**
   String get walletDetailCreated;
 
-  /// No description provided for @walletDetailTransferredOn.
-  ///
-  /// In en, this message translates to:
-  /// **'Transferred on'**
-  String get walletDetailTransferredOn;
-
   /// No description provided for @walletDetailClose.
   ///
   /// In en, this message translates to:
@@ -2112,12 +2046,6 @@ abstract class AppLocalizations {
   /// **'Error deriving addresses: {error}'**
   String walletDetailErrorAddresses(Object error);
 
-  /// No description provided for @walletDetailFirst100.
-  ///
-  /// In en, this message translates to:
-  /// **'First 100 Addresses'**
-  String get walletDetailFirst100;
-
   /// No description provided for @walletDetailValidSig.
   ///
   /// In en, this message translates to:
@@ -2189,180 +2117,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Support the project ❤️'**
   String get donateButton;
-
-  /// No description provided for @multiTransferTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-Wallet Send'**
-  String get multiTransferTitle;
-
-  /// No description provided for @multiTransferSelectWallets.
-  ///
-  /// In en, this message translates to:
-  /// **'Select wallets to send'**
-  String get multiTransferSelectWallets;
-
-  /// No description provided for @multiTransferSelectedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count,plural, =1{1 wallet selected} other{{count} wallets selected}}'**
-  String multiTransferSelectedCount(num count);
-
-  /// No description provided for @multiTransferTotalValue.
-  ///
-  /// In en, this message translates to:
-  /// **'Total value: {amount} {ticker}'**
-  String multiTransferTotalValue(Object amount, Object ticker);
-
-  /// No description provided for @multiTransferMethodLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Transfer method:'**
-  String get multiTransferMethodLabel;
-
-  /// No description provided for @multiTransferMethodWebRtc.
-  ///
-  /// In en, this message translates to:
-  /// **'WebRTC (max {max})'**
-  String multiTransferMethodWebRtc(Object max);
-
-  /// No description provided for @multiTransferMethodBluetooth.
-  ///
-  /// In en, this message translates to:
-  /// **'Bluetooth (max {max})'**
-  String multiTransferMethodBluetooth(Object max);
-
-  /// No description provided for @multiTransferMethodQr.
-  ///
-  /// In en, this message translates to:
-  /// **'QR Code 2-phase (max {max})'**
-  String multiTransferMethodQr(Object max);
-
-  /// No description provided for @multiTransferSendButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Send {count,plural, =1{1 Wallet} other{{count} Wallets}} · {amount} BTC'**
-  String multiTransferSendButton(Object amount, num count);
-
-  /// No description provided for @multiTransferProgressTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sending...'**
-  String get multiTransferProgressTitle;
-
-  /// No description provided for @multiTransferProgressWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet {current} of {total}'**
-  String multiTransferProgressWallet(Object current, Object total);
-
-  /// No description provided for @multiTransferSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'{count,plural, =1{1 wallet sent successfully} other{{count} wallets sent successfully}}'**
-  String multiTransferSuccess(num count);
-
-  /// No description provided for @multiTransferPartialSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'{success} sent, {failed} failed'**
-  String multiTransferPartialSuccess(Object failed, Object success);
-
-  /// No description provided for @multiTransferNoLockedWallets.
-  ///
-  /// In en, this message translates to:
-  /// **'No wallets available for transfer. Only LOCKED wallets can be transferred.'**
-  String get multiTransferNoLockedWallets;
-
-  /// No description provided for @multiTransferLimitExceeded.
-  ///
-  /// In en, this message translates to:
-  /// **'You selected {selected} wallets. The maximum for {method} is {max}.'**
-  String multiTransferLimitExceeded(Object max, Object method, Object selected);
-
-  /// No description provided for @multiTransferReceivingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-Wallet Receive'**
-  String get multiTransferReceivingTitle;
-
-  /// No description provided for @multiTransferReceivingProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'Received {received} of {total} wallets'**
-  String multiTransferReceivingProgress(Object received, Object total);
-
-  /// No description provided for @multiTransferMethodUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Not available on this platform'**
-  String get multiTransferMethodUnavailable;
-
-  /// No description provided for @multiTransferSendingWallet.
-  ///
-  /// In en, this message translates to:
-  /// **'Sending wallet {current} of {total}...'**
-  String multiTransferSendingWallet(Object current, Object total);
-
-  /// No description provided for @multiTransferPreparing.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing wallet...'**
-  String get multiTransferPreparing;
-
-  /// No description provided for @multiTransferWaitingReceiver.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for receiver...'**
-  String get multiTransferWaitingReceiver;
-
-  /// No description provided for @multiTransferCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Completed'**
-  String get multiTransferCompleted;
-
-  /// No description provided for @multiTransferFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed'**
-  String get multiTransferFailed;
-
-  /// No description provided for @multiTransferMethodQrDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Manual 2-phase transfer via QR code. Max {max} wallets.'**
-  String multiTransferMethodQrDesc(Object max);
-
-  /// No description provided for @multiTransferMethodWebRtcDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Fast P2P transfer via internet. Max {max} wallets.'**
-  String multiTransferMethodWebRtcDesc(Object max);
-
-  /// No description provided for @multiTransferMethodBluetoothDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Direct device-to-device transfer. Max {max} wallets.'**
-  String multiTransferMethodBluetoothDesc(Object max);
-
-  /// No description provided for @multiTransferNoBalance.
-  ///
-  /// In en, this message translates to:
-  /// **'Balance not available'**
-  String get multiTransferNoBalance;
-
-  /// No description provided for @multiTransferConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm send'**
-  String get multiTransferConfirmTitle;
-
-  /// No description provided for @multiTransferConfirmMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'You are about to send {count,plural, =1{1 wallet} other{{count} wallets}} totaling {amount} {ticker}. Continue?'**
-  String multiTransferConfirmMessage(Object amount, num count, Object ticker);
 
   /// No description provided for @onboardingTitle.
   ///
@@ -2453,12 +2207,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select your country of tax residence'**
   String get onboardingValidationResidence;
-
-  /// No description provided for @onboardingValidationCheckbox.
-  ///
-  /// In en, this message translates to:
-  /// **'You must accept all declarations to continue'**
-  String get onboardingValidationCheckbox;
 
   /// No description provided for @onboardingLinkTerms.
   ///
@@ -2645,6 +2393,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid connection string'**
   String get lightningConnectInvalidUri;
+
+  /// No description provided for @lightningConnectRecentNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent nodes'**
+  String get lightningConnectRecentNodes;
 
   /// No description provided for @lightningConnectInfo.
   ///
@@ -3755,6 +3509,456 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send'**
   String get lightningKeysendSend;
+
+  /// No description provided for @walletAddressesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Addresses & UTXO'**
+  String get walletAddressesTitle;
+
+  /// No description provided for @walletAddressesTabAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Addresses'**
+  String get walletAddressesTabAddresses;
+
+  /// No description provided for @walletAddressesTabUtxos.
+  ///
+  /// In en, this message translates to:
+  /// **'UTXO'**
+  String get walletAddressesTabUtxos;
+
+  /// No description provided for @walletAddressesReceiveBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive (/0)'**
+  String get walletAddressesReceiveBranch;
+
+  /// No description provided for @walletAddressesChangeBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Change (/1)'**
+  String get walletAddressesChangeBranch;
+
+  /// No description provided for @walletAddressesStatusUnused.
+  ///
+  /// In en, this message translates to:
+  /// **'Never used'**
+  String get walletAddressesStatusUnused;
+
+  /// No description provided for @walletAddressesStatusUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used'**
+  String get walletAddressesStatusUsed;
+
+  /// No description provided for @walletAddressesStatusFunds.
+  ///
+  /// In en, this message translates to:
+  /// **'With funds'**
+  String get walletAddressesStatusFunds;
+
+  /// No description provided for @walletAddressesTxCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} transactions'**
+  String walletAddressesTxCount(int count);
+
+  /// No description provided for @walletAddressesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No address to show'**
+  String get walletAddressesEmpty;
+
+  /// No description provided for @walletAddressesHintTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an address to copy it'**
+  String get walletAddressesHintTap;
+
+  /// No description provided for @lightningPeeringGateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Peering restricted to bit 68 releases'**
+  String get lightningPeeringGateTitle;
+
+  /// No description provided for @lightningPeeringGateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This node requires option_blake2b (bit 68) during the connection handshake, so nodes on older releases cannot connect. It is a choice of the node, not a problem of the app or of the bridge. Use peers running release .4 or later, or wait for the community to make the bit optional.'**
+  String get lightningPeeringGateBody;
+
+  /// No description provided for @lightningPeeringGateLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility matrix'**
+  String get lightningPeeringGateLink;
+
+  /// No description provided for @lightningPeersRegisteredOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} registered peers, none connected'**
+  String lightningPeersRegisteredOnly(int count);
+
+  /// No description provided for @lightningSwapOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay an invoice without a node (swap)'**
+  String get lightningSwapOpen;
+
+  /// No description provided for @lightningSwapWebOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Web app: Lightning payments use a swap provider (no node required). Connecting your own node is available in the Android app.'**
+  String get lightningSwapWebOnlyNote;
+
+  /// No description provided for @lightningSwapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning payment via provider'**
+  String get lightningSwapTitle;
+
+  /// No description provided for @lightningSwapIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'You keep custody of the funds: they go into an on-chain HTLC (P2WSH) and are released only when the provider pays your invoice. If the payment fails, you can recover the funds after the time lock.'**
+  String get lightningSwapIntro;
+
+  /// No description provided for @lightningSwapProviderUriHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider URI (nostr+swap://...)'**
+  String get lightningSwapProviderUriHint;
+
+  /// No description provided for @lightningSwapProviderConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect provider'**
+  String get lightningSwapProviderConnect;
+
+  /// No description provided for @lightningSwapProviderConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider connected: {pubkey}'**
+  String lightningSwapProviderConnected(String pubkey);
+
+  /// No description provided for @lightningSwapProviderDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get lightningSwapProviderDisconnect;
+
+  /// No description provided for @lightningSwapInvoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning invoice (lnbc...)'**
+  String get lightningSwapInvoiceHint;
+
+  /// No description provided for @lightningSwapStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get lightningSwapStart;
+
+  /// No description provided for @lightningSwapAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice amount'**
+  String get lightningSwapAmount;
+
+  /// No description provided for @lightningSwapFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees (claim + service)'**
+  String get lightningSwapFees;
+
+  /// No description provided for @lightningSwapTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total to lock'**
+  String get lightningSwapTotal;
+
+  /// No description provided for @lightningSwapFund.
+  ///
+  /// In en, this message translates to:
+  /// **'Send funds and start swap'**
+  String get lightningSwapFund;
+
+  /// No description provided for @lightningSwapFundHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The funds go to the HTLC address shown above. Payment starts after 1 confirmation.'**
+  String get lightningSwapFundHint;
+
+  /// No description provided for @lightningSwapStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get lightningSwapStateLabel;
+
+  /// No description provided for @lightningSwapHtlc.
+  ///
+  /// In en, this message translates to:
+  /// **'HTLC address'**
+  String get lightningSwapHtlc;
+
+  /// No description provided for @lightningSwapCltv.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund available from block {height}'**
+  String lightningSwapCltv(int height);
+
+  /// No description provided for @swapStateAwaitingFunding.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for on-chain funding'**
+  String get swapStateAwaitingFunding;
+
+  /// No description provided for @swapStateConfirming.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for confirmations'**
+  String get swapStateConfirming;
+
+  /// No description provided for @swapStatePaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Lightning payment in progress'**
+  String get swapStatePaying;
+
+  /// No description provided for @swapStatePaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice paid, claiming in progress'**
+  String get swapStatePaid;
+
+  /// No description provided for @swapStateClaiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim in progress'**
+  String get swapStateClaiming;
+
+  /// No description provided for @swapStateCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get swapStateCompleted;
+
+  /// No description provided for @swapStatePaymentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment failed — funds recoverable'**
+  String get swapStatePaymentFailed;
+
+  /// No description provided for @swapStateExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired — funds recoverable'**
+  String get swapStateExpired;
+
+  /// No description provided for @swapStateRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get swapStateRefunded;
+
+  /// No description provided for @lightningSwapRecoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fund recovery'**
+  String get lightningSwapRecoveryTitle;
+
+  /// No description provided for @lightningSwapRecoveryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery blob (swaprecover1....)'**
+  String get lightningSwapRecoveryHint;
+
+  /// No description provided for @lightningSwapRecoveryImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import session'**
+  String get lightningSwapRecoveryImport;
+
+  /// No description provided for @lightningSwapRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover funds (refund)'**
+  String get lightningSwapRefund;
+
+  /// No description provided for @lightningSwapRefundNotYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund not available yet: it opens from block {height}'**
+  String lightningSwapRefundNotYet(int height);
+
+  /// No description provided for @lightningSwapCopyBlob.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy recovery blob'**
+  String get lightningSwapCopyBlob;
+
+  /// No description provided for @lightningSwapBlobCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery blob copied'**
+  String get lightningSwapBlobCopied;
+
+  /// No description provided for @lightningSwapClaimTxid.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim txid'**
+  String get lightningSwapClaimTxid;
+
+  /// No description provided for @lightningSwapClaimHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The claim is an on-chain transaction: it is confirmed with the next block (~12 min). Tap the link to verify it.'**
+  String get lightningSwapClaimHint;
+
+  /// No description provided for @lightningSwapInvalidInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'That does not look like a Lightning invoice'**
+  String get lightningSwapInvalidInvoice;
+
+  /// No description provided for @lightningSwapWatchOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The swap needs a wallet with seed (not watch-only)'**
+  String get lightningSwapWatchOnly;
+
+  /// No description provided for @lightningSwapNoUtxos.
+  ///
+  /// In en, this message translates to:
+  /// **'No spendable funds in this wallet'**
+  String get lightningSwapNoUtxos;
+
+  /// No description provided for @lightningSwapErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {message}'**
+  String lightningSwapErrorGeneric(String message);
+
+  /// No description provided for @lightningSwapKnownUris.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved provider URIs'**
+  String get lightningSwapKnownUris;
+
+  /// No description provided for @lightningSwapWalletLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet'**
+  String get lightningSwapWalletLabel;
+
+  /// No description provided for @lightningSwapWalletBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance: {balance} sat'**
+  String lightningSwapWalletBalance(String balance);
+
+  /// No description provided for @lightningSwapInsufficientFunds.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient funds: {needed} sat needed, {available} sat available'**
+  String lightningSwapInsufficientFunds(String needed, String available);
+
+  /// No description provided for @lightningSwapCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel swap'**
+  String get lightningSwapCancel;
+
+  /// No description provided for @lightningSwapErrorConnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the provider. Check your connection and try again.'**
+  String get lightningSwapErrorConnectFailed;
+
+  /// No description provided for @lightningSwapErrorDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection to the provider was lost. Try connecting again.'**
+  String get lightningSwapErrorDisconnected;
+
+  /// No description provided for @lightningSwapErrorNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider not connected.'**
+  String get lightningSwapErrorNotConnected;
+
+  /// No description provided for @lightningSwapErrorRelayNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This provider uses a relay that the web version cannot reach. Open the app on your phone to pay with this provider.'**
+  String get lightningSwapErrorRelayNotAllowed;
+
+  /// No description provided for @lightningSwapCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this swap?'**
+  String get lightningSwapCancelTitle;
+
+  /// No description provided for @lightningSwapCancelBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The app will forget this swap. The provider drops it by itself before the deadline and no funds are locked. To retry with the same invoice you need a new session only after it expires — otherwise generate a new invoice.'**
+  String get lightningSwapCancelBody;
+
+  /// No description provided for @lightningSwapCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, cancel'**
+  String get lightningSwapCancelConfirm;
+
+  /// No description provided for @lightningSwapWalletMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The wallet bound to this swap is no longer available'**
+  String get lightningSwapWalletMissing;
+
+  /// No description provided for @lightningSwapBoundWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Bound wallet: {name}'**
+  String lightningSwapBoundWallet(String name);
+
+  /// No description provided for @lightningInvoiceDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete invoice'**
+  String get lightningInvoiceDelete;
+
+  /// No description provided for @lightningInvoiceDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this invoice?'**
+  String get lightningInvoiceDeleteTitle;
+
+  /// No description provided for @lightningInvoiceDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice will be removed from the node. If it is unpaid it can no longer be paid.'**
+  String get lightningInvoiceDeleteBody;
+
+  /// No description provided for @lightningInvoiceDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, delete'**
+  String get lightningInvoiceDeleteConfirm;
+
+  /// No description provided for @lightningInvoiceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice deleted'**
+  String get lightningInvoiceDeleted;
+
+  /// No description provided for @lightningChannelPeerAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Peer address'**
+  String get lightningChannelPeerAddress;
 }
 
 class _AppLocalizationsDelegate

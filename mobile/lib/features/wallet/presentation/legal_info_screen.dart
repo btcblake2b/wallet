@@ -7,12 +7,13 @@ import '../../../l10n/app_localizations.dart';
 // Il dominio ufficiale non è ancora stato acquistato (D4); quando sarà
 // online, valutare il link esterno alla versione definitiva.
 //
-// Audit legale: testi riscritti per essere ACCURATI — l'API terza è
-// dichiarata (mempool.guide, unica fonte dal 2026-09-08), rimossa la
-// clausola "reverse solicitation" (nozione MiFID fuori contesto), aggiunto
-// il disclaimer sulla natura sperimentale della rete fork. Il controvalore
-// fiat (CoinGecko) è stato rimosso il 07/09/2026: la rete blake2b non ha
-// prezzo di mercato.
+// Audit legale: testi riscritti per essere ACCURATI — le API terze sono
+// dichiarate (mempool.guide come primario dal 2026-09-08 + i due mirror
+// comunitari Esplora-compatibili usati SOLO in caso di indisponibilità dal
+// 2026-09-16), rimossa la clausola "reverse solicitation" (nozione MiFID
+// fuori contesto), aggiunto il disclaimer sulla natura sperimentale della
+// rete fork. Il controvalore fiat (CoinGecko) è stato rimosso il 07/09/2026:
+// la rete blake2b non ha prezzo di mercato.
 
 // PERCHÉ (audit legale): contatti centralizzati. Dominio ufficiale attivo
 // dal 07/09/2026: btcblake2b.org (contact@). La via raccomandata per le
@@ -60,7 +61,8 @@ class LegalInfoScreen extends StatelessWidget {
                 context,
                 icon: Icons.privacy_tip_outlined,
                 title: loc.onboardingLinkPrivacy,
-                content: loc.legalPrivacyContent(kCopyrightHolder, kContactEmail),
+                content:
+                    loc.legalPrivacyContent(kCopyrightHolder, kContactEmail),
               ),
               const SizedBox(height: 24),
               // Licenza MIT

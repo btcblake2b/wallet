@@ -30,8 +30,12 @@ import '../nostr/nostr_transport.dart';
 import 'lightning_service.dart';
 
 /// Client Lightning per nodo remoto: pagamenti via **NWC (NIP-47)**,
-/// canali via **NCC** (specifica dal nodo dln-node: kind 23198/23199,
+/// canali via **NNC/NCC** (spec Nostr Node Control: kind 23198/23199,
 /// payload `{"method","params"}` / `{"result_type","result","error"}`).
+///
+/// // PERCHÉ (NIP-XX): nomi metodo, nomi parametro e unità (`_sats`) sono
+/// quelli canonici della spec — il bridge accetta anche gli alias storici,
+/// così app e bridge possono essere aggiornati in momenti diversi.
 ///
 /// // PERCHÉ: tutto il protocollo è implementato e testato contro un
 /// transport iniettabile — quando il nodo blake2b sarà buildabile basta
@@ -246,7 +250,9 @@ class NwcLightningService implements LightningService {
     final result = await _request(
       kind: nwcRequestKind,
       method: 'make_new_address',
-      params: {if (addressType != null) 'address_type': addressType},
+      // PERCHÉ (NIP-XX): il campo spec è `type`; il bridge accetta anche
+      // `address_type` per retro-compatibilità.
+      params: {if (addressType != null) 'type': addressType},
     );
     return LightningNodeAddress.fromJson(result);
   }
@@ -271,9 +277,11 @@ class NwcLightningService implements LightningService {
       method: 'pay_onchain',
       params: {
         'address': address,
-        'amount_sat': amountSats,
-        // PERCHÉ: CLN vuole feerate in perkw — 1 sat/vB = 250 sat/kw.
-        if (feeRateSatVb != null) 'feerate': '${feeRateSatVb * 250}perkw',
+        // PERCHÉ (NIP-XX nwc-units): `amount_sats` è il nome spec.
+        'amount_sats': amountSats,
+        // PERCHÉ (NIP-XX nwc-onchain): `feerate` in sat/vB; la conversione
+        // perkw per CLN è responsabilità del bridge (l'app non conosce CLN).
+        if (feeRateSatVb != null) 'feerate': feeRateSatVb,
       },
     );
     return LightningOnchainResult.fromJson(result);
@@ -341,6 +349,20 @@ class NwcLightningService implements LightningService {
       },
     );
     return LightningInvoiceRecord.fromJson(result);
+  }
+
+  @override
+  Future<void> deleteInvoice({String? paymentHash, String? label}) async {
+    // Scrittura: NESSUN retry automatico (una doppia cancellazione non è
+    // pericolosa, ma la semantica di `_request` resta uniforme per i write).
+    await _request(
+      kind: nwcRequestKind,
+      method: 'delete_invoice',
+      params: {
+        if (paymentHash != null) 'payment_hash': paymentHash,
+        if (paymentHash == null && label != null) 'label': label,
+      },
+    );
   }
 
   @override
@@ -427,7 +449,7 @@ class NwcLightningService implements LightningService {
   }) async {
     final result = await _request(
       kind: nccRequestKind,
-      method: 'list_forwards',
+      method: 'get_forwarding_history',
       params: {'limit': limit, 'offset': offset},
     );
     final list = (result['forwards'] as List?) ?? const [];
@@ -440,10 +462,11 @@ class NwcLightningService implements LightningService {
 
   @override
   Future<LightningNetworkNode> getNodeInfo(String nodeId) async {
+    // PERCHÉ (NIP-XX get_network_node): `pubkey` è il nome spec del parametro.
     final result = await _request(
       kind: nccRequestKind,
-      method: 'get_node_info',
-      params: {'node_id': nodeId},
+      method: 'get_network_node',
+      params: {'pubkey': nodeId},
     );
     return LightningNetworkNode.fromJson(result);
   }
@@ -456,10 +479,12 @@ class NwcLightningService implements LightningService {
   }) async {
     final result = await _request(
       kind: nccRequestKind,
-      method: 'get_route',
+      method: 'query_routes',
+      // PERCHÉ (NIP-XX nwc-units): `amount` è il nome spec (msat, senza
+      // suffisso); `risk_factor` resta un extra accettato dal bridge.
       params: {
         'destination': destination,
-        'amount_msat': amountMsat,
+        'amount': amountMsat,
         if (riskFactor != null) 'risk_factor': riskFactor,
       },
     );
@@ -572,7 +597,8 @@ class NwcLightningService implements LightningService {
       method: 'open_channel',
       params: {
         'pubkey': nodeId,
-        'amount': amountSats,
+        // PERCHÉ (NIP-XX nwc-units): `amount_sats` è il nome spec.
+        'amount_sats': amountSats,
         if (host != null && host.isNotEmpty) 'host': host,
         if (isPrivate) 'private': true,
       },
@@ -668,8 +694,13 @@ class NwcLightningService implements LightningService {
       method == 'get_channel_fees' ||
       // I3e: letture di rete/diagnostica. `keysend` NON è qui: muove fondi.
       method == 'get_node_stats' ||
+      // PERCHÉ (NIP-XX): nomi canonici + alias storici — un bridge non ancora
+      // aggiornato risponde `NOT_IMPLEMENTED` al nome nuovo, non un timeout.
+      method == 'get_forwarding_history' ||
       method == 'list_forwards' ||
+      method == 'get_network_node' ||
       method == 'get_node_info' ||
+      method == 'query_routes' ||
       method == 'get_route';
 
   /// Invia una singola richiesta cifrata e attende la risposta correlata

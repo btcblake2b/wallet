@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app/app.dart';
+import 'core/services/explorer_mirrors.dart';
+import 'core/services/info_hints.dart';
 import 'core/services/locale_provider.dart';
 import 'core/services/security_service.dart';
 import 'core/services/theme_provider.dart';
@@ -74,15 +76,20 @@ Future<void> main() async {
     return;
   }
 
-  // Error handler: stampa in console.
+  // Error handler: stampa in console SOLO in debug (audit SEC-11: in release
+  // non deve finire in logcat nulla che possa contenere dati sensibili).
   FlutterError.onError = (errorDetails) {
-    debugPrint(
-      '[FlutterError] ${errorDetails.exception}\n${errorDetails.stack}',
-    );
+    if (kDebugMode) {
+      debugPrint(
+        '[FlutterError] ${errorDetails.exception}\n${errorDetails.stack}',
+      );
+    }
     FlutterError.presentError(errorDetails);
   };
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('[PlatformDispatcher] $error\n$stack');
+    if (kDebugMode) {
+      debugPrint('[PlatformDispatcher] $error\n$stack');
+    }
     return false;
   };
 
@@ -126,6 +133,14 @@ Future<void> main() async {
   // PERCHÉ (blocco app): lo stato va risolto PRIMA di runApp — se attivo
   // l'app parte già coperta dalla lock screen (nessun flash di contenuti).
   await services.appLockService.init();
+
+  // PERCHÉ (interruttore mirror Esplora): la preferenza va letta PRIMA di
+  // runApp, così la prima richiesta di rete rispetta già la scelta dell'utente.
+  await ExplorerMirrors.instance.init();
+
+  // PERCHÉ (pallini info): la preferenza va letta PRIMA di runApp, così nessuna
+  // schermata mostra un "flash" di pallini se l'utente li ha disattivati.
+  await InfoHints.instance.init();
 
   runApp(
     BtcBlake2bWalletApp(

@@ -129,6 +129,33 @@ void main() {
 
       expect(forged.verify(), isFalse);
     });
+
+    test('tag alterato con id+firma originali -> verify false (SEC-01)', () {
+      final original = NostrEvent.unsigned(
+        pubkey: pub,
+        kind: 23194,
+        tags: [
+          ['p', 'node_pubkey'],
+        ],
+        content: 'contenuto',
+        createdAt: 1700000000,
+      ).sign(priv);
+
+      // Attacco relay: stesso id/firma ma tag sostituito (redirezione `e`).
+      final tampered = NostrEvent(
+        id: original.id,
+        pubkey: original.pubkey,
+        createdAt: original.createdAt,
+        kind: original.kind,
+        tags: [
+          ['p', 'attacker_pubkey'],
+        ],
+        content: original.content,
+        sig: original.sig,
+      );
+
+      expect(tampered.verify(), isFalse);
+    });
   });
 
   group('serializzazione', () {

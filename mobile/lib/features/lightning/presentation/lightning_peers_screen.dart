@@ -6,7 +6,10 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/lightning_peer_utils.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/info_dot.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/info_hints_l10n.dart';
+import 'widgets/peering_gate_banner.dart';
 
 /// Gestione dei peer del nodo remoto (NCC): lista, connessione, disconnessione.
 ///
@@ -24,6 +27,8 @@ class LightningPeersScreen extends StatefulWidget {
 
 class _LightningPeersScreenState extends State<LightningPeersScreen> {
   List<LightningPeer> _peers = const [];
+  /// Versione del nodo (serve al banner del gate bit 68); null = non nota.
+  String? _version;
   bool _loading = false;
 
   static String _short(String value) => value.length <= 14
@@ -40,9 +45,25 @@ class _LightningPeersScreenState extends State<LightningPeersScreen> {
     setState(() => _loading = true);
     try {
       final peers = await widget.lightningService.listPeers();
+      // PERCHÉ (P8): la versione serve solo al banner del gate bit 68 → lettura
+      // separata e TOLLERANTE: se fallisce resta null e non si mostra l'avviso
+      // (mai un allarme su un dato mancante), senza perdere la lista peer.
+      String? version;
+      try {
+        version = (await widget.lightningService.getInfo()).version;
+      } on LightningException {
+        version = null;
+      }
       if (!mounted) return;
-      setState(() => _peers = peers);
-      debugPrint('[LoopEngineer] peers caricati: ${peers.length}');
+      setState(() {
+        _peers = peers;
+        _version = version;
+      });
+      debugPrint(
+        '[LoopEngineer] peers caricati: ${peers.length} '
+        '(connessi=${peers.where((p) => p.connected).length}, '
+        'version=$version)',
+      );
     } on LightningException catch (e) {
       _showError(e);
     } finally {
@@ -152,6 +173,25 @@ class _LightningPeersScreenState extends State<LightningPeersScreen> {
                 label: Text(loc.lightningConnectPeer),
               ),
               const SizedBox(height: 16),
+              // PERCHÉ (P8): con il gate bit 68 attivo e zero peer connessi,
+              // l'utente deve capire PERCHÉ la connessione a un peer vecchio
+              // fallisce (scelta del nodo, non bug di app o bridge).
+              PeeringGateBanner(
+                version: _version,
+                peersConnected: _peers.where((p) => p.connected).length,
+              ),
+              // PERCHÉ (P8): "nessun peer" ≠ "peer registrati ma disconnessi":
+              // il secondo caso è quello che spiega il gate meglio di una lista
+              // di peer senza connessione.
+              if (_peers.isNotEmpty && _peers.every((p) => !p.connected))
+                GlassContainer(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(14),
+                  child: Text(
+                    loc.lightningPeersRegisteredOnly(_peers.length),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
               if (_peers.isEmpty)
                 GlassContainer(
                   padding: const EdgeInsets.all(16),
@@ -162,9 +202,8 @@ class _LightningPeersScreenState extends State<LightningPeersScreen> {
                 )
               else
                 ..._peers.map((peer) {
-                  final color = peer.connected
-                      ? Colors.greenAccent
-                      : Colors.orangeAccent;
+                  final color =
+                      peer.connected ? Colors.greenAccent : Colors.orangeAccent;
                   return GlassContainer(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: Padding(
@@ -213,9 +252,14 @@ class _LightningPeersScreenState extends State<LightningPeersScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            '${loc.lightningPeerId}: ${_short(peer.id)}',
-                            style: theme.textTheme.bodySmall,
+                          Row(
+                            children: [
+                              Text(
+                                '${loc.lightningPeerId}: ${_short(peer.id)}',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                              const InfoDot(id: InfoHintId.peers, size: 14),
+                            ],
                           ),
                           if (peer.addresses.isNotEmpty)
                             Text(

@@ -79,14 +79,28 @@ class NostrEvent {
     return copyWith(sig: signature);
   }
 
-  /// Verifica la firma rispetto all'id dell'evento.
-  bool verify() =>
-      sig.isNotEmpty &&
-      NostrCrypto.schnorrVerify(
-        pubkeyHex: pubkey,
-        messageHex: id,
-        signatureHex: sig,
-      );
+  /// Verifica la firma rispetto all'id dell'evento E che l'id sia il hash
+  /// canonico del contenuto (NIP-01).
+  ///
+  /// // PERCHÉ (audit SEC-01): la firma copre solo l'id dichiarato; senza il
+  /// // ricalcolo, un relay potrebbe alterare tags/content mantenendo id+sig
+  /// // (es. redirezione della risposta NWC cambiando il tag `e`).
+  bool verify() {
+    if (sig.isEmpty) return false;
+    final expectedId = computeId(
+      pubkey: pubkey,
+      createdAt: createdAt,
+      kind: kind,
+      tags: tags,
+      content: content,
+    );
+    if (expectedId != id) return false;
+    return NostrCrypto.schnorrVerify(
+      pubkeyHex: pubkey,
+      messageHex: id,
+      signatureHex: sig,
+    );
+  }
 
   bool get isSigned => sig.isNotEmpty;
 

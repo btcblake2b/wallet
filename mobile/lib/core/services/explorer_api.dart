@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 
-import '../config/bitcoin_network_config.dart';
 import '../models/wallet_balance.dart';
+import 'explorer_mirrors.dart';
 
 /// User-Agent condiviso per le richieste all'API Esplora-compatibile.
 /// PERCHÉ: identificare client e contatto è buona prassi per API pubbliche:
@@ -50,11 +51,45 @@ class ExplorerApi {
     this.timeout = const Duration(seconds: 15),
     this.maxAttempts = 1,
     this.baseRetryDelay = const Duration(milliseconds: 600),
-  }) : _client = client ?? http.Client();
+    List<String>? baseUrls,
+    this.fallbackTimeout = const Duration(seconds: 8),
+  })  : _client = client ?? http.Client(),
+        _explicitBaseUrls = _explicitHosts(baseUrls) {
+    // PERCHÉ: host "sticky" — parte dal primario, si sposta su un mirror solo
+    // dopo un failover riuscito: evita di ripagare il timeout del primario a
+    // ogni richiesta dello scan gap-limit (20+ richieste per catena).
+    _activeBaseUrl = this.baseUrls.first;
+  }
 
   // PERCHÉ: client HTTP iniettabile (pattern P1.2 già usato in BitcoinService)
   // per testare con MockClient senza colpire la rete reale.
   final http.Client _client;
+
+  /// Host passati esplicitamente (test). null = si usa la politica di processo
+  /// ([ExplorerMirrors]), letta a OGNI richiesta: così l'interruttore delle
+  /// Impostazioni ha effetto anche su istanze già create.
+  final List<String>? _explicitBaseUrls;
+
+  /// Host Esplora in ordine di priorità (lista di 1 = single-host storico).
+  List<String> get baseUrls =>
+      _explicitBaseUrls ?? ExplorerMirrors.instance.readHosts;
+
+  /// Timeout di un tentativo su un host di fallback. Si usa comunque il
+  /// minore fra questo e [timeout]: un mirror non aspetta mai più del primario.
+  final Duration fallbackTimeout;
+
+  /// Host corrente delle richieste (sticky sul primario finché risponde).
+  late String _activeBaseUrl;
+
+  static const Map<String, String> _headers = <String, String>{
+    'User-Agent': kExplorerUserAgent,
+  };
+
+  /// Host espliciti (test) o null → la lista arriva dalla politica di processo.
+  static List<String>? _explicitHosts(List<String>? explicit) =>
+      (explicit == null || explicit.isEmpty)
+          ? null
+          : List<String>.unmodifiable(explicit);
 
   /// Timeout di rete per ogni richiesta (15s, regola del servizio).
   final Duration timeout;
@@ -68,10 +103,6 @@ class ExplorerApi {
 
   /// Ritardo base del backoff esponenziale (raddoppia a ogni tentativo) + jitter.
   final Duration baseRetryDelay;
-
-  // PERCHÉ: unica sorgente per le letture on-chain — mempool.guide
-  // (Esplora-compatibile), nessun backend personale.
-  String get _baseUrl => BitcoinNetworkConfig.blockstreamApiBaseUrl;
 
   /// Saldo (catena confermata + mempool) in satoshi e conteggio transazioni.
   ///
@@ -152,49 +183,103 @@ class ExplorerApi {
     }
   }
 
+  /// GET su [path] con failover fra gli host Esplora configurati.
+  ///
+  /// Si parte dall'host sticky ([_activeBaseUrl]) e si prosegue con gli altri
+  /// SOLO se l'errore è di disponibilità ([_isFailoverWorthy]). Il retry con
+  /// backoff resta sull'host primario ([maxAttempts]); i mirror tentano una
+  /// volta sola, con timeout ridotto.
   Future<String> _getString(String path) async {
-    final uri = Uri.parse('$_baseUrl/$path');
-    const headers = {'User-Agent': kExplorerUserAgent};
-    // PERCHÉ: retry su errori transitori — un 429/502/503 o un timeout di rete
-    // possono essere momentanei (il 502 è spesso un blip del servizio):
-    // riprovare con backoff evita "saldo non disponibile" per un errore solo.
-    // Il circuit breaker (BitcoinService) resta il guardiano degli outage lunghi.
-    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-      final isLast = attempt == maxAttempts;
-      http.Response response;
-      try {
-        response = await _client.get(uri, headers: headers).timeout(timeout);
-      } on TimeoutException {
-        if (isLast) {
-          throw const ApiException('timeout', 'Timeout della richiesta');
-        }
-        await _waitBeforeRetry(attempt);
-        continue;
-      } on http.ClientException {
-        // PERCHÉ: copre SocketException/network su tutte le piattaforme
-        // (incluso web, dove dart:io non è disponibile).
-        if (isLast) {
-          throw const ApiException('network', 'Rete non disponibile');
-        }
-        await _waitBeforeRetry(attempt);
-        continue;
-      }
-      if (response.statusCode == 200) {
-        return response.body;
-      }
-      if (!isLast && _isRetryable(response.statusCode)) {
-        // PERCHÉ: Retry-After (429) ha priorità quando il servizio lo indica.
-        await _waitBeforeRetry(
-          attempt,
-          retryAfter: response.headers['retry-after'],
-        );
-        continue;
-      }
-      throw _mapHttpError(response.statusCode);
+    // FLOW: Lettura on-chain con failover Esplora
+    // PERCHÉ: se l'utente ha disattivato i mirror dopo un failover, l'host
+    // sticky non è più permesso → si torna al primario da questa richiesta.
+    if (!baseUrls.contains(_activeBaseUrl)) {
+      _activeBaseUrl = baseUrls.first;
     }
-    // Irraggiungibile: maxAttempts >= 1 per costruzione.
-    throw const ApiException('internal_error', 'Tentativi di lettura esauriti');
+    // STEP: 1 — ordine host: sticky per primo, poi gli altri della lista.
+    final ordered = <String>[
+      _activeBaseUrl,
+      ...baseUrls.where((h) => h != _activeBaseUrl),
+    ];
+    ApiException? reportedError;
+
+    for (var hostIndex = 0; hostIndex < ordered.length; hostIndex++) {
+      final host = ordered[hostIndex];
+      final isCurrentHost = hostIndex == 0;
+      // PERCHÉ: 3 host x 3 tentativi x 15s = 45s per richiesta bloccherebbero
+      // lo scan gap-limit (20+ richieste per catena).
+      final attempts = isCurrentHost ? maxAttempts : 1;
+      final hostTimeout = fallbackTimeout < timeout ? fallbackTimeout : timeout;
+
+      // STEP: 2 — tentativi sull'host corrente (retry/backoff come prima).
+      for (var attempt = 1; attempt <= attempts; attempt++) {
+        final isLast = attempt == attempts;
+        http.Response response;
+        try {
+          response = await _client
+              .get(Uri.parse('$host/$path'), headers: _headers)
+              .timeout(isCurrentHost ? timeout : hostTimeout);
+        } on TimeoutException {
+          reportedError ??= const ApiException(
+            'timeout',
+            'Timeout della richiesta',
+          );
+          if (!isLast) {
+            await _waitBeforeRetry(attempt);
+            continue;
+          }
+          break; // host esaurito → failover
+        } on http.ClientException {
+          // PERCHÉ: copre SocketException/network su tutte le piattaforme
+          // (incluso web, dove dart:io non è disponibile).
+          reportedError ??= const ApiException(
+            'network',
+            'Rete non disponibile',
+          );
+          if (!isLast) {
+            await _waitBeforeRetry(attempt);
+            continue;
+          }
+          break; // host esaurito → failover
+        }
+
+        if (response.statusCode == 200) {
+          // STEP: 3 — host sticky: le richieste successive restano qui.
+          if (!isCurrentHost) {
+            debugPrint('[ExplorerApi] failover attivo su $host');
+            _activeBaseUrl = host;
+          }
+          return response.body;
+        }
+
+        final error = _mapHttpError(response.statusCode);
+        reportedError ??= error;
+        // PERCHÉ: 404 e bad_response sono RISPOSTE VALIDE (es. tx sconosciuta):
+        // si propagano subito, senza failover, per non mascherarne l'esito.
+        if (!_isFailoverWorthy(error)) throw error;
+        if (!isLast && _isRetryable(response.statusCode)) {
+          // PERCHÉ: Retry-After (429) ha priorità quando il servizio lo indica.
+          await _waitBeforeRetry(
+            attempt,
+            retryAfter: response.headers['retry-after'],
+          );
+          continue;
+        }
+        break; // host esaurito → failover
+      }
+    }
+
+    // PERCHÉ: si rilancia l'errore del PRIMO host tentato (di norma il
+    // primario): codici e messaggi mappati dalla UI restano quelli storici.
+    throw reportedError ??
+        const ApiException('internal_error', 'Tentativi di lettura esauriti');
   }
+
+  /// True se l'errore giustifica il passaggio a un altro host Esplora.
+  /// PERCHÉ: solo indisponibilità — `not_found` e `bad_response` sono esiti
+  /// legittimi della richiesta e non vanno ritentati altrove.
+  static bool _isFailoverWorthy(ApiException e) =>
+      e.isNetworkError || e.isRateLimited || e.isServiceUnavailable;
 
   /// True se lo status HTTP indica un errore transitorio da ritentare.
   /// PERCHÉ: il 500 è ESCLUSO di proposito — i fallimenti "errore interno"

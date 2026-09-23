@@ -210,7 +210,7 @@ class FakeDlnNode implements NostrTransport {
       case 'close_channel':
         return {};
       case 'make_new_address':
-        final addrType = '${params['address_type'] ?? 'bech32'}';
+        final addrType = '${params['type'] ?? 'bech32'}';
         return {
           'address': addrType == 'p2tr'
               ? 'bc1pfaketest000000000000000000000000000'
@@ -237,7 +237,8 @@ class FakeDlnNode implements NostrTransport {
         return {
           'utxos': [
             {
-              'txid': 'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6',
+              'txid':
+                  'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6',
               'vout': 1,
               'amount_msat': 19382000,
               'address': 'bc1p8ypv5',
@@ -394,7 +395,7 @@ class FakeDlnNode implements NostrTransport {
           ],
           'forward_count': 1,
         };
-      case 'list_forwards':
+      case 'get_forwarding_history':
         return const {
           'forwards': [
             {
@@ -409,9 +410,9 @@ class FakeDlnNode implements NostrTransport {
           ],
           'total': 1,
         };
-      case 'get_node_info':
+      case 'get_network_node':
         return {
-          'node_id': params['node_id'],
+          'node_id': params['pubkey'],
           'alias': 'Paperclip Pool',
           'color': 'f56835',
           'last_timestamp': 1789321362,
@@ -420,8 +421,8 @@ class FakeDlnNode implements NostrTransport {
             {'type': 'ipv4', 'address': '140.99.254.11', 'port': 9735},
           ],
         };
-      case 'get_route':
-        final amount = (params['amount_msat'] as num?)?.toInt() ?? 0;
+      case 'query_routes':
+        final amount = (params['amount'] as num?)?.toInt() ?? 0;
         return {
           'route': [
             {
@@ -609,13 +610,13 @@ void main() {
       expect(c.status?.first, contains('CHANNELD_NORMAL'));
     });
 
-    test('openChannel invia pubkey+amount (sat)', () async {
+    test('openChannel invia pubkey+amount_sats (spec)', () async {
       await service.openChannel(nodeId: '02${'cc' * 32}', amountSats: 20000);
       final last = node.receivedRequests.last;
       expect(last['method'], 'open_channel');
       final params = (last['params'] as Map).cast<String, dynamic>();
       expect(params['pubkey'], '02${'cc' * 32}');
-      expect(params['amount'], 20000);
+      expect(params['amount_sats'], 20000);
     });
 
     test('closeChannel invia id+force', () async {
@@ -667,8 +668,8 @@ void main() {
 
     test('connectPeer senza host non invia il campo host', () async {
       await service.connectPeer(nodeId: '02${'dd' * 32}');
-      final params = (node.receivedRequests.last['params'] as Map)
-          .cast<String, dynamic>();
+      final params =
+          (node.receivedRequests.last['params'] as Map).cast<String, dynamic>();
       expect(params.containsKey('host'), isFalse);
     });
 
@@ -681,14 +682,11 @@ void main() {
       expect(params['force'], isTrue);
     });
 
-    test('timeout su list_peers → retry automatico (è una lettura)',
-        () async {
+    test('timeout su list_peers → retry automatico (è una lettura)', () async {
       node.silentOnce = true;
       expect(await service.listPeers(), hasLength(2));
       expect(
-        node.receivedRequests
-            .where((r) => r['method'] == 'list_peers')
-            .length,
+        node.receivedRequests.where((r) => r['method'] == 'list_peers').length,
         2,
       );
     });
@@ -830,7 +828,7 @@ void main() {
       expect(address.type, 'p2tr');
       final params =
           (node.receivedRequests.last['params'] as Map).cast<String, dynamic>();
-      expect(params['address_type'], 'p2tr');
+      expect(params['type'], 'p2tr');
     });
 
     test('listAddresses mappa keyidx, tipo e fondi', () async {
@@ -978,8 +976,7 @@ void main() {
       );
     });
 
-    test('timeout su get_pending_htlcs → retry automatico (lettura)',
-        () async {
+    test('timeout su get_pending_htlcs → retry automatico (lettura)', () async {
       node.silentOnce = true;
       expect(await service.listPendingHtlcs(), hasLength(2));
       expect(
@@ -1072,7 +1069,7 @@ void main() {
       final forwards = await service.listForwards(limit: 10, offset: 0);
 
       final last = node.receivedRequests.last;
-      expect(last['method'], 'list_forwards');
+      expect(last['method'], 'get_forwarding_history');
       expect((last['params'] as Map)['limit'], 10);
       expect((last['params'] as Map)['offset'], 0);
 
@@ -1080,19 +1077,18 @@ void main() {
       expect(forwards.single.isSettled, isTrue);
     });
 
-    test('getNodeInfo invia node_id e mappa alias e indirizzi', () async {
+    test('getNodeInfo invia pubkey e mappa alias e indirizzi', () async {
       final node0 = await service.getNodeInfo('02${'aa' * 32}');
 
       expect(node0.displayName, 'Paperclip Pool');
       expect(node0.addresses.single.label, '140.99.254.11:9735');
       expect(
-        (node.receivedRequests.last['params'] as Map)['node_id'],
+        (node.receivedRequests.last['params'] as Map)['pubkey'],
         '02${'aa' * 32}',
       );
     });
 
-    test('getRoute invia destinazione/importo/risk e mappa la rotta',
-        () async {
+    test('getRoute invia destinazione/importo/risk e mappa la rotta', () async {
       final route = await service.getRoute(
         destination: '02${'aa' * 32}',
         amountMsat: 1000000,
@@ -1102,7 +1098,7 @@ void main() {
       final params =
           (node.receivedRequests.last['params'] as Map).cast<String, dynamic>();
       expect(params['destination'], '02${'aa' * 32}');
-      expect(params['amount_msat'], 1000000);
+      expect(params['amount'], 1000000);
       expect(params['risk_factor'], 5);
 
       expect(route.feeSats, 1);
@@ -1155,7 +1151,7 @@ void main() {
       expect(fees.isEmpty, isFalse);
     });
 
-    test('payOnchain invia amount_sat e feerate in perkw', () async {
+    test('payOnchain invia amount_sats e feerate in sat/vB (spec)', () async {
       final result = await service.payOnchain(
         address: 'bc1qdest',
         amountSats: 5000,
@@ -1166,9 +1162,10 @@ void main() {
       expect(last['method'], 'pay_onchain');
       final params = (last['params'] as Map).cast<String, dynamic>();
       expect(params['address'], 'bc1qdest');
-      expect(params['amount_sat'], 5000);
-      // 2 sat/vB = 500 sat/kw (perkw).
-      expect(params['feerate'], '500perkw');
+      expect(params['amount_sats'], 5000);
+      // PERCHÉ: il client parla in sat/vB (spec); la conversione perkw per CLN
+      // la fa il bridge.
+      expect(params['feerate'], 2);
     });
 
     test('payOnchain senza fee → nessun feerate nel payload', () async {
@@ -1252,8 +1249,7 @@ void main() {
       expect(params['offset'], 0);
     });
 
-    test('timeout su list_transactions → retry automatico (lettura)',
-        () async {
+    test('timeout su list_transactions → retry automatico (lettura)', () async {
       node.silentOnce = true;
       expect(await service.listTransactions(), hasLength(2));
       expect(

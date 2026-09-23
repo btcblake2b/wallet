@@ -5,7 +5,9 @@ import '../../../core/services/lightning/lightning_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/lightning_peer_utils.dart';
 import '../../../core/widgets/app_background.dart';
+import '../../../core/widgets/info_dot.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/info_hints_l10n.dart';
 
 /// Apertura di un canale Lightning verso un peer del nodo remoto (NCC).
 class LightningOpenChannelScreen extends StatefulWidget {
@@ -133,7 +135,12 @@ class _LightningOpenChannelScreenState
             SwitchListTile(
               value: _isPrivate,
               onChanged: (value) => setState(() => _isPrivate = value),
-              title: Text(loc.lightningOpenChannelPrivate),
+              title: Row(
+                children: [
+                  Text(loc.lightningOpenChannelPrivate),
+                  const InfoDot(id: InfoHintId.openChannelPrivate),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(

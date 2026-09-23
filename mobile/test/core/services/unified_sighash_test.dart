@@ -7,8 +7,10 @@ import 'package:btc_blake2b_wallet/core/services/unified_sighash.dart';
 
 /// Test delle proprietà crittografiche del digest SIGHASH_UNIFIED
 /// (Bitcoin Knots PR #357 — la chain blake2b attiva il fork con
-/// DEPLOYMENT_BLAKE2B). Non esistono vettori pubblici ufficiali nel progetto,
-/// quindi si verificano le proprietà di sicurezza:
+/// DEPLOYMENT_BLAKE2B). Spec di riferimento: `doc/unified-sighash.md` di Knots,
+/// tag `v29.4.1.knots20260508`, con 166 vettori (indicata dal meeting community
+/// del 16/09/2026). Il gruppo "Vettori ufficiali" in fondo usa
+/// `unified_sighash.json` del PR #357; le proprietà sotto pinnano il resto:
 ///   - replay protection (digest ≠ BIP-143 legacy)
 ///   - determinismo
 ///   - commitment a tutti gli output spesi (CVE-2020-14199)
@@ -203,7 +205,8 @@ void main() {
       expect(wit[1].toLowerCase(), equals(pubHex.toLowerCase()));
     });
 
-    test('enableRBF: ogni input ha sequence non-final (0xfffffffd); '
+    test(
+        'enableRBF: ogni input ha sequence non-final (0xfffffffd); '
         'default sequence finale', () {
       final key = ECPrivate.fromBytes(
         BigintUtils.toBytes(BigInt.from(42), length: 32, order: Endian.big),
@@ -299,7 +302,8 @@ void main() {
       expect(tx.inputs[1].txId, 'b' * 64);
     });
 
-    test('la firma prodotta verifica contro il digest con gli scriptPubKey reali',
+    test(
+        'la firma prodotta verifica contro il digest con gli scriptPubKey reali',
         () {
       // PERCHÉ: riproduce il caso d'uso reale — un UTXO P2WPKH con scriptPubKey
       // on-chain 0014{hash160(pub)}. La firma deve verificare contro il digest
@@ -319,12 +323,15 @@ void main() {
           vout: 0,
           scriptType: SegwitAddressType.p2wpkh,
         ),
-        ownerDetails: UtxoAddressDetails(publicKey: pubHex, address: segwitAddr),
+        ownerDetails:
+            UtxoAddressDetails(publicKey: pubHex, address: segwitAddr),
       );
 
       final hex = buildAndSignUnifiedTx(
         utxoWithAddresses: [utxo],
-        outputs: [BitcoinOutput(address: segwitAddr, value: BigInt.from(90000))],
+        outputs: [
+          BitcoinOutput(address: segwitAddr, value: BigInt.from(90000)),
+        ],
         privateKeysByPublicKey: {pubHex: key},
         fee: BigInt.from(10000),
       );
@@ -336,7 +343,8 @@ void main() {
       final sigHex = wit.first;
       final pubkeyHex = wit[1];
       // togli il byte sighash (0x21) dalla firma per la verifica ECDSA
-      final derSig = BytesUtils.fromHexString(sigHex).sublist(0, sigHex.length ~/ 2 - 1);
+      final derSig =
+          BytesUtils.fromHexString(sigHex).sublist(0, sigHex.length ~/ 2 - 1);
       final pubkeyBytes = BytesUtils.fromHexString(pubkeyHex);
 
       // Ricomputa il digest come fa il nodo: scriptCode = P2PKH, sha_scripts =
@@ -415,8 +423,8 @@ void main() {
       final sigLen = scriptSigBytes.first;
       final sigWithType = scriptSigBytes.sublist(1, 1 + sigLen);
       final derSig = sigWithType.sublist(0, sigWithType.length - 1);
-      final verifier =
-          BitcoinSignatureVerifier.fromKeyBytes(BytesUtils.fromHexString(pubHex));
+      final verifier = BitcoinSignatureVerifier.fromKeyBytes(
+          BytesUtils.fromHexString(pubHex),);
       expect(
         verifier.verifyECDSADerSignature(digest: digest, signature: derSig),
         isTrue,
@@ -505,8 +513,8 @@ void main() {
           BytesUtils.fromHexString(tx.inputs[0].scriptSig.toHex());
       final sigLen = scriptSigBytes.first;
       final legacySig = scriptSigBytes.sublist(1, 1 + sigLen);
-      final verifier =
-          BitcoinSignatureVerifier.fromKeyBytes(BytesUtils.fromHexString(pubHex));
+      final verifier = BitcoinSignatureVerifier.fromKeyBytes(
+          BytesUtils.fromHexString(pubHex),);
       expect(
         verifier.verifyECDSADerSignature(
           digest: legacyDigest,
@@ -538,11 +546,14 @@ void main() {
     });
   });
 
-  group('Vettori ufficiali (unified_sighash.json, script_type=1, hashType=0x21)',
+  group(
+      'Vettori ufficiali (unified_sighash.json, script_type=1, hashType=0x21)',
       () {
     // Vettori estratti da src/test/data/unified_sighash.json del PR #357
     // (privkeyio/hf-sighash-opt-in). Sono 8 casi segwit v0 con SIGHASH_ALL|UNIFIED
     // (0x21) — lo stesso caso d'uso dell'app. Hashes raw, non reversed.
+    // Gli stessi casi sono nella spec normativa Knots `doc/unified-sighash.md`
+    // @ `v29.4.1.knots20260508` (166 vettori totali): qui ne pinniamo 8.
     final vectors = <Map<String, Object>>[
       {
         'scriptCode': '515151515151',
@@ -552,7 +563,8 @@ void main() {
         'spent': [
           {'value': BigInt.from(163728673632716), 'script': '51515151515151'},
         ],
-        'sighash': 'f2c5bab31e7924172309e841f22885a287927cecb6e06fec9abc8902882fe659',
+        'sighash':
+            'f2c5bab31e7924172309e841f22885a287927cecb6e06fec9abc8902882fe659',
       },
       {
         'scriptCode': '5252',
@@ -562,7 +574,8 @@ void main() {
         'spent': [
           {'value': BigInt.from(438341308167044), 'script': '5656565656565656'},
         ],
-        'sighash': 'e436aba06dbac2f6acbf0f23ba96b198f6678cd104f6bc2204c50104f7fc8cba',
+        'sighash':
+            'e436aba06dbac2f6acbf0f23ba96b198f6678cd104f6bc2204c50104f7fc8cba',
       },
       {
         'scriptCode': '535353535353',
@@ -573,7 +586,8 @@ void main() {
           {'value': BigInt.from(1597090254845911), 'script': '5454545454'},
           {'value': BigInt.from(1849715362702527), 'script': '525252525252'},
         ],
-        'sighash': '28911b0ff2abfa96f62027f4e3a334635666014da3a8accd854c2660b7e3f13c',
+        'sighash':
+            '28911b0ff2abfa96f62027f4e3a334635666014da3a8accd854c2660b7e3f13c',
       },
       {
         'scriptCode': '55555555',
@@ -584,7 +598,8 @@ void main() {
           {'value': BigInt.from(1166767615501852), 'script': '545454545454'},
           {'value': BigInt.from(1230938136281501), 'script': '545454545454'},
         ],
-        'sighash': '4f522185c73a538bbcbc326f6a0187a6f073d672db27a1d52bc08fffe792be4b',
+        'sighash':
+            '4f522185c73a538bbcbc326f6a0187a6f073d672db27a1d52bc08fffe792be4b',
       },
       {
         'scriptCode': '565656565656',
@@ -594,7 +609,8 @@ void main() {
         'spent': [
           {'value': BigInt.from(605598600082670), 'script': '56565656565656'},
         ],
-        'sighash': '885cf61f29077eb60ebb8ed4c019e4ea79410b1ea1c82e04b08fa3f6b8c152cc',
+        'sighash':
+            '885cf61f29077eb60ebb8ed4c019e4ea79410b1ea1c82e04b08fa3f6b8c152cc',
       },
       {
         'scriptCode': '525252',
@@ -604,7 +620,8 @@ void main() {
         'spent': [
           {'value': BigInt.from(1029877187370002), 'script': '5252'},
         ],
-        'sighash': 'df93da32b5227902a9d3224f1c891bad3bbb78c32f2af5eeccafcd8228e86b69',
+        'sighash':
+            'df93da32b5227902a9d3224f1c891bad3bbb78c32f2af5eeccafcd8228e86b69',
       },
       {
         'scriptCode': '5252',
@@ -613,10 +630,14 @@ void main() {
         'inIdx': 2,
         'spent': [
           {'value': BigInt.from(1066671014058054), 'script': '52525252525252'},
-          {'value': BigInt.from(1214768938606586), 'script': '5656565656565656'},
+          {
+            'value': BigInt.from(1214768938606586),
+            'script': '5656565656565656',
+          },
           {'value': BigInt.from(1855602602674740), 'script': '53535353'},
         ],
-        'sighash': '30bd7a3812ace8682f0637e415a44ed092ae173d27160714d276333a6273d532',
+        'sighash':
+            '30bd7a3812ace8682f0637e415a44ed092ae173d27160714d276333a6273d532',
       },
       {
         'scriptCode': '53535353535353',
@@ -626,7 +647,8 @@ void main() {
         'spent': [
           {'value': BigInt.from(32625082010655), 'script': '54545454545454'},
         ],
-        'sighash': 'c8882a3305da5d6df92413f2bedebc4a1258c0ff5375a39bdea3f1b30f56bcfc',
+        'sighash':
+            'c8882a3305da5d6df92413f2bedebc4a1258c0ff5375a39bdea3f1b30f56bcfc',
       },
     ];
 

@@ -20,8 +20,7 @@ class LightningRoute {
   int get feeSats => feeMsat ~/ 1000;
   bool get isEmpty => hops.isEmpty;
 
-  factory LightningRoute.fromJson(Map<String, dynamic> json) =>
-      LightningRoute(
+  factory LightningRoute.fromJson(Map<String, dynamic> json) => LightningRoute(
         hops: [
           for (final h in (json['route'] as List? ?? const []))
             LightningRouteHop.fromJson((h as Map).cast<String, dynamic>()),

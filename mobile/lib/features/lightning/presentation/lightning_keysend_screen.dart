@@ -60,7 +60,8 @@ class _LightningKeysendScreenState extends State<LightningKeysendScreen> {
     } on LightningException catch (e) {
       // PERCHÉ: la risoluzione è un di più — se il nodo non è nel gossip si
       // continua con l'id troncato, senza allarmare l'utente.
-      debugPrint('[LoopEngineer] keysend: get_node_info non risolto (${e.code})');
+      debugPrint(
+          '[LoopEngineer] keysend: get_node_info non risolto (${e.code})',);
     } finally {
       if (mounted) setState(() => _resolving = false);
     }
@@ -187,9 +188,8 @@ class _LightningKeysendScreenState extends State<LightningKeysendScreen> {
                     : IconButton(
                         icon: const Icon(Icons.search),
                         tooltip: loc.lightningKeysendDestination,
-                        onPressed: _isValidPubkey(destination)
-                            ? _resolvePeer
-                            : null,
+                        onPressed:
+                            _isValidPubkey(destination) ? _resolvePeer : null,
                       ),
               ),
             ),
@@ -217,8 +217,8 @@ class _LightningKeysendScreenState extends State<LightningKeysendScreen> {
             // deve sapere PRIMA di premere che il pagamento è immediato.
             Text(
               loc.lightningKeysendWarning,
-              style:
-                  theme.textTheme.bodySmall?.copyWith(color: Colors.orangeAccent),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: Colors.orangeAccent),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(

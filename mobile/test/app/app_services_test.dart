@@ -9,6 +9,11 @@ import 'package:btc_blake2b_wallet/core/services/crypto_service.dart';
 import 'package:btc_blake2b_wallet/core/services/device_service.dart';
 import 'package:btc_blake2b_wallet/core/services/lightning/lightning_connection_store.dart';
 import 'package:btc_blake2b_wallet/core/services/lightning/lightning_service_mock.dart';
+import 'package:btc_blake2b_wallet/core/services/nostr/websocket_transport.dart';
+import 'package:btc_blake2b_wallet/core/services/swap/swap_provider_client.dart';
+import 'package:btc_blake2b_wallet/core/services/swap/swap_provider_store.dart';
+import 'package:btc_blake2b_wallet/core/services/swap/swap_service.dart';
+import 'package:btc_blake2b_wallet/core/services/swap/swap_session_store.dart';
 import 'package:btc_blake2b_wallet/core/services/wallet_repository.dart';
 
 class MockWalletRepository extends Mock implements WalletRepository {}
@@ -50,6 +55,12 @@ void main() {
         appLockService: AppLockService.test(),
         lightningService: LightningServiceMock(),
         lightningConnectionStore: LightningConnectionStore(),
+        swapService: SwapService(
+          client: SwapProviderClient(transport: WebSocketTransport()),
+          providerStore: SwapProviderStore(),
+          sessionStore: SwapSessionStore(),
+          bitcoinService: mockBitcoinService,
+        ),
       );
     });
 

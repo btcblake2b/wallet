@@ -1,0 +1,34 @@
+manifestVersion: 1.1
+id: nwc-cln-bridge
+category: bitcoin
+name: NWC/NCC Bridge
+version: "0.1.0"
+tagline: Control a Core Lightning node from the btc-blake2b wallet app
+description: >-
+  Exposes a Core Lightning node over Nostr Wallet Connect (NIP-47) and NCC, so
+  the btc-blake2b wallet app can send and receive on Lightning and manage
+  channels without touching the node's console.
+
+
+  **First run**: open the app, then in the "Core Lightning node" section enter
+  the REST URL of `clnrest` and a rune created on your node (`createrune`).
+  Both are applied immediately. The page then shows the connection string
+  (QR code) to paste in the wallet app — one string per device.
+
+
+  The node can be local or remote, as long as `clnrest` is reachable from this
+  server. The bridge only listens outbound (Nostr relay over wss + clnrest):
+  no inbound port is required.
+releaseNotes: ""
+developer: btc-blake2b
+website: https://btcblake2b.org
+dependencies: []
+repo: https://github.com/btcblake2b/control-plane
+support: https://github.com/btcblake2b/control-plane/issues
+port: 3477
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+submitter: btcblake2b
+submission: ""

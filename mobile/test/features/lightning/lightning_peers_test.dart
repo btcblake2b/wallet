@@ -75,7 +75,10 @@ void main() {
 
     // Forma compatta incollata in un colpo solo: il campo host resta vuoto.
     final pubkey = '02${'dd' * 32}';
-    await tester.enterText(find.byType(TextField).first, '$pubkey@1.2.3.4:9735');
+    await tester.enterText(
+      find.byType(TextField).first,
+      '$pubkey@1.2.3.4:9735',
+    );
     await tester.tap(find.widgetWithText(TextButton, 'Confirm'));
     await tester.pumpAndSettle();
 
@@ -83,7 +86,8 @@ void main() {
     expect(find.textContaining('1.2.3.4:9735'), findsWidgets);
   });
 
-  testWidgets('disconnetti peer: conferma → badge Disconnected', (tester) async {
+  testWidgets('disconnetti peer: conferma → badge Disconnected',
+      (tester) async {
     await tester.runAsync(() => service.connect(connection));
     await tester.pumpWidget(
       wrap(LightningPeersScreen(lightningService: service)),
@@ -103,7 +107,8 @@ void main() {
     expect(find.text('Disconnected'), findsOneWidget);
   });
 
-  testWidgets('stringa peer non valida → errore, nessun connect', (tester) async {
+  testWidgets('stringa peer non valida → errore, nessun connect',
+      (tester) async {
     await tester.runAsync(() => service.connect(connection));
     await tester.pumpWidget(
       wrap(LightningPeersScreen(lightningService: service)),
@@ -154,6 +159,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
+    // Il titolo "Channel details" appare nell'AppBar della schermata dettaglio.
     expect(find.text('Channel details'), findsOneWidget);
     // 16.000.000 msat = 16.000 sat (unità convertite) e 1000 msat = 1 sat.
     expect(find.text('16,000 sat'), findsWidgets);
@@ -161,8 +167,14 @@ void main() {
     expect(find.text('peer-one'), findsOneWidget);
     expect(find.text('1'), findsWidgets); // HTLC pending
 
-    await tester.tap(find.text('Close channel'));
+    // Il pulsante "Close channel" è sotto la piega → scorri manualmente.
+    await tester.drag(
+      find.byType(ListView),
+      const Offset(0, -400),
+    );
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Close channel'));
+    await tester.pump();
     await tester.tap(find.widgetWithText(TextButton, 'Confirm'));
     await tester.pumpAndSettle();
 

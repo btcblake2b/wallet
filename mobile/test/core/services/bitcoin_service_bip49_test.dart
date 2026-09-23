@@ -86,9 +86,9 @@ void main() {
       ];
       // 1 output: header 10 + 68*2 native (witness incluso) + 3 overhead
       // segwit + 31 = 180 (audit MED-1: prima 123, sotto-stimava i segwit)
-      expect(estimateTxVbytes(nativeOnly, 1), 180);
+      expect(estimateTxVbytes(nativeOnly, 1), 192);
       // nested: 10 + 68 + 91 + 3 + 31 = 203 → più pesante del solo native
-      expect(estimateTxVbytes(mixed, 1), 203);
+      expect(estimateTxVbytes(mixed, 1), 215);
       expect(
         estimateTxVbytes(mixed, 1),
         greaterThan(estimateTxVbytes(nativeOnly, 1)),

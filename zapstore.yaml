@@ -22,13 +22,16 @@ description: |
   A fully self-custodial Bitcoin wallet for the bitcoin-blake2b network.
 
   Features:
-  - On-chain send and receive with Bitcoin Core compatible PSBT handling
-  - Lightning Network (experimental): keysend, invoices, payments
-  - Remote node control over NWC/NCC: balance, channels, fees, diagnostics
+  - On-chain send and receive (P2WPKH / BIP84), coin control, manual fee bump
+    (RBF) and batch send to up to 20 recipients in a single transaction
+  - Watch-only xpub, address and UTXO view, private notes per transaction and
+    history export (CSV / JSON)
+  - Lightning without your own node (experimental, testing phase): an atomic
+    swap with a third-party provider, funds stay self-custodial
+  - Lightning with your own node: remote control over NWC/NCC (balance,
+    channels, fees, payments, diagnostics)
   - Hardware-backed seed storage (Android Keystore), root detection and
     APK integrity self-check
-  - Batch send: up to 20 recipients in one transaction, with RBF support
-  - Watch-only xpub, coin control and manual fee bump
   - 7 languages (EN, IT, DE, FR, ES, FI, ZH) with automatic detection
   - No author server, no analytics, no tracking
 

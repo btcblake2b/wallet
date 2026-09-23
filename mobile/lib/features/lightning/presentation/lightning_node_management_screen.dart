@@ -19,6 +19,7 @@ import 'lightning_onchain_screen.dart';
 import 'lightning_payments_screen.dart';
 import 'lightning_peers_screen.dart';
 import 'widgets/movement_tile.dart';
+import 'widgets/peering_gate_banner.dart';
 
 /// Dashboard di gestione del nodo Lightning: identità, liquidità e movimenti.
 ///
@@ -101,8 +102,7 @@ class _LightningNodeManagementScreenState
     }
   }
 
-  int get _capacitySats =>
-      _channels.fold(0, (sum, c) => sum + c.capacitySats);
+  int get _capacitySats => _channels.fold(0, (sum, c) => sum + c.capacitySats);
 
   /// Outbound: quello che il nodo può spendere nei canali (fallback sul locale).
   int get _outboundSats => _channels.fold(
@@ -158,6 +158,15 @@ class _LightningNodeManagementScreenState
                     ),
                   ),
                 if (info != null) _identityCard(loc, theme, info),
+                if (info != null)
+                  // PERCHÉ (P8): qui l'utente guarda versione e contatori — se
+                  // il nodo richiede il bit 68 e non ha peer connessi, la causa
+                  // va detta qui. `numPeersConnected` null (bridge vecchio) =
+                  // nessun avviso: non sappiamo se ci sono peer connessi.
+                  PeeringGateBanner(
+                    version: info.version,
+                    peersConnected: info.numPeersConnected,
+                  ),
                 const SizedBox(height: 20),
                 _sectionTitle(loc.lightningLiquidity, theme),
                 _liquidityCard(loc, theme),
@@ -216,8 +225,8 @@ class _LightningNodeManagementScreenState
         children: [
           Text(
             loc.lightningNodeIdentity,
-            style:
-                theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           if (info.alias != null && info.alias!.isNotEmpty)
@@ -363,9 +372,8 @@ class _LightningNodeManagementScreenState
 
   /// Riga pagamenti: quante fatture e quante ancora da incassare.
   Widget _paymentsTile(AppLocalizations loc) {
-    final pending = _invoices
-        .where((i) => i.state == LightningInvoiceState.pending)
-        .length;
+    final pending =
+        _invoices.where((i) => i.state == LightningInvoiceState.pending).length;
     return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Material(
@@ -377,7 +385,8 @@ class _LightningNodeManagementScreenState
             color: AppTheme.lightningAccent,
           ),
           title: Text(loc.lightningPayments),
-          subtitle: Text(loc.lightningPaymentsSummary(_invoices.length, pending)),
+          subtitle:
+              Text(loc.lightningPaymentsSummary(_invoices.length, pending)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () async {
             await Navigator.of(context).push(
@@ -423,7 +432,8 @@ class _LightningNodeManagementScreenState
       );
 
   /// Riga canali: elenco completo (con conteggio) e dettaglio per canale.
-  Widget _channelsTile(AppLocalizations loc) => GlassContainer(        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+  Widget _channelsTile(AppLocalizations loc) => GlassContainer(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         child: Material(
           type: MaterialType.transparency,
           child: ListTile(

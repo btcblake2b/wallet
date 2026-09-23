@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      # // PERCHÉ: `<app-id>_<service-name>_1` è il nome iniettato da umbrelOS;
+      # APP_PORT è la porta interna del bridge (UI_PORT), non la porta pubblica
+      # (manifest `port: 3477`).
+      APP_HOST: nwc-cln-bridge_server_1
+      APP_PORT: 3000
+
+  server:
+    # // PERCHÉ: immagine pubblicata su GHCR e pinnata col digest del
+    # manifest-list multi-arch (linux/amd64 + linux/arm64 verificati).
+    image: ghcr.io/btcblake2b/nwc-cln-bridge:0.1.0@sha256:b56a2b362e9a228052e1e76077e5b1f7af7d42acb502090f5daf8e2cf6601fe3
+    restart: on-failure
+    stop_grace_period: 30s
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+    environment:
+      BRIDGE_UI_PORT: 3000
+      # // PERCHÉ: l'app sta dietro app_proxy, che applica il login Umbrel (e il
+      # 2FA quando attivo): chiedere anche un token del bridge renderebbe la
+      # pagina inaccessibile dall'app.
+      BRIDGE_UI_TOKEN: none
+      BRIDGE_ALIAS: btcblake2b-bridge
+      BRIDGE_RELAY: wss://relay.primal.net

@@ -9,7 +9,7 @@
 - ✅ Create wallet (BIP39 + BIP32/BIP84, seed encrypted AES-GCM in secure storage)
 - ✅ Import wallet from seed phrase
 - ✅ Receive (QR + address) / Send (build & sign tx, fee estimate, broadcast)
-- ✅ Balance and transactions (Esplora-compatible API: `mempool.guide`)
+- ✅ Balance and transactions (Esplora-compatible API: `mempool.guide`, with automatic failover to two community mirrors — `mempool.kilombino.com`, `mempool.maveth.ca`)
 - ✅ Unlock with biometrics / password (web)
 - ✅ Message signing and verification
 - ✅ Lightning (experimental): control of a remote blake2b node via NWC/NCC — see the [main README](../README.md) for the connection string
@@ -115,8 +115,35 @@ flutter build web --release --csp --no-web-resources-cdn
 - `web/boot.js` is an external script: no inline scripts in the HTML.
 - Outfit font bundled and licenses in `assets/legal/`: no requests to Google
   Fonts or raw.githubusercontent.com while using the app.
-- Deploy: publish `build/web/` (Cloudflare Pages). A dedicated origin is
-  recommended (e.g. `app.btcblake2b.org`) separate from the showcase site.
+- Deploy: **not activated while the PWA is under development** — it is tested
+  locally only. The planned dedicated origin is `app.btcblake2b.org`.
+
+### Local testing (no deploy)
+
+From the repo root (uses `wrangler`, already required for the showcase deploy):
+
+```powershell
+.\scripts\serve-pwa.ps1            # hardened build + local server on :8788
+.\scripts\serve-pwa.ps1 -SkipBuild # serve the existing build/web
+.\scripts\serve-pwa.ps1 -Clean     # clean caches first (stale plugin builds)
+```
+
+- The server is `wrangler pages dev`: it applies the real `web/_headers`
+  (CSP/HSTS) locally, so the local test matches what Pages will serve.
+  Nothing is published.
+- Quick iterations without production headers: `flutter run -d chrome`.
+- Use `http://localhost:8788` only: it is a secure context, so the web vault
+  accepts it. `http://<LAN-IP>` is rejected (the vault requires a secure context).
+- Current web limitations: on the web app Lightning payments work **only
+  through a swap provider** (pay an invoice without owning a node) —
+  connecting your own node (NWC/NCC) is not available there, because the
+  connection key would carry node-admin powers in a weaker storage context
+  than an OS keyring. The CSP allows only the allowlisted swap relay
+  (`wss://relay.primal.net`, see `kWebAllowedSwapRelays` in
+  `core/services/swap/swap_web_policy.dart`), not any `wss:` host.
+- `mempool.guide` does not expose CORS to browsers, so reads and broadcasts
+  fail over to the community mirror (`mempool.kilombino.com`) — keep the
+  fallback-explorer setting ON (default) while testing.
 
 ## Security and privacy note
 

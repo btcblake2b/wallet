@@ -135,7 +135,8 @@ class LightningServiceMock implements LightningService {
       amountMsat: 2000000,
       amountSentMsat: 2002000,
       status: 'complete',
-      destination: '02bfcaa8328a89aa03ef55b3b810dc0dc43ee6df1e8d4cc8badb219ba303063389',
+      destination:
+          '02bfcaa8328a89aa03ef55b3b810dc0dc43ee6df1e8d4cc8badb219ba303063389',
       createdAt: 1789364186,
       completedAt: 1789364187,
       createdIndex: 1,
@@ -150,7 +151,10 @@ class LightningServiceMock implements LightningService {
       amountMsat: 21000000,
       status: 'unpaid',
       description: 'mock scaduta',
-      expiresAt: DateTime.now().subtract(const Duration(hours: 2)).millisecondsSinceEpoch ~/ 1000,
+      expiresAt: DateTime.now()
+              .subtract(const Duration(hours: 2))
+              .millisecondsSinceEpoch ~/
+          1000,
       createdIndex: 1,
     ),
     LightningInvoiceRecord(
@@ -159,7 +163,9 @@ class LightningServiceMock implements LightningService {
       amountMsat: 5000000,
       status: 'unpaid',
       description: 'mock in attesa',
-      expiresAt: DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000,
+      expiresAt:
+          DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+              1000,
       createdIndex: 2,
     ),
   ];
@@ -172,7 +178,8 @@ class LightningServiceMock implements LightningService {
   late final List<LightningForward> _forwards;
 
   LightningChannel _mockChannel(int index) {
-    final receivable = inboundOverrideMsat ?? (index == 0 ? 59000000 : 49000000);
+    final receivable =
+        inboundOverrideMsat ?? (index == 0 ? 59000000 : 49000000);
     if (index == 0) {
       return LightningChannel(
         id: 'mock_channel_1',
@@ -396,6 +403,18 @@ class LightningServiceMock implements LightningService {
   }
 
   @override
+  Future<void> deleteInvoice({String? paymentHash, String? label}) async {
+    _ensureConnected();
+    await Future<void>.delayed(latency);
+    _invoices.removeWhere(
+      (i) =>
+          (paymentHash != null && i.paymentHash == paymentHash) ||
+          (paymentHash == null && label != null && i.label == label),
+    );
+    _notifications.add(null);
+  }
+
+  @override
   Future<LightningPaymentResult> payInvoice(String bolt11) async {
     _ensureConnected();
     await Future<void>.delayed(latency);
@@ -534,8 +553,8 @@ class LightningServiceMock implements LightningService {
       nodeId: nodeId,
       alias: channel?.peerAlias,
       colorHex: '3399ff',
-      lastTimestamp:
-          DateTime.now().millisecondsSinceEpoch ~/ 1000 - const Duration(hours: 1).inSeconds,
+      lastTimestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000 -
+          const Duration(hours: 1).inSeconds,
       addresses: const [
         LightningNodeEndpoint(
           type: 'ipv4',
@@ -755,7 +774,8 @@ class LightningServiceMock implements LightningService {
     // della UI senza fixture duplicate nei test.
     return [
       LightningUtxo(
-        txid: 'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6',
+        txid:
+            'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6',
         vout: 0,
         amountMsat: _onchainBalanceMsat - 5000000,
         address: 'bc1qmockutxo1',
@@ -763,7 +783,8 @@ class LightningServiceMock implements LightningService {
         blockHeight: 971913,
       ),
       const LightningUtxo(
-        txid: 'aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00ee11ff22aa33bb44cc55dd66',
+        txid:
+            'aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00ee11ff22aa33bb44cc55dd66',
         vout: 1,
         amountMsat: 5000000,
         address: 'bc1qmockutxo2',

@@ -34,6 +34,7 @@ class WalletRecord {
     this.accountXpub,
     this.seedBackupConfirmed = false,
     this.utxoLabels = const {},
+    this.txNotes = const {},
   });
 
   final String walletId;
@@ -62,6 +63,23 @@ class WalletRecord {
   /// Stored with the wallet so labels survive refreshes and app restarts.
   final Map<String, String> utxoLabels;
 
+  /// Note libere dell'utente per singola transazione, chiave = `txid`.
+  ///
+  /// // PERCHÉ: stesso pattern di [utxoLabels] — la nota vive nel record del
+  /// wallet, quindi sopravvive a refresh e riavvii senza storage aggiuntivo e
+  /// senza backend. Non è materiale sensibile: è un'annotazione dell'utente.
+  final Map<String, String> txNotes;
+
+  /// Nota dell'utente per [txid], oppure `null` se assente o vuota.
+  /// // PERCHÉ: una nota di soli spazi equivale a nessuna nota, così la UI non
+  /// deve ripetere il controllo in ogni punto di lettura.
+  String? noteFor(String txid) {
+    final note = txNotes[txid];
+    if (note == null) return null;
+    final trimmed = note.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
   WalletRecord copyWith({
     String? walletId,
     String? encryptedSeed,
@@ -77,6 +95,7 @@ class WalletRecord {
     bool clearAccountXpub = false,
     bool? seedBackupConfirmed,
     Map<String, String>? utxoLabels,
+    Map<String, String>? txNotes,
   }) {
     return WalletRecord(
       walletId: walletId ?? this.walletId,
@@ -89,10 +108,10 @@ class WalletRecord {
       masterFingerprint: masterFingerprint ?? this.masterFingerprint,
       derivationPath: derivationPath ?? this.derivationPath,
       kind: kind ?? this.kind,
-      accountXpub:
-          clearAccountXpub ? null : (accountXpub ?? this.accountXpub),
+      accountXpub: clearAccountXpub ? null : (accountXpub ?? this.accountXpub),
       seedBackupConfirmed: seedBackupConfirmed ?? this.seedBackupConfirmed,
       utxoLabels: utxoLabels ?? this.utxoLabels,
+      txNotes: txNotes ?? this.txNotes,
     );
   }
 
@@ -111,6 +130,7 @@ class WalletRecord {
       'account_xpub': accountXpub,
       'seed_backup_confirmed': seedBackupConfirmed,
       'utxo_labels': utxoLabels,
+      'tx_notes': txNotes,
     };
   }
 
@@ -131,11 +151,17 @@ class WalletRecord {
       kind: WalletKind.fromValue(map['kind'] as String? ?? ''),
       accountXpub: map['account_xpub'] as String?,
       seedBackupConfirmed: map['seed_backup_confirmed'] as bool? ?? false,
-      utxoLabels: _parseUtxoLabels(map['utxo_labels']),
+      utxoLabels: _parseStringMap(map['utxo_labels']),
+      // PERCHÉ: i record scritti dalle versioni precedenti non hanno
+      // `tx_notes` → mappa vuota, nessuna migrazione e nessun crash.
+      txNotes: _parseStringMap(map['tx_notes']),
     );
   }
 
-  static Map<String, String> _parseUtxoLabels(Object? raw) {
+  /// Parsa una mappa stringa→stringa persistita (etichette UTXO, note tx).
+  /// // PERCHÉ: un valore assente o di tipo inatteso deve degradare a mappa
+  /// vuota, mai far fallire il caricamento dell'intero wallet.
+  static Map<String, String> _parseStringMap(Object? raw) {
     if (raw is! Map) return <String, String>{};
     return raw.map(
       (key, value) => MapEntry(key.toString(), value.toString()),

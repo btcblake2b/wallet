@@ -90,8 +90,15 @@ WalletDerivationResult deriveWalletData(AddressDerivationData data) {
   final type = WalletScriptType.fromDerivationPath(path);
   final account = root.derivePath(path);
 
+  // PERCHÉ (P8-b): i rami external (/0) e change (/1) si derivano UNA volta
+  // sola e si riusano. Prima `account.derive(0)`/`derive(1)` erano ricalcolati
+  // a ogni indirizzo: 2×count derivazioni in più (~25-35% del tempo, che sul
+  // device significa secondi). Stesso schema di `deriveWatchOnlyAddresses`.
+  final externalChain = account.derive(0);
+  final changeChain = account.derive(1);
+
   // Derive first address for the main publicAddress
-  final firstChild = account.derive(0).derive(0);
+  final firstChild = externalChain.derive(0);
   final firstAddress = pubKeyToAddressForType(
     firstChild.publicKey,
     type: type,
@@ -106,16 +113,10 @@ WalletDerivationResult deriveWalletData(AddressDerivationData data) {
   final count = data.addressCount;
   for (var i = 0; i < count; i++) {
     addresses.add(
-      pubKeyToAddressForType(
-        account.derive(0).derive(i).publicKey,
-        type: type,
-      ),
+      pubKeyToAddressForType(externalChain.derive(i).publicKey, type: type),
     );
     changeAddresses.add(
-      pubKeyToAddressForType(
-        account.derive(1).derive(i).publicKey,
-        type: type,
-      ),
+      pubKeyToAddressForType(changeChain.derive(i).publicKey, type: type),
     );
   }
 

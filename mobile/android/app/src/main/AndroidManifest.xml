@@ -1,7 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.btcblake2b.wallet">
-  <!-- PERCHÉ (audit R1): la release interroga mempool.guide per saldo, fee e
-       broadcast. Senza INTERNET nel manifest principale l'APK release non
-       ha rete (era dichiarato solo in debug/profile). -->
+  <!-- PERCHÉ (audit R1): la release interroga i servizi Esplora della rete
+       blake2b (mempool.guide primario + mirror comunitari di fallback) per
+       saldo, fee e broadcast. Senza INTERNET nel manifest principale l'APK
+       release non ha rete (era dichiarato solo in debug/profile). -->
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
   <!-- Permessi per Fotocamera (QR Code indirizzi) -->
@@ -37,6 +38,13 @@
     <intent>
       <action android:name="android.intent.action.VIEW"/>
       <data android:scheme="bitcoin"/>
+    </intent>
+    <!-- // PERCHÉ (P8, 16/09): su Android 11+ `canLaunchUrl(https://...)` è
+         falso se l'app non dichiara la visibilità verso i browser. Senza questa
+         voce i link esterni (pagina Nodo, licenze online) non si aprivano. -->
+    <intent>
+      <action android:name="android.intent.action.VIEW"/>
+      <data android:scheme="https"/>
     </intent>
     <package android:name="com.google.android.gms"/>
   </queries>

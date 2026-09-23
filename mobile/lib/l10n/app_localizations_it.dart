@@ -12,12 +12,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get appTitle => 'Btc Blake2b Wallet';
 
   @override
-  String get appErrorTitle => 'Impossibile avviare l\'app';
-
-  @override
-  String get appReload => 'Ricarica la pagina';
-
-  @override
   String get homeScreenTitle => 'Btc Blake2b Wallet';
 
   @override
@@ -49,12 +43,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get homeCreateWallet => 'Crea wallet';
 
   @override
-  String get homeReceiveWallet => 'Ricevi';
-
-  @override
-  String get homeMultiTransfer => 'Multi-invio';
-
-  @override
   String get homeSelected => 'selezionati';
 
   @override
@@ -68,11 +56,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String homeDeleted(Object count) {
     return '$count wallet eliminati con successo.';
-  }
-
-  @override
-  String homeDeleteMultiError(Object message) {
-    return '$message';
   }
 
   @override
@@ -114,9 +97,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get homeBackupNotVerified => 'Backup non verificato';
-
-  @override
-  String get homeMoreOptions => 'Altre opzioni';
 
   @override
   String get homeLockVault => 'Blocca vault';
@@ -164,6 +144,149 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsAppLockDisabled => 'Blocco app disattivato';
 
   @override
+  String get settingsExplorerMirrors => 'Explorer di riserva';
+
+  @override
+  String get settingsExplorerMirrorsDesc =>
+      'Se mempool.guide non risponde, l\'app interroga due mirror comunitari. Disattiva per usare solo mempool.guide.';
+
+  @override
+  String get settingsSectionInterface => 'Interfaccia';
+
+  @override
+  String get settingsInfoDots => 'Suggerimenti informativi';
+
+  @override
+  String get settingsInfoDotsDesc =>
+      'Mostra i pallini info che spiegano ogni funzione';
+
+  @override
+  String get infoCoinControlTitle => 'Coin control (selezione UTXO)';
+
+  @override
+  String get infoCoinControlBody =>
+      'Il saldo è formato dagli UTXO, i pezzi ricevuti. Qui scegli quali spendere: la transazione userà solo quelli, così puoi lasciare da parte i pezzi piccoli o inattivi.';
+
+  @override
+  String get infoDustLimitTitle => 'Importo minimo (dust)';
+
+  @override
+  String get infoDustLimitBody =>
+      'Gli output sotto i 546 sat sono rifiutati dalla rete come \'dust\'. Sotto quella soglia l\'importo non è inviabile.';
+
+  @override
+  String get infoFeeRateTitle => 'Commissione di transazione';
+
+  @override
+  String get infoFeeRateBody =>
+      'La commissione si paga per unità di dimensione della transazione (sat/vB): più vuoi conferma rapida, più paghi. \'Economica\' può richiedere ore, \'Prioritaria\' pochi minuti. \'Personalizzata\' serve quando conosci il valore attuale del mempool.';
+
+  @override
+  String get infoBatchSendTitle => 'Più destinatari (batch)';
+
+  @override
+  String get infoBatchSendBody =>
+      'In una sola transazione puoi pagare fino a 5 indirizzi, dividendo la commissione invece di pagarla una volta per bonifico. Prima di firmare vedi l\'elenco completo dei destinatari.';
+
+  @override
+  String get infoBumpFeeTitle => 'Aumenta fee (RBF)';
+
+  @override
+  String get infoBumpFeeBody =>
+      'Una transazione in attesa può essere sostituita da una che paga più commissione (BIP125). L\'originale viene annullata e solo la sostituta può confermare — indirizzo e importo restano identici.';
+
+  @override
+  String get infoXpubTitle => 'Chiave pubblica dell\'account (xpub)';
+
+  @override
+  String get infoXpubBody =>
+      'L\'xpub genera tutti i tuoi indirizzi di ricezione. Non può muovere fondi, ma rivela saldo e storico completi: condividila solo con app di cui ti fidi (es. un wallet di sola lettura).';
+
+  @override
+  String get infoReceiveAddressTitle => 'Indirizzo di ricezione';
+
+  @override
+  String get infoReceiveAddressBody =>
+      'Ogni \'Ricevi\' mostra un indirizzo nuovo, scelto fra quelli mai usati: così i pagamenti non sono collegabili tra loro. Riusare un indirizzo non è un errore, rende solo più facile tracciare i tuoi movimenti.';
+
+  @override
+  String get infoWatchOnlyTitle => 'Wallet di sola lettura';
+
+  @override
+  String get infoWatchOnlyBody =>
+      'Hai importato solo l\'xpub: l\'app vede saldo e storico ma non custodisce chiavi private, quindi non può firmare. Per spendere da questo wallet serve il dispositivo che possiede la seed.';
+
+  @override
+  String get infoSignVerifyTitle => 'Firma / verifica messaggio';
+
+  @override
+  String get infoSignVerifyBody =>
+      'Firmare un messaggio dimostra che l\'indirizzo è tuo senza muovere fondi. Chiunque può poi verificare la firma confrontandola con quell\'indirizzo e lo stesso messaggio.';
+
+  @override
+  String get infoChannelCapacityTitle => 'Capacità del canale';
+
+  @override
+  String get infoChannelCapacityBody =>
+      'Il totale di satoshi nel canale, diviso tra te e il tuo peer. Più capacità significa poter gestire pagamenti più grandi. Capacità = saldo locale + saldo remoto.';
+
+  @override
+  String get infoChannelReserveTitle => 'Riserva del canale';
+
+  @override
+  String get infoChannelReserveBody =>
+      'Una piccola parte dei tuoi fondi deve restare bloccata come deposito di sicurezza (la \'riserva\'). Garantisce che entrambe le parti abbiano qualcosa da perdere — se l\'altro va offline malevolmente, la riserva può essere usata per penalizzarlo on-chain.';
+
+  @override
+  String get infoToSelfDelayTitle => 'Ritardo verso sé stessi';
+
+  @override
+  String get infoToSelfDelayBody =>
+      'Quando avviene una chiusura forzata, il tuo output on-chain è ritardato di questo numero di blocchi (tipicamente 144 = ~1 giorno). Questo dà al tuo peer tempo di reclamare i propri fondi prima, prevenendo attacchi di doppia spesa sullo stato del canale.';
+
+  @override
+  String get infoHtlcTitle => 'HTLC (Contratto a Tempo Vincolato con Hash)';
+
+  @override
+  String get infoHtlcBody =>
+      'Un HTLC è un pagamento condizionato: i fondi sono bloccati finché il destinatario non rivela un preimage hash. In Lightning, gli HTLC abilitano il routing istantaneo off-chain: il tuo pagamento salta attraverso più canali senza fidarsi di alcun intermediario.';
+
+  @override
+  String get infoOpenChannelPrivateTitle => 'Canale privato';
+
+  @override
+  String get infoOpenChannelPrivateBody =>
+      'Un canale privato non è annunciato alla rete. Solo tu e il tuo peer sapete che esiste. Usalo quando non vuoi che altri facciano routing attraverso di esso (privacy) o quando il canale è troppo piccolo per essere utile per il routing.';
+
+  @override
+  String get infoRoutingFeesTitle => 'Commissioni di routing';
+
+  @override
+  String get infoRoutingFeesBody =>
+      'Quando altri nodi instradano pagamenti attraverso il tuo canale, guadagni commissioni. La commissione base (sat) si paga per pagamento; il rate (ppm) è proporzionale all\'importo. Il CLTV delta limita quanto tempo un HTLC inolttrato può impiegare per essere regolato.';
+
+  @override
+  String get infoForceCloseTitle => 'Chiusura forzata';
+
+  @override
+  String get infoForceCloseBody =>
+      'Trasmette l\'ultimo stato del canale on-chain. È irreversibile e richiede di attendere il ritardo verso sé stessi prima di poter spendere i tuoi fondi. Usalo solo se il tuo peer non risponde o è malizioso — la chiusura cooperativa è sempre più veloce ed economica.';
+
+  @override
+  String get infoPeersTitle => 'Peer connessi';
+
+  @override
+  String get infoPeersBody =>
+      'I peer sono altri nodi Lightning con cui sei direttamente connesso via TCP/Tor. Ogni peer può avere uno o più canali. Puoi connetterti a nuovi peer per aprire canali e aumentare la liquidità e la capacità di routing del tuo nodo.';
+
+  @override
+  String get infoNodeManagementTitle => 'Gestione nodo';
+
+  @override
+  String get infoNodeManagementBody =>
+      'L\'identità del tuo nodo Lightning: pubkey, versione, numero di canali e peer attivi/in attesa. Questa schermata mostra dati contabili dal plugin bookkeeper del nodo e statistiche di forwarding.';
+
+  @override
   String get appLockTitle => 'App bloccata';
 
   @override
@@ -199,16 +322,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aboutLicensesOpenOnline => 'Apri online';
 
   @override
-  String homeCreated(Object date) {
-    return 'Creato: $date';
-  }
-
-  @override
-  String homeLastTransfer(Object date) {
-    return 'Ultimo trasferimento: $date';
-  }
-
-  @override
   String homeWalletSemantics(Object balance, Object name) {
     return 'Wallet $name$balance';
   }
@@ -222,33 +335,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get walletDetailNoConnection => 'Nessuna connessione';
-
-  @override
-  String get walletDetailTransferSuccess =>
-      'Wallet trasferito con successo. Il seed locale è stato cancellato.';
-
-  @override
-  String walletDetailTransferError(Object error) {
-    return 'Errore trasferimento: $error';
-  }
-
-  @override
-  String get walletDetailSeedCopied =>
-      'Seed phrase copiata. Verrà rimossa tra 60s.';
-
-  @override
-  String get walletDetailSeedWarning =>
-      'Conservala al sicuro! È l\'UNICO modo per recuperare i tuoi fondi.';
-
-  @override
   String get walletDetailAddress => 'Indirizzo';
-
-  @override
-  String get walletDetailName => 'Nome';
-
-  @override
-  String get walletDetailBalance => 'Saldo';
 
   @override
   String get walletDetailTransactions => 'Transazioni';
@@ -272,10 +359,48 @@ class AppLocalizationsIt extends AppLocalizations {
   String get walletDetailTxError => 'Impossibile caricare le transazioni';
 
   @override
+  String get walletDetailTxExport => 'Esporta';
+
+  @override
+  String get walletDetailTxExportCsv => 'CSV (foglio di calcolo)';
+
+  @override
+  String walletDetailTxExportCopied(String fileName) {
+    return 'Copiato negli appunti ($fileName)';
+  }
+
+  @override
+  String walletDetailTxExportDownloaded(String fileName) {
+    return 'Download avviato ($fileName)';
+  }
+
+  @override
+  String get walletDetailTxExportFailed => 'Esportazione non riuscita';
+
+  @override
+  String get walletDetailTxExportJson => 'JSON (completo)';
+
+  @override
   String get walletDetailTxFee => 'Fee';
 
   @override
   String get walletDetailTxIncoming => 'Ricevuti';
+
+  @override
+  String get walletDetailTxNote => 'Nota';
+
+  @override
+  String get walletDetailTxNoteAdd => 'Aggiungi nota';
+
+  @override
+  String get walletDetailTxNoteEdit => 'Modifica nota';
+
+  @override
+  String get walletDetailTxNoteHint =>
+      'Nota privata, salvata solo su questo dispositivo';
+
+  @override
+  String get walletDetailTxNoteRemove => 'Rimuovi';
 
   @override
   String get walletDetailTxOrphan => 'Orfana (blocco perso)';
@@ -291,9 +416,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get walletDetailTxRetry => 'Riprova';
-
-  @override
-  String get themeToggle => 'Cambia tema';
 
   @override
   String get backupSeedTitle => 'Backup della seed';
@@ -347,35 +469,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get walletDetailReceive => 'Ricevi';
 
   @override
-  String get walletDetailTransfer => 'Trasferisci';
-
-  @override
-  String get walletDetailTransferred => 'TRASFERITO';
-
-  @override
-  String get walletDetailPending => 'TRASFERIMENTO IN SOSPESO';
-
-  @override
-  String get walletDetailNoName => 'Wallet senza nome';
-
-  @override
-  String get walletDetailTransferredDesc =>
-      'Questo wallet è stato trasferito. Modalità sola lettura.';
-
-  @override
   String get sendScreenTitle => 'Invia BTC';
 
   @override
   String get sendScreenAddressLabel => 'Indirizzo destinatario';
 
   @override
-  String get sendScreenAddressHint => 'bc1...';
-
-  @override
   String get sendScreenAmountLabel => 'Importo (BTC)';
-
-  @override
-  String get sendScreenAmountHint => '0.00';
 
   @override
   String get sendScreenFeeLabel => 'Fee';
@@ -472,9 +572,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get walletDetailUtxoClearSelection => 'Deseleziona tutto';
 
   @override
-  String get walletDetailFirst100Addresses => 'Primi 100 Indirizzi';
-
-  @override
   String get walletDetailPasswordSeedReason =>
       'Conferma password per visualizzare la seed phrase';
 
@@ -540,6 +637,47 @@ class AppLocalizationsIt extends AppLocalizations {
   String get sendScreenFeeTime2h => '~2 h';
 
   @override
+  String get sendBatchToggle => 'Più destinatari';
+
+  @override
+  String get sendBatchToggleSingle => 'Un destinatario';
+
+  @override
+  String sendBatchRecipientLabel(int index) {
+    return 'Destinatario $index';
+  }
+
+  @override
+  String get sendBatchAddRecipient => 'Aggiungi destinatario';
+
+  @override
+  String get sendBatchRemoveRecipient => 'Rimuovi';
+
+  @override
+  String get sendBatchMaxRecipients => 'Massimo 20 destinatari';
+
+  @override
+  String get sendBatchTotalLabel => 'Totale destinatari';
+
+  @override
+  String get sendBatchDustError => 'Minimo 546 sat per destinatario';
+
+  @override
+  String get sendBatchDuplicateError => 'Indirizzo duplicato';
+
+  @override
+  String get sendBatchMinRecipients =>
+      'Servono almeno 2 destinatari per un invio multiplo';
+
+  @override
+  String sendBatchConfirmRecipients(int count) {
+    return '$count destinatari';
+  }
+
+  @override
+  String get sendBatchConfirmTitle => 'Conferma invio multiplo';
+
+  @override
   String get sendScreenFeeTime1h => '~1 h';
 
   @override
@@ -585,7 +723,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String legalPrivacyContent(String holder, String email) {
-    return 'Questa Informativa Privacy è provvisoria e sarà sostituita dalla versione definitiva pubblicata sul sito ufficiale quando disponibile.\n\n1) DATI SUL DISPOSITIVO. L\'app non richiede account e non salva dati personali su server dell\'autore. Seed cifrata (AES-256-GCM), preferenze e consensi restano SOLO sul tuo dispositivo.\n\n2) DATI TRASMESSI A TERZI PER IL FUNZIONAMENTO. Per mostrare saldo e commissioni l\'app interroga API pubbliche di terze parti:\n• mempool.guide (esploratore blockchain).\nA ogni richiesta vengono trasmessi il tuo indirizzo IP e l\'indirizzo pubblico del wallet interrogato. Chiavi private e seed non vengono MAI trasmessi.\n\n3) NESSUN TRACKER. Nessuna analytics, nessuna pubblicità, nessun cookie all\'interno dell\'app.\n\n4) DIRITTI (GDPR artt. 13-14). Hai diritto di accesso, rettifica, cancellazione e opposizione scrivendo al Titolare del trattamento: $holder — $email. Poiché non conserviamo dati personali, questi diritti sono in gran parte già garantiti dal fatto che i dati restano sul tuo dispositivo.';
+    return 'Questa Informativa Privacy è provvisoria e sarà sostituita dalla versione definitiva pubblicata sul sito ufficiale quando disponibile.\n\n1) DATI SUL DISPOSITIVO. L\'app non richiede account e non salva dati personali su server dell\'autore. Seed cifrata (AES-256-GCM), preferenze e consensi restano SOLO sul tuo dispositivo.\n\n2) DATI TRASMESSI A TERZI PER IL FUNZIONAMENTO. Per mostrare saldo e commissioni l\'app interroga API pubbliche di terze parti:\n• mempool.guide (esploratore blockchain).\n• Se mempool.guide non è disponibile, l\'app può interrogare due mirror comunitari Esplora-compatibili (mempool.kilombino.com, mempool.maveth.ca). Questa opzione è disattivabile nelle Impostazioni.\nA ogni richiesta vengono trasmessi il tuo indirizzo IP e l\'indirizzo pubblico del wallet interrogato. Chiavi private e seed non vengono MAI trasmessi.\n\n3) NESSUN TRACKER. Nessuna analytics, nessuna pubblicità, nessun cookie all\'interno dell\'app.\n\n4) DIRITTI (GDPR artt. 13-14). Hai diritto di accesso, rettifica, cancellazione e opposizione scrivendo al Titolare del trattamento: $holder — $email. Poiché non conserviamo dati personali, questi diritti sono in gran parte già garantiti dal fatto che i dati restano sul tuo dispositivo.';
   }
 
   @override
@@ -599,11 +737,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String sendScreenSuccessTxid(Object txid) {
     return 'TXID: $txid';
-  }
-
-  @override
-  String sendScreenError(Object error) {
-    return 'Errore invio: $error';
   }
 
   @override
@@ -718,15 +851,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Frase mnemonica non valida. Controlla l\'ortografia delle parole.';
 
   @override
-  String get importScreenImporting => 'Importazione in corso...';
-
-  @override
   String get importScreenImport => 'Importa';
-
-  @override
-  String importScreenError(Object error) {
-    return 'Errore importazione wallet: $error';
-  }
 
   @override
   String get importModeSeed => 'Frase seed';
@@ -756,180 +881,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get watchOnlyBadge => 'Solo visualizzazione';
 
   @override
-  String get transferScreenTitle => 'Trasferisci Wallet';
-
-  @override
-  String get transferScreenScanning => 'Inquadra il QR Code del ricevente.';
-
-  @override
-  String get transferScreenProcessing => 'Elaborazione e cifratura dei dati...';
-
-  @override
-  String transferScreenScanError(Object error) {
-    return 'Errore durante la scansione o cifratura: $error';
-  }
-
-  @override
-  String get transferScreenNearbyTitle => 'Scansiona per ricevere';
-
-  @override
-  String get transferScreenNearbySubtitle =>
-      'Fai scansionare questo QR Code al ricevente.';
-
-  @override
-  String transferScreenNearbyCode(Object code) {
-    return 'Codice manuale: $code';
-  }
-
-  @override
-  String get transferScreenNearbyCancel => 'Annulla';
-
-  @override
-  String get transferScreenNearbySuccess =>
-      'Wallet trasferito con successo via Bluetooth. Il seed locale è stato cancellato.';
-
-  @override
-  String transferScreenNearbyError(Object error) {
-    return 'Errore trasmissione: $error';
-  }
-
-  @override
-  String get transferScreenWebRtcConnecting => 'Avvio connessione WebRTC...';
-
-  @override
-  String get transferScreenWebRtcTransferring =>
-      'Trasferimento via WebRTC in corso...';
-
-  @override
-  String get transferScreenTransferComplete => 'Trasferimento completato!';
-
-  @override
-  String get transferScreenMethodTitle => 'Scegli metodo di trasferimento';
-
-  @override
-  String get transferScreenMethodQr => 'QR Code (2 Fasi)';
-
-  @override
-  String get transferScreenMethodQrDesc =>
-      'Scansiona il QR code del ricevente, poi genera un QR code con il seed cifrato.';
-
-  @override
-  String get transferScreenMethodNearby => 'Bluetooth P2P';
-
-  @override
-  String get transferScreenMethodNearbyDesc =>
-      'Trasferimento diretto tra dispositivi. Richiede Bluetooth.';
-
-  @override
-  String get transferScreenMethodWebRtc => 'WebRTC (Internet)';
-
-  @override
-  String get transferScreenMethodWebRtcDesc =>
-      'P2P via browser. Richiede internet su entrambi i dispositivi.';
-
-  @override
-  String get transferScreenWebRtcQrDescription =>
-      'Il ricevente deve scansionare questo QR. Il trasferimento avverrà via WebRTC (nessun limite di dimensione).';
-
-  @override
-  String get transferScreenEncryptedQrDescription =>
-      'Mostra questo QR Code al dispositivo ricevente. Una volta scansionato e completata la ricezione, il wallet verrà rimosso automaticamente da questo dispositivo.';
-
-  @override
-  String get transferScreenWebRtcTimeout =>
-      'Connessione WebRTC non riuscita dopo 30 secondi. Riprova o usa il metodo QR Code 2-fasi.';
-
-  @override
-  String get receiveScreenTitle => 'Ricevi Wallet';
-
-  @override
-  String get receiveScreenInit => 'Inizializzazione chiave asimmetrica...';
-
-  @override
-  String get receiveScreenShowQr => 'Mostra questo QR Code al mittente.';
-
-  @override
-  String get receiveScreenScanSender =>
-      'Inquadra il QR Code sul dispositivo mittente.';
-
-  @override
-  String get receiveScreenAutoDetectMethod =>
-      'Il sistema rileva automaticamente il metodo usato dal mittente.';
-
-  @override
-  String receiveScreenKeyError(Object error) {
-    return 'Errore generazione chiave: $error';
-  }
-
-  @override
-  String get receiveScreenDecrypting =>
-      'Dati ricevuti. Decrittografia e validazione server in corso...';
-
-  @override
-  String get receiveScreenSuccess =>
-      'Wallet ricevuto e importato con successo.';
-
-  @override
-  String get receiveScreenQrSuccess => 'Wallet ricevuto via QR Code.';
-
-  @override
-  String receiveScreenNearbyConnecting(Object code) {
-    return 'Codice $code letto. Connessione in corso...';
-  }
-
-  @override
-  String get receiveScreenNearbySuccess => 'Wallet ricevuto via Bluetooth P2P.';
-
-  @override
-  String receiveScreenError(Object error) {
-    return 'Errore: $error';
-  }
-
-  @override
-  String get receiveScreenWebRtcTitle => 'Stanza WebRTC';
-
-  @override
-  String get receiveScreenWebRtcConnect => 'Connetti alla Stanza';
-
-  @override
-  String get receiveScreenWebRtcShareQr =>
-      'Condividi questo QR Code con il mittente';
-
-  @override
-  String get receiveScreenWebRtcScanQr =>
-      'Scansiona il QR Code della stanza del mittente';
-
-  @override
-  String get receiveScreenWebRtcWait =>
-      'In attesa della connessione del mittente...';
-
-  @override
-  String receiveScreenRoomId(Object roomId) {
-    return 'Room ID: $roomId';
-  }
-
-  @override
   String get passwordDialogCreateTitle => 'Crea Password di Sicurezza';
-
-  @override
-  String get passwordDialogCreateContent =>
-      'Imposta una password per proteggere le operazioni sensibili su questo browser. La password verrà memorizzata localmente e usata per cifrare i tuoi dati.';
 
   @override
   String get passwordDialogCreateHint => 'Inserisci una password sicura';
 
   @override
   String get passwordDialogCreateConfirm => 'Conferma password';
-
-  @override
-  String get passwordDialogCreateConfirmHint => 'Reinserisci la password';
-
-  @override
-  String get passwordDialogCreateMismatch => 'Le password non corrispondono';
-
-  @override
-  String get passwordDialogCreateTooShort =>
-      'La password deve essere di almeno 8 caratteri';
 
   @override
   String get passwordDialogCreate => 'Crea';
@@ -939,10 +897,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get passwordDialogEnterTitle => 'Inserisci Password';
-
-  @override
-  String get passwordDialogEnterContent =>
-      'Inserisci la tua password di sicurezza per continuare.';
 
   @override
   String get passwordDialogEnterHint => 'Inserisci la tua password';
@@ -1004,9 +958,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get walletDetailType => 'Tipo';
-
-  @override
-  String get walletDetailTypeValue => 'HD SegWit (BIP84 Bech32 Native)';
 
   @override
   String get walletTypeNativeSegwit => 'HD SegWit (BIP84 Bech32 Native)';
@@ -1101,9 +1052,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get walletDetailCreated => 'Creato il';
 
   @override
-  String get walletDetailTransferredOn => 'Trasferito il';
-
-  @override
   String get walletDetailClose => 'Chiudi';
 
   @override
@@ -1160,9 +1108,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get walletDetailFirst100 => 'Primi 100 Indirizzi';
-
-  @override
   String get walletDetailValidSig => 'FIRMA VALIDA ✓';
 
   @override
@@ -1200,152 +1145,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get donateButton => 'Supporta il progetto ❤️';
-
-  @override
-  String get multiTransferTitle => 'Invio Multi-Wallet';
-
-  @override
-  String get multiTransferSelectWallets => 'Seleziona i wallet da inviare';
-
-  @override
-  String multiTransferSelectedCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count wallet selezionati',
-      one: '1 wallet selezionato',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String multiTransferTotalValue(Object amount, Object ticker) {
-    return 'Valore totale: $amount $ticker';
-  }
-
-  @override
-  String get multiTransferMethodLabel => 'Metodo di invio:';
-
-  @override
-  String multiTransferMethodWebRtc(Object max) {
-    return 'WebRTC (max $max)';
-  }
-
-  @override
-  String multiTransferMethodBluetooth(Object max) {
-    return 'Bluetooth (max $max)';
-  }
-
-  @override
-  String multiTransferMethodQr(Object max) {
-    return 'QR Code 2-fasi (max $max)';
-  }
-
-  @override
-  String multiTransferSendButton(Object amount, num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Wallet',
-      one: '1 Wallet',
-    );
-    return 'Invia $_temp0 · $amount BTC';
-  }
-
-  @override
-  String get multiTransferProgressTitle => 'Invio in corso...';
-
-  @override
-  String multiTransferProgressWallet(Object current, Object total) {
-    return 'Wallet $current di $total';
-  }
-
-  @override
-  String multiTransferSuccess(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count wallet inviati con successo',
-      one: '1 wallet inviato con successo',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String multiTransferPartialSuccess(Object failed, Object success) {
-    return '$success inviati, $failed falliti';
-  }
-
-  @override
-  String get multiTransferNoLockedWallets =>
-      'Nessun wallet disponibile per l\'invio. Solo i wallet in stato LOCKED possono essere trasferiti.';
-
-  @override
-  String multiTransferLimitExceeded(
-      Object max, Object method, Object selected) {
-    return 'Hai selezionato $selected wallet. Il massimo per $method è $max.';
-  }
-
-  @override
-  String get multiTransferReceivingTitle => 'Ricezione Multi-Wallet';
-
-  @override
-  String multiTransferReceivingProgress(Object received, Object total) {
-    return 'Ricevuti $received di $total wallet';
-  }
-
-  @override
-  String get multiTransferMethodUnavailable =>
-      'Non disponibile su questa piattaforma';
-
-  @override
-  String multiTransferSendingWallet(Object current, Object total) {
-    return 'Invio wallet $current di $total...';
-  }
-
-  @override
-  String get multiTransferPreparing => 'Preparazione wallet...';
-
-  @override
-  String get multiTransferWaitingReceiver => 'In attesa del ricevente...';
-
-  @override
-  String get multiTransferCompleted => 'Completato';
-
-  @override
-  String get multiTransferFailed => 'Fallito';
-
-  @override
-  String multiTransferMethodQrDesc(Object max) {
-    return 'Invio manuale 2-fasi via QR code. Massimo $max wallet.';
-  }
-
-  @override
-  String multiTransferMethodWebRtcDesc(Object max) {
-    return 'Trasferimento P2P veloce via internet. Massimo $max wallet.';
-  }
-
-  @override
-  String multiTransferMethodBluetoothDesc(Object max) {
-    return 'Trasferimento diretto tra dispositivi. Massimo $max wallet.';
-  }
-
-  @override
-  String get multiTransferNoBalance => 'Saldo non disponibile';
-
-  @override
-  String get multiTransferConfirmTitle => 'Conferma invio';
-
-  @override
-  String multiTransferConfirmMessage(Object amount, num count, Object ticker) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count wallet',
-      one: '1 wallet',
-    );
-    return 'Stai per inviare $_temp0 per un totale di $amount $ticker. Continuare?';
-  }
 
   @override
   String get onboardingTitle => 'Benvenuto in Btc Blake2b Wallet';
@@ -1397,10 +1196,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get onboardingValidationResidence =>
       'Seleziona il tuo paese di residenza fiscale';
-
-  @override
-  String get onboardingValidationCheckbox =>
-      'Devi accettare tutte le dichiarazioni per continuare';
 
   @override
   String get onboardingLinkTerms => 'Termini di Servizio';
@@ -1506,6 +1301,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get lightningConnectInvalidUri => 'Stringa di connessione non valida';
+
+  @override
+  String get lightningConnectRecentNodes => 'Nodi recenti';
 
   @override
   String get lightningConnectInfo =>
@@ -2100,4 +1898,262 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get lightningKeysendSend => 'Invia';
+
+  @override
+  String get walletAddressesTitle => 'Indirizzi e UTXO';
+
+  @override
+  String get walletAddressesTabAddresses => 'Indirizzi';
+
+  @override
+  String get walletAddressesTabUtxos => 'UTXO';
+
+  @override
+  String get walletAddressesReceiveBranch => 'Ricezione (/0)';
+
+  @override
+  String get walletAddressesChangeBranch => 'Resto (/1)';
+
+  @override
+  String get walletAddressesStatusUnused => 'Mai usato';
+
+  @override
+  String get walletAddressesStatusUsed => 'Usato';
+
+  @override
+  String get walletAddressesStatusFunds => 'Con saldo';
+
+  @override
+  String walletAddressesTxCount(int count) {
+    return '$count transazioni';
+  }
+
+  @override
+  String get walletAddressesEmpty => 'Nessun indirizzo da mostrare';
+
+  @override
+  String get walletAddressesHintTap => 'Tocca un indirizzo per copiarlo';
+
+  @override
+  String get lightningPeeringGateTitle =>
+      'Peering limitato alle release con bit 68';
+
+  @override
+  String get lightningPeeringGateBody =>
+      'Questo nodo richiede option_blake2b (bit 68) durante l\'handshake: i nodi con release precedenti non possono connettersi. È una scelta del nodo, non un problema dell\'app o del bridge. Usa peer con release .4 o successiva, oppure attendi che la community renda il bit opzionale.';
+
+  @override
+  String get lightningPeeringGateLink => 'Matrice di compatibilità';
+
+  @override
+  String lightningPeersRegisteredOnly(int count) {
+    return '$count peer registrati, nessuno connesso';
+  }
+
+  @override
+  String get lightningSwapOpen => 'Paga un invoice senza nodo (swap)';
+
+  @override
+  String get lightningSwapWebOnlyNote =>
+      'App web: i pagamenti Lightning usano un provider di swap (nessun nodo richiesto). La connessione al tuo nodo è disponibile nell\'app Android.';
+
+  @override
+  String get lightningSwapTitle => 'Pagamento Lightning via provider';
+
+  @override
+  String get lightningSwapIntro =>
+      'I fondi restano in tua custodia: vanno in un HTLC on-chain (P2WSH) e si sbloccano solo quando il provider paga la tua invoice. Se il pagamento non riesce, puoi recuperare i fondi dopo il time lock.';
+
+  @override
+  String get lightningSwapProviderUriHint =>
+      'URI del provider (nostr+swap://...)';
+
+  @override
+  String get lightningSwapProviderConnect => 'Collega provider';
+
+  @override
+  String lightningSwapProviderConnected(String pubkey) {
+    return 'Provider collegato: $pubkey';
+  }
+
+  @override
+  String get lightningSwapProviderDisconnect => 'Disconnetti';
+
+  @override
+  String get lightningSwapInvoiceHint => 'Invoice Lightning (lnbc...)';
+
+  @override
+  String get lightningSwapStart => 'Continua';
+
+  @override
+  String get lightningSwapAmount => 'Importo invoice';
+
+  @override
+  String get lightningSwapFees => 'Commissioni (claim + servizio)';
+
+  @override
+  String get lightningSwapTotal => 'Totale da bloccare';
+
+  @override
+  String get lightningSwapFund => 'Invia fondi e avvia lo swap';
+
+  @override
+  String get lightningSwapFundHint =>
+      'I fondi vanno all\'indirizzo HTLC qui sopra. Il pagamento parte dopo 1 conferma.';
+
+  @override
+  String get lightningSwapStateLabel => 'Stato';
+
+  @override
+  String get lightningSwapHtlc => 'Indirizzo HTLC';
+
+  @override
+  String lightningSwapCltv(int height) {
+    return 'Refund disponibile dal blocco $height';
+  }
+
+  @override
+  String get swapStateAwaitingFunding => 'In attesa dei fondi on-chain';
+
+  @override
+  String get swapStateConfirming => 'In attesa di conferme';
+
+  @override
+  String get swapStatePaying => 'Pagamento Lightning in corso';
+
+  @override
+  String get swapStatePaid => 'Invoice pagata, claim in corso';
+
+  @override
+  String get swapStateClaiming => 'Claim in corso';
+
+  @override
+  String get swapStateCompleted => 'Completato';
+
+  @override
+  String get swapStatePaymentFailed => 'Pagamento fallito — fondi recuperabili';
+
+  @override
+  String get swapStateExpired => 'Scaduto — fondi recuperabili';
+
+  @override
+  String get swapStateRefunded => 'Rimborsato';
+
+  @override
+  String get lightningSwapRecoveryTitle => 'Recupero fondi';
+
+  @override
+  String get lightningSwapRecoveryHint => 'Blob di recupero (swaprecover1....)';
+
+  @override
+  String get lightningSwapRecoveryImport => 'Importa sessione';
+
+  @override
+  String get lightningSwapRefund => 'Recupera fondi (refund)';
+
+  @override
+  String lightningSwapRefundNotYet(int height) {
+    return 'Rimborso non ancora disponibile: si sblocca dal blocco $height';
+  }
+
+  @override
+  String get lightningSwapCopyBlob => 'Copia blob di recupero';
+
+  @override
+  String get lightningSwapBlobCopied => 'Blob di recupero copiato';
+
+  @override
+  String get lightningSwapClaimTxid => 'Txid del claim';
+
+  @override
+  String get lightningSwapClaimHint =>
+      'Il claim è una transazione on-chain: la conferma arriva con il blocco successivo (~12 min). Tocca il link per verificarla.';
+
+  @override
+  String get lightningSwapInvalidInvoice =>
+      'Questo non sembra un invoice Lightning';
+
+  @override
+  String get lightningSwapWatchOnly =>
+      'Lo swap richiede un wallet con seed (non watch-only)';
+
+  @override
+  String get lightningSwapNoUtxos => 'Nessun fondo spendibile in questo wallet';
+
+  @override
+  String lightningSwapErrorGeneric(String message) {
+    return 'Errore: $message';
+  }
+
+  @override
+  String get lightningSwapKnownUris => 'URI provider salvate';
+
+  @override
+  String get lightningSwapWalletLabel => 'Wallet';
+
+  @override
+  String lightningSwapWalletBalance(String balance) {
+    return 'Saldo: $balance sat';
+  }
+
+  @override
+  String lightningSwapInsufficientFunds(String needed, String available) {
+    return 'Fondi insufficienti: servono $needed sat, disponibili $available sat';
+  }
+
+  @override
+  String get lightningSwapCancel => 'Annulla swap';
+
+  @override
+  String get lightningSwapErrorConnectFailed =>
+      'Impossibile raggiungere il provider. Controlla la connessione e riprova.';
+
+  @override
+  String get lightningSwapErrorDisconnected =>
+      'Collegamento al provider interrotto. Prova a ricollegarti.';
+
+  @override
+  String get lightningSwapErrorNotConnected => 'Provider non collegato.';
+
+  @override
+  String get lightningSwapErrorRelayNotAllowed =>
+      'Questo provider usa un relay che la versione web non può raggiungere. Per pagare con questo provider usa la versione mobile della app.';
+
+  @override
+  String get lightningSwapCancelTitle => 'Annullare questo swap?';
+
+  @override
+  String get lightningSwapCancelBody =>
+      'L\'app dimenticherà questa swap. Il provider la scarta da solo prima della scadenza e nessun fondo è bloccato. Per riprovare con la stessa invoice serve una nuova sessione solo dopo che è scaduta: altrimenti genera una nuova invoice.';
+
+  @override
+  String get lightningSwapCancelConfirm => 'Sì, annulla';
+
+  @override
+  String get lightningSwapWalletMissing =>
+      'Il wallet legato a questa swap non è più disponibile';
+
+  @override
+  String lightningSwapBoundWallet(String name) {
+    return 'Wallet legato: $name';
+  }
+
+  @override
+  String get lightningInvoiceDelete => 'Cancella fattura';
+
+  @override
+  String get lightningInvoiceDeleteTitle => 'Cancellare questa fattura?';
+
+  @override
+  String get lightningInvoiceDeleteBody =>
+      'La fattura verrà rimossa dal nodo. Se non è pagata non potrà più essere pagata.';
+
+  @override
+  String get lightningInvoiceDeleteConfirm => 'Sì, cancella';
+
+  @override
+  String get lightningInvoiceDeleted => 'Fattura cancellata';
+
+  @override
+  String get lightningChannelPeerAddress => 'Indirizzo peer';
 }

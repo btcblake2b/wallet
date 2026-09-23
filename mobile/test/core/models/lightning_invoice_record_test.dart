@@ -7,7 +7,9 @@ void main() {
       DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
       1000;
   int inPast() =>
-      DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+      DateTime.now()
+          .subtract(const Duration(hours: 1))
+          .millisecondsSinceEpoch ~/
       1000;
 
   group('LightningInvoiceRecord', () {

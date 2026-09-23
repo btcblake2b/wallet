@@ -22,6 +22,11 @@
 CLAUDE.md export-ignore
 tasks.json export-ignore
 
+# --- Diario di sviluppo (log chat community) ---
+# PERCHÉ: conversazioni della chat della community usate come diario di
+# sviluppo: interne, non fanno parte del sorgente pubblico.
+chat_discord.md export-ignore
+
 # --- docs/ interamente interna ---
 # PERCHÉ: tutti i 19 file tracciati sono interni: docs/ai-memory/** (memoria
 # condivisa AI + telemetria agent_runs.jsonl), docs/legal-audit.md e

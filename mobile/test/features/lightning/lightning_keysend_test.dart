@@ -52,8 +52,7 @@ void main() {
     expect(find.text('Enter an amount greater than zero'), findsOneWidget);
   });
 
-  testWidgets('conferma con destinazione e importo, poi invio',
-      (tester) async {
+  testWidgets('conferma con destinazione e importo, poi invio', (tester) async {
     final service = LightningServiceMock();
     await tester.runAsync(() => service.connect(connection));
     await tester.pumpWidget(wrap(service));

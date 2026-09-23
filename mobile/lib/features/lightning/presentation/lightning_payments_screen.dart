@@ -177,8 +177,7 @@ class _LightningPaymentsScreenState extends State<LightningPaymentsScreen> {
                   ),
                 ],
                 selected: {_mode},
-                onSelectionChanged: (selection) =>
-                    _switchMode(selection.first),
+                onSelectionChanged: (selection) => _switchMode(selection.first),
               ),
               const SizedBox(height: 16),
               GlassContainer(
@@ -202,8 +201,7 @@ class _LightningPaymentsScreenState extends State<LightningPaymentsScreen> {
                     else if (_htlcs.isEmpty)
                       _emptyRow(theme, loc.lightningHtlcsEmpty)
                     else
-                      for (final htlc in _htlcs)
-                        _htlcRow(loc, theme, htlc),
+                      for (final htlc in _htlcs) _htlcRow(loc, theme, htlc),
                   ],
                 ),
               ),
@@ -329,12 +327,48 @@ class _LightningPaymentsScreenState extends State<LightningPaymentsScreen> {
           if (htlc.pending)
             Text(
               loc.lightningHtlcInProgress,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: Colors.orangeAccent, fontWeight: FontWeight.w700),
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.orangeAccent, fontWeight: FontWeight.w700,),
             ),
         ],
       ),
     );
+  }
+
+  /// Cancella una fattura non pagata (in attesa o scaduta) con conferma.
+  Future<void> _deleteInvoice(LightningInvoiceRecord invoice) async {
+    final loc = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.lightningInvoiceDeleteTitle),
+        content: Text(loc.lightningInvoiceDeleteBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.lightningInvoiceDeleteConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await widget.lightningService.deleteInvoice(
+        paymentHash: invoice.paymentHash,
+        label: invoice.label,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.lightningInvoiceDeleted)),
+      );
+      await _load();
+    } on LightningException catch (e) {
+      _showError(e);
+    }
   }
 
   Widget _invoiceRow(
@@ -403,6 +437,17 @@ class _LightningPaymentsScreenState extends State<LightningPaymentsScreen> {
             ),
           ),
           const SizedBox(width: 8),
+          // Azione cancella SOLO per fatture non pagate (le pagate sono la
+          // ricevuta contabile del nodo e il bridge le rifiuta).
+          if (state == LightningInvoiceState.pending ||
+              state == LightningInvoiceState.expired) ...[
+            IconButton(
+              tooltip: loc.lightningInvoiceDelete,
+              icon: const Icon(Icons.delete_outline, size: 20),
+              onPressed: () => _deleteInvoice(invoice),
+            ),
+            const SizedBox(width: 4),
+          ],
           Text(
             label,
             style: theme.textTheme.bodySmall

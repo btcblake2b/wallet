@@ -51,7 +51,8 @@ void main() {
     expect(find.text('1 entry'), findsNWidgets(2));
     expect(find.text('On-chain fees'), findsOneWidget);
     // La fonte è dichiarata: il numero non è magia.
-    expect(find.text("From the node's accounting (bookkeeper)"), findsOneWidget);
+    expect(
+        find.text("From the node's accounting (bookkeeper)"), findsOneWidget,);
     // Plugin: nome corto + il non attivo è marcato.
     expect(find.text('Plugins'), findsOneWidget);
     expect(find.text('keysend'), findsOneWidget);

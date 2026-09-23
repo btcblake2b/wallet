@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -31,10 +32,29 @@ class LightningView extends StatefulWidget {
     super.key,
     required this.lightningService,
     required this.connectionStore,
+    this.onOpenSwap,
+    this.hideNodeConnect = kIsWeb,
   });
 
   final LightningService lightningService;
   final LightningConnectionStore connectionStore;
+
+  /// True = nasconde il pulsante "Connetti nodo".
+  ///
+  /// // PERCHÉ (PWA 2026-09-18): sulla variante web si paga SOLO via provider di
+  /// // swap (nessun nodo proprio dal browser: la chiave di connessione avrebbe
+  /// // poteri di amministrazione su un nodo e vivrebbe in uno storage più
+  /// // debole di un keyring OS). Su nativo resta tutto invariato.
+  /// // Il default è `kIsWeb`, ma il parametro è iniettabile perché nei test
+  /// // `kIsWeb` è sempre false: senza il seam il ramo web resterebbe scoperto.
+  final bool hideNodeConnect;
+
+  /// Callback per aprire la schermata swap (pagamento senza nodo, P9).
+  ///
+  /// // PERCHÉ: la view non conosce wallet/bitcoinService — è la Home a
+  /// // orchestrare il push della LightningSwapScreen (dependency injection
+  /// // esplicita, niente service locator). Se null la CTA non compare.
+  final VoidCallback? onOpenSwap;
 
   @override
   State<LightningView> createState() => _LightningViewState();
@@ -73,7 +93,9 @@ class _LightningViewState extends State<LightningView> {
   /// Il prelievo on-chain richiede `pay_onchain`.
   bool get _supportsWithdraw {
     final methods = _info?.methods;
-    return methods == null || methods.isEmpty || methods.contains('pay_onchain');
+    return methods == null ||
+        methods.isEmpty ||
+        methods.contains('pay_onchain');
   }
 
   @override
@@ -285,12 +307,31 @@ class _LightningViewState extends State<LightningView> {
               ),
               const SizedBox(height: 10),
               Text(loc.lightningDisconnectedBody),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _connectFlow,
-                icon: const Icon(Icons.link),
-                label: Text(loc.lightningConnectButton),
-              ),
+              if (!widget.hideNodeConnect) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _connectFlow,
+                  icon: const Icon(Icons.link),
+                  label: Text(loc.lightningConnectButton),
+                ),
+              ],
+              if (widget.onOpenSwap != null) ...[
+                SizedBox(height: widget.hideNodeConnect ? 16 : 10),
+                OutlinedButton.icon(
+                  onPressed: widget.onOpenSwap,
+                  icon: const Icon(Icons.swap_horiz),
+                  label: Text(loc.lightningSwapOpen),
+                ),
+              ],
+              if (widget.hideNodeConnect) ...[
+                const SizedBox(height: 12),
+                // PERCHÉ: senza la connessione al nodo la CTA di swap resta
+                // l'unica via — una riga spiega perché e dove trovare l'altra.
+                Text(
+                  loc.lightningSwapWebOnlyNote,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ],
           ),
         ),
@@ -533,11 +574,11 @@ class _LightningViewState extends State<LightningView> {
             // PERCHÉ (I3a): la principale mostra solo i primi canali — con
             // molti canali la lista spingeva fuori schermo il resto.
             ..._channels.take(2).map(
-              (channel) => LightningChannelCard(
-                channel: channel,
-                onTap: () => _openChannelDetail(channel),
-              ),
-            ),
+                  (channel) => LightningChannelCard(
+                    channel: channel,
+                    onTap: () => _openChannelDetail(channel),
+                  ),
+                ),
           if (_channels.length > 2)
             Align(
               alignment: Alignment.centerRight,

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../models/send_output.dart';
 import '../models/utxo_info.dart';
 
 /// Tipo di transazione tracciata per il bump fee RBF.
@@ -13,18 +14,34 @@ enum RbfTxKind { send, sweep }
 class RbfTxParams {
   const RbfTxParams({
     required this.kind,
-    required this.toAddress,
-    required this.amountSats,
+    this.toAddress = '',
+    this.amountSats = 0,
+    this.outputs = const <SendOutput>[],
     required this.derivationPath,
     required this.originalFeeRateSatVb,
     required this.utxos,
   });
 
   final RbfTxKind kind;
+
+  /// Destinatario singolo (percorso storico). Per le tx batch si usa [outputs].
+  /// Non più `required`: la sostitutiva di un batch non ha un solo indirizzo.
   final String toAddress;
 
-  /// Importo al destinatario (usato solo per [RbfTxKind.send]).
+  /// Importo al destinatario singolo (usato solo per [RbfTxKind.send] legacy).
   final int amountSats;
+
+  /// // PERCHÉ (P3): la sostitutiva RBF deve ripagare TUTTI i destinatari —
+  /// // con il solo `toAddress` un bump su un batch pagherebbe un indirizzo e
+  /// // riporterebbe gli altri importi nel change (pagamenti che falliscono in
+  /// // silenzio, pur con fondi recuperati).
+  final List<SendOutput> outputs;
+
+  /// Destinatari effettivi: la lista se presente, altrimenti il singolo.
+  List<SendOutput> get effectiveOutputs => outputs.isNotEmpty
+      ? outputs
+      : <SendOutput>[SendOutput(address: toAddress, amountSats: amountSats)];
+
   final String derivationPath;
 
   /// Fee rate originale: il bump deve essere STRETTAMENTE maggiore (BIP125).

@@ -70,7 +70,8 @@ class _LightningMovementsScreenState extends State<LightningMovementsScreen> {
         _movements = [..._movements, ...page];
         _hasMore = page.length == LightningMovementsScreen.pageSize;
       });
-      debugPrint('[LoopEngineer] movimenti (append): totali ${_movements.length}');
+      debugPrint(
+          '[LoopEngineer] movimenti (append): totali ${_movements.length}',);
     } on LightningException catch (e) {
       _showError(e);
     } finally {
@@ -106,7 +107,8 @@ class _LightningMovementsScreenState extends State<LightningMovementsScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               GlassContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 child: Column(
                   children: [
                     if (_movements.isEmpty)

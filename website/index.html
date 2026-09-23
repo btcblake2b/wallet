@@ -26,6 +26,8 @@
     "operatingSystem": "Android",
     "softwareVersion": "0.2.0",
     "url": "https://btcblake2b.org/",
+    "downloadUrl": "https://github.com/btcblake2b/wallet/releases",
+    "installUrl": "https://zapstore.dev/apps/com.btcblake2b.wallet",
     "description": "A local, self-custodial wallet for the bitcoin-blake2b network. No author-operated server and no tracking.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
     "author": { "@type": "Person", "name": "Filippo Santagiuliana" }
@@ -151,7 +153,7 @@
         </details>
         <details>
           <summary>What data is transmitted?</summary>
-          <p>For balance, fees and history the app queries one public API (<code>mempool.guide</code>). These requests may expose your IP address and the queried public address to the provider.</p>
+          <p>For balance, fees and history the app queries one public API (<code>mempool.guide</code>). If that service is unavailable, the app may query two community Esplora-compatible mirrors (<code>mempool.kilombino.com</code>, <code>mempool.maveth.ca</code>). This can be turned off in Settings. These requests may expose your IP address and the queried public address to the provider.</p>
         </details>
         <details>
           <summary>Is there replay protection?</summary>

@@ -28,6 +28,5 @@ void main() {
     });
 
     // TODO: Implementa test per i metodi pubblici
-    // test('getOrCreateDeviceId should ...', () { ... });
   });
 }

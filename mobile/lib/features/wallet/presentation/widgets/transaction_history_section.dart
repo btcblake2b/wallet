@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/models/transaction_record.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/info_dot.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../l10n/info_hints_l10n.dart';
 
 /// Sezione storico transazioni (componente isolato).
 ///
@@ -19,6 +21,9 @@ class TransactionHistorySection extends StatefulWidget {
     this.onRetry,
     this.isBumpable,
     this.onBumpFee,
+    this.noteFor,
+    this.onSetNote,
+    this.onExport,
   });
 
   final List<TransactionRecord> transactions;
@@ -34,6 +39,21 @@ class TransactionHistorySection extends StatefulWidget {
   /// Esegue il flusso "Aumenta fee" per la tx (auth + scelta fee + bump).
   /// Invocato DOPO la chiusura del dialog di dettaglio.
   final Future<void> Function(TransactionRecord tx)? onBumpFee;
+
+  /// Nota utente della tx (`null` se assente). Predicato del chiamante.
+  /// // PERCHÉ: le note vivono nel `WalletRecord` (persistite col wallet), non
+  /// in questa sezione — che resta dumb e testabile in isolamento.
+  final String? Function(TransactionRecord tx)? noteFor;
+
+  /// Salva la nota della tx (stringa vuota = rimuovi).
+  /// // PERCHÉ: nullable → chiamanti e test che non gestiscono note usano la
+  /// sezione esattamente come prima (zero breaking).
+  final Future<void> Function(TransactionRecord tx, String note)? onSetNote;
+
+  /// Esporta lo storico (CSV/JSON). Assente → l'azione non è offerta.
+  /// // PERCHÉ: la formattazione e la consegna vivono nel chiamante: questa
+  /// sezione resta dumb (nessun accesso a clipboard/file).
+  final VoidCallback? onExport;
 
   @override
   State<TransactionHistorySection> createState() =>
@@ -94,6 +114,20 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Column(
                   children: [
+                    // PERCHÉ: l'export si offre solo quando c'è qualcosa da
+                    // esportare e non c'è un caricamento/errore in corso.
+                    if (widget.onExport != null &&
+                        !widget.isLoading &&
+                        widget.error == null &&
+                        widget.transactions.isNotEmpty)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: widget.onExport,
+                          icon: const Icon(Icons.ios_share, size: 18),
+                          label: Text(loc.walletDetailTxExport),
+                        ),
+                      ),
                     if (widget.isLoading)
                       const Center(
                         child: Padding(
@@ -176,6 +210,7 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
     final date = tx.timestamp != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(tx.timestamp!)
         : '';
+    final note = widget.noteFor?.call(tx);
 
     return GlassContainer(
       margin: const EdgeInsets.only(bottom: 8),
@@ -200,9 +235,30 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
             '$label · $sign${_formatBtc(tx.amountSats)}',
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
-          subtitle: date.isEmpty
+          // PERCHÉ: la nota utente si aggiunge alla data — è l'informazione con
+          // cui l'utente riconosce la transazione, quindi resta sul tile senza
+          // dover aprire il dettaglio.
+          subtitle: (date.isEmpty && note == null)
               ? null
-              : Text(date, style: const TextStyle(fontSize: 13)),
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (date.isNotEmpty)
+                      Text(date, style: const TextStyle(fontSize: 13)),
+                    if (note != null)
+                      Text(
+                        note,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
           // PERCHÉ (audit P1-c): la tx espulsa/sostituita (nostra outgoing non
           // più nel mempool) ha precedenza — non è "in attesa" né orfana.
           trailing: tx.isEvicted
@@ -247,8 +303,9 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
                       decoration: BoxDecoration(
                         color: Colors.red.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
-                        border:
-                            Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.5),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -301,6 +358,7 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
 
   void _showDetails(BuildContext context, TransactionRecord tx) {
     final loc = AppLocalizations.of(context);
+    final note = widget.noteFor?.call(tx);
     final isIncoming = tx.direction == TxDirection.incoming;
     final sign = isIncoming ? '+' : '-';
     final date = tx.timestamp != null
@@ -314,7 +372,12 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(loc.walletDetailTxDetails),
+        title: Row(
+          children: [
+            Text(loc.walletDetailTxDetails),
+            const InfoDot(id: InfoHintId.bumpFee),
+          ],
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -347,6 +410,10 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
                   loc.walletDetailTxBlockHeight,
                   '${tx.blockHeight}',
                 ),
+              // PERCHÉ: la nota è un dato dell'utente, non della chain — la
+              // mostro anche quando è vuota ("—"), così la matita ha sempre un
+              // punto di riferimento nel dettaglio.
+              _detailRow(ctx, loc.walletDetailTxNote, note ?? '—'),
               const SizedBox(height: 12),
               const Divider(height: 1),
               const SizedBox(height: 12),
@@ -367,6 +434,19 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
           ),
         ),
         actions: [
+          // PERCHÉ: un solo dialog alla volta — come per il bump, la matita
+          // chiude il dettaglio e apre l'editor della nota.
+          if (widget.onSetNote != null)
+            IconButton(
+              tooltip: note == null
+                  ? loc.walletDetailTxNoteAdd
+                  : loc.walletDetailTxNoteEdit,
+              icon: const Icon(Icons.edit_note),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _editNote(context, tx);
+              },
+            ),
           // PERCHÉ (S8/C): l'azione di bump è disponibile SOLO per tx
           // pending nostra con parametri in sessione — il predicato è del
           // chiamante (wallet_detail), qui resta un bottone condizionale.
@@ -387,6 +467,31 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
         ],
       ),
     );
+  }
+
+  /// Apre l'editor della nota e delega la persistenza al chiamante.
+  ///
+  /// // PERCHÉ: qui resta solo il flusso di UI — la nota finisce nel
+  /// `WalletRecord` attraverso `onSetNote` (il widget resta dumb).
+  Future<void> _editNote(BuildContext context, TransactionRecord tx) async {
+    final loc = AppLocalizations.of(context);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _EditTxNoteDialog(
+        initialNote: widget.noteFor?.call(tx) ?? '',
+        title: loc.walletDetailTxNote,
+        hint: loc.walletDetailTxNoteHint,
+        saveLabel: loc.walletDetailSave,
+        removeLabel: loc.walletDetailTxNoteRemove,
+        cancelLabel: loc.walletDetailClose,
+      ),
+    );
+    if (value == null) return;
+    debugPrint(
+      '[LoopEngineer] nota tx ${tx.txid} '
+      '${value.trim().isEmpty ? 'da rimuovere' : 'da salvare'}',
+    );
+    await widget.onSetNote?.call(tx, value);
   }
 
   Widget _detailRow(BuildContext context, String label, String value) {
@@ -416,6 +521,85 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Editor della nota di una transazione.
+///
+/// // PERCHÉ: widget dedicato (non un dialog inline) perché possiede il
+/// `TextEditingController` e lo smaltisce in `dispose()`: il chiamante non deve
+/// mai fare `dispose()` dopo `await showDialog()` — il dialog si smonta in modo
+/// asincrono e l'assert "_dependents.isEmpty" scatta in faccia all'utente
+/// (lezione 2026-09-06).
+/// Ritorna la nota (stringa vuota = rimuovi) oppure `null` se annullato.
+class _EditTxNoteDialog extends StatefulWidget {
+  const _EditTxNoteDialog({
+    required this.initialNote,
+    required this.title,
+    required this.hint,
+    required this.saveLabel,
+    required this.removeLabel,
+    required this.cancelLabel,
+  });
+
+  final String initialNote;
+  final String title;
+  final String hint;
+  final String saveLabel;
+  final String removeLabel;
+  final String cancelLabel;
+
+  @override
+  State<_EditTxNoteDialog> createState() => _EditTxNoteDialogState();
+}
+
+class _EditTxNoteDialogState extends State<_EditTxNoteDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialNote);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        minLines: 1,
+        maxLines: 3,
+        // PERCHÉ: limite esplicito — la nota è persistita nel record del wallet
+        // (storage locale), non deve poter crescere senza controllo.
+        maxLength: 120,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(hintText: widget.hint),
+      ),
+      actions: [
+        // PERCHÉ: "Rimuovi" compare solo se c'è qualcosa da rimuovere.
+        if (widget.initialNote.trim().isNotEmpty)
+          TextButton(
+            onPressed: () => Navigator.pop(context, ''),
+            child: Text(widget.removeLabel),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(widget.cancelLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: Text(widget.saveLabel),
+        ),
+      ],
     );
   }
 }

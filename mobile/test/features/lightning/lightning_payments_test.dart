@@ -23,7 +23,8 @@ void main() {
         home: LightningPaymentsScreen(lightningService: lightningService),
       );
 
-  testWidgets('storico fatture: scaduta e in attesa con importi', (tester) async {
+  testWidgets('storico fatture: scaduta e in attesa con importi',
+      (tester) async {
     service = LightningServiceMock();
     await tester.runAsync(() => service.connect(connection));
     await tester.pumpWidget(wrap(service));
@@ -37,7 +38,30 @@ void main() {
     expect(find.text('No invoices yet'), findsNothing);
   });
 
-  testWidgets('fattura pagata: stato verde e data di pagamento', (tester) async {
+  testWidgets('cancella fattura: icona solo su non pagate + conferma',
+      (tester) async {
+    service = LightningServiceMock();
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pumpAndSettle();
+
+    // Due fatture non pagate (scaduta + in attesa) → due icone cancella.
+    expect(find.byIcon(Icons.delete_outline), findsNWidgets(2));
+
+    await tester.tap(find.byIcon(Icons.delete_outline).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete this invoice?'), findsOneWidget);
+
+    await tester.tap(find.text('Yes, delete'));
+    await tester.pumpAndSettle();
+
+    // Una è stata rimossa dal nodo (mock) → resta una sola icona.
+    expect(find.byIcon(Icons.delete_outline), findsNWidgets(1));
+    expect(find.text('Invoice deleted'), findsOneWidget);
+  });
+
+  testWidgets('fattura pagata: stato verde e data di pagamento',
+      (tester) async {
     service = LightningServiceMock();
     await tester.runAsync(() async {
       await service.connect(connection);

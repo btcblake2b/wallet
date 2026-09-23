@@ -13,6 +13,10 @@ import '../core/services/lightning/nwc_lightning_service.dart';
 import '../core/services/locale_provider.dart';
 import '../core/services/nostr/websocket_transport.dart';
 import '../core/services/secure_seed_storage.dart';
+import '../core/services/swap/swap_provider_client.dart';
+import '../core/services/swap/swap_provider_store.dart';
+import '../core/services/swap/swap_service.dart';
+import '../core/services/swap/swap_session_store.dart';
 import '../core/services/theme_provider.dart';
 import '../core/services/wallet_repository.dart';
 import '../core/theme/app_theme.dart';
@@ -36,6 +40,7 @@ class AppServices {
     required this.appLockService,
     required this.lightningService,
     required this.lightningConnectionStore,
+    required this.swapService,
   });
 
   final WalletRepository walletRepository;
@@ -49,6 +54,9 @@ class AppServices {
   /// Client Lightning (nodo remoto via NWC/NCC) — feature opzionale.
   final LightningService lightningService;
   final LightningConnectionStore lightningConnectionStore;
+
+  /// Swap con provider terzi (P9): pagamenti LN senza nodo personale.
+  final SwapService swapService;
 }
 
 class BtcBlake2bWalletApp extends StatelessWidget {
@@ -87,6 +95,18 @@ class BtcBlake2bWalletApp extends StatelessWidget {
       transport: WebSocketTransport(),
     );
 
+    // PERCHÉ (P9): client swap verso provider terzi — transport dedicato
+    // (relay e sottoscrizioni separati dal canale NWC/NCC).
+    final swapService = SwapService(
+      client: SwapProviderClient(transport: WebSocketTransport()),
+      providerStore: SwapProviderStore(),
+      sessionStore: SwapSessionStore(),
+      bitcoinService: bitcoinService,
+      // PERCHÉ (refund P9): l'app sa se il CLTV è già maturo → messaggio
+      // chiaro invece dell'errore grezzo del nodo se si preme troppo presto.
+      tipHeightProvider: () => bitcoinService.fetchTipHeight(),
+    );
+
     return AppServices(
       walletRepository: walletRepository,
       biometricService: biometricService,
@@ -97,6 +117,7 @@ class BtcBlake2bWalletApp extends StatelessWidget {
       appLockService: appLockService,
       lightningService: lightningService,
       lightningConnectionStore: lightningConnectionStore,
+      swapService: swapService,
     );
   }
 
@@ -174,6 +195,7 @@ class BtcBlake2bWalletApp extends StatelessWidget {
           appLockService: services.appLockService,
           lightningService: services.lightningService,
           lightningConnectionStore: services.lightningConnectionStore,
+          swapService: services.swapService,
         ),
       ),
       GoRoute(

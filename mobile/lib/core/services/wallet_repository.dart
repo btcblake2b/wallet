@@ -133,6 +133,44 @@ class WalletRepository {
     return wallet;
   }
 
+  // FLOW: Etichette e note
+  /// Imposta la nota utente di una transazione e la persiste col wallet.
+  ///
+  /// // PERCHÉ: la nota vive nel record del wallet (`tx_notes`, chiave = txid) —
+  /// stesso pattern di `utxoLabels`: nessuno storage nuovo, nessun backend,
+  /// nessun segreto. Una nota vuota (o di soli spazi) RIMUOVE la chiave, così
+  /// un wallet senza note resta byte-identico a un wallet mai etichettato.
+  ///
+  /// Lancia [ArgumentError] se [txid] è vuoto.
+  // STEP: 1 — persistenza locale della nota (nessuna chiamata di rete)
+  Future<WalletRecord> setTransactionNote(
+    WalletRecord wallet,
+    String txid,
+    String note,
+  ) async {
+    if (txid.isEmpty) {
+      throw ArgumentError.value(txid, 'txid', 'txid vuoto');
+    }
+    // PERCHÉ: `txNotes` è immutabile nel record → si lavora su una copia.
+    final notes = Map<String, String>.from(wallet.txNotes);
+    final trimmed = note.trim();
+    if (trimmed.isEmpty) {
+      notes.remove(txid);
+    } else {
+      notes[txid] = trimmed;
+    }
+    final updated = wallet.copyWith(txNotes: notes);
+    await updateWallet(updated);
+    if (kDebugMode) {
+      final shortId = txid.length > 8 ? txid.substring(0, 8) : txid;
+      debugPrint(
+        '[LoopEngineer] nota tx $shortId… '
+        '${trimmed.isEmpty ? 'rimossa' : 'salvata'} (${notes.length} note)',
+      );
+    }
+    return updated;
+  }
+
   Future<void> deleteWallet(String walletId) async {
     await _secureSeedStorage.deleteWallet(walletId);
   }
@@ -149,11 +187,6 @@ class WalletRepository {
     );
     await _secureSeedStorage.upsertWallet(updated);
     return updated;
-  }
-
-  /// Verifica se il wallet ha un backup (seed phrase annotato).
-  bool isBackupConfirmed(WalletRecord wallet) {
-    return wallet.seedBackupConfirmed;
   }
 
   /// Importa un wallet da una mnemonic phrase (e derivazione path opzionale).

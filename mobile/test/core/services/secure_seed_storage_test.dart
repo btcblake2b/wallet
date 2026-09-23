@@ -20,9 +20,5 @@ void main() {
     });
 
     // TODO: Implementa test per i metodi pubblici
-    // test('loadWallets should ...', () { ... });
-    // test('upsertWallet should ...', () { ... });
-    // test('deleteWallet should ...', () { ... });
-    // test('saveWallets should ...', () { ... });
   });
 }

@@ -8,7 +8,9 @@ import '../../../core/services/lightning/lightning_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/info_dot.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/info_hints_l10n.dart';
 
 /// Dettaglio di un canale Lightning del nodo remoto.
 ///
@@ -38,12 +40,16 @@ class _LightningChannelDetailScreenState
   LightningChannelFees? _fees;
   bool _savingFees = false;
 
+  /// Indirizzo del peer (`host:porta`) per comporre `pubkey@host:porta`.
+  String? _peerAddress;
+
   static String _fmt(int sats) => NumberFormat.decimalPattern().format(sats);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadFees());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPeerAddress());
   }
 
   /// // PERCHÉ (I3d): base/ppm arrivano già da list_channels, ma i limiti HTLC,
@@ -59,6 +65,29 @@ class _LightningChannelDetailScreenState
     } on LightningException catch (e) {
       // Il dettaglio canale resta usabile anche se il nodo non supporta le fee.
       debugPrint('[LoopEngineer] channel fees non disponibili (${e.code})');
+    }
+  }
+
+  /// Indirizzo del peer per il formato `pubkey@host:porta` (da copiare).
+  ///
+  /// // PERCHÉ: il canale non porta il netaddr del peer; si incrocia
+  /// // `list_peers` sull'id — si preferisce remote_addr (attivo), poi il
+  /// // primo indirizzo annunciato.
+  Future<void> _loadPeerAddress() async {
+    try {
+      final peers = await widget.lightningService.listPeers();
+      for (final p in peers) {
+        if (p.id != widget.channel.peerPubkey) continue;
+        final addr = (p.remoteAddr?.isNotEmpty ?? false)
+            ? p.remoteAddr
+            : (p.addresses.isNotEmpty ? p.addresses.first : null);
+        if (addr != null && mounted) {
+          setState(() => _peerAddress = addr);
+        }
+        break;
+      }
+    } on LightningException catch (e) {
+      debugPrint('[LoopEngineer] peer address non disponibile (${e.code})');
     }
   }
 
@@ -103,8 +132,7 @@ class _LightningChannelDetailScreenState
                 onChanged: (v) => newPpm = int.tryParse(v.trim()) ?? newPpm,
               ),
               TextFormField(
-                initialValue:
-                    newMinSats == null ? '' : '$newMinSats',
+                initialValue: newMinSats == null ? '' : '$newMinSats',
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: loc.lightningHtlcMinLabel,
@@ -113,8 +141,7 @@ class _LightningChannelDetailScreenState
                     newMinSats = int.tryParse(v.trim()) ?? newMinSats,
               ),
               TextFormField(
-                initialValue:
-                    newMaxSats == null ? '' : '$newMaxSats',
+                initialValue: newMaxSats == null ? '' : '$newMaxSats',
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: loc.lightningHtlcMaxLabel,
@@ -228,9 +255,7 @@ class _LightningChannelDetailScreenState
           force ? loc.lightningCloseChannelForce : loc.lightningCloseChannel,
         ),
         content: Text(
-          force
-              ? loc.lightningCloseChannelForceWarning
-              : loc.lightningConfirm,
+          force ? loc.lightningCloseChannelForceWarning : loc.lightningConfirm,
         ),
         actions: [
           TextButton(
@@ -294,6 +319,7 @@ class _LightningChannelDetailScreenState
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -318,7 +344,7 @@ class _LightningChannelDetailScreenState
                           ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       if (ch.peerConnected != null)
                         Text(
                           ch.peerConnected!
@@ -329,7 +355,17 @@ class _LightningChannelDetailScreenState
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _row(loc.lightningChannelPeer, ch.peerLabel ?? ch.peerPubkey),
+                  _row(
+                    loc.lightningChannelPeer,
+                    ch.peerLabel ?? ch.peerPubkey,
+                    copyValue: ch.peerPubkey,
+                  ),
+                  if (_peerAddress != null)
+                    _row(
+                      loc.lightningChannelPeerAddress,
+                      '${ch.peerPubkey}@$_peerAddress',
+                      copyValue: '${ch.peerPubkey}@$_peerAddress',
+                    ),
                   _row(
                     loc.lightningChannelShortId,
                     ch.shortChannelId ?? ch.id,
@@ -339,6 +375,7 @@ class _LightningChannelDetailScreenState
                     loc.lightningChannelCapacity,
                     '${_fmt(ch.capacitySats)} sat',
                   ),
+                  const InfoDot(id: InfoHintId.channelCapacity),
                   _row(
                     loc.lightningChannelSpendable,
                     ch.spendableSats == null
@@ -365,6 +402,7 @@ class _LightningChannelDetailScreenState
                       '${ch.feeBaseSats ?? 0} sat + ${ch.feePpm ?? 0} ppm',
                     ),
                   _row(loc.lightningChannelHtlcs, '${ch.htlcCount ?? 0}'),
+                  const InfoDot(id: InfoHintId.htlc, size: 14),
                   if (ch.fundingTxid != null)
                     _row(
                       loc.lightningChannelFundingTxid,
@@ -383,7 +421,7 @@ class _LightningChannelDetailScreenState
                   children: [
                     Row(
                       children: [
-                        Expanded(
+                        Flexible(
                           child: Text(
                             loc.lightningChannelFees,
                             style: theme.textTheme.titleSmall,
@@ -412,16 +450,20 @@ class _LightningChannelDetailScreenState
                       ),
                     if (_fees!.cltvDelta != null)
                       _row(loc.lightningCltvLabel, '${_fees!.cltvDelta}'),
-                    if (_fees!.reserveSats != null)
+                    if (_fees!.reserveSats != null) ...[
                       _row(
                         loc.lightningChannelReserve,
                         '${_fmt(_fees!.reserveSats!)} sat',
                       ),
-                    if (_fees!.toSelfDelay != null)
+                      const InfoDot(id: InfoHintId.channelReserve, size: 14),
+                    ],
+                    if (_fees!.toSelfDelay != null) ...[
                       _row(
                         loc.lightningChannelToSelfDelay,
                         '${_fees!.toSelfDelay}',
                       ),
+                      const InfoDot(id: InfoHintId.toSelfDelay, size: 14),
+                    ],
                   ],
                 ),
               ),
@@ -456,7 +498,13 @@ class _LightningChannelDetailScreenState
               onPressed: _closing ? null : () => _close(force: true),
               icon: const Icon(Icons.warning_amber, size: 18),
               style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-              label: Text(loc.lightningCloseChannelForce),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(loc.lightningCloseChannelForce),
+                  const InfoDot(id: InfoHintId.forceClose),
+                ],
+              ),
             ),
           ],
         ),
@@ -473,7 +521,9 @@ class _LightningChannelDetailScreenState
               width: 130,
               child: Text(label, style: Theme.of(context).textTheme.bodySmall),
             ),
-            Expanded(
+            const SizedBox(width: 8),
+            Flexible(
+              fit: FlexFit.loose,
               child: Text(
                 value,
                 style: Theme.of(context)

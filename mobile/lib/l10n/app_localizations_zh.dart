@@ -12,12 +12,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appTitle => 'Btc Blake2b Wallet';
 
   @override
-  String get appErrorTitle => '无法启动应用';
-
-  @override
-  String get appReload => '重新加载页面';
-
-  @override
   String get homeScreenTitle => 'Btc Blake2b Wallet';
 
   @override
@@ -47,12 +41,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeCreateWallet => '创建钱包';
 
   @override
-  String get homeReceiveWallet => '接收';
-
-  @override
-  String get homeMultiTransfer => '批量发送';
-
-  @override
   String get homeSelected => '已选择';
 
   @override
@@ -66,11 +54,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String homeDeleted(Object count) {
     return '已成功删除 $count 个钱包。';
-  }
-
-  @override
-  String homeDeleteMultiError(Object message) {
-    return '$message';
   }
 
   @override
@@ -111,9 +94,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get homeBackupNotVerified => '备份未验证';
-
-  @override
-  String get homeMoreOptions => '更多选项';
 
   @override
   String get homeLockVault => '锁定保险库';
@@ -158,6 +138,147 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsAppLockDisabled => '应用锁已禁用';
 
   @override
+  String get settingsExplorerMirrors => '备用区块浏览器';
+
+  @override
+  String get settingsExplorerMirrorsDesc =>
+      '如果 mempool.guide 无响应，本应用会查询两个社区镜像。关闭后仅使用 mempool.guide。';
+
+  @override
+  String get settingsSectionInterface => '界面';
+
+  @override
+  String get settingsInfoDots => '信息提示';
+
+  @override
+  String get settingsInfoDotsDesc => '显示解释每个功能的小信息按钮';
+
+  @override
+  String get infoCoinControlTitle => '硬币控制（UTXO 选择）';
+
+  @override
+  String get infoCoinControlBody =>
+      '你的余额由 UTXO 组成，即你收到的碎片。在这里你可以选择哪些要花费：交易将只使用这些，让你可以将小额或不活跃的碎片保留在一旁。';
+
+  @override
+  String get infoDustLimitTitle => '最低金额（灰尘）';
+
+  @override
+  String get infoDustLimitBody => '低于 546 sat 的输出会被网络拒绝为灰尘。低于该限额的金额无法发送。';
+
+  @override
+  String get infoFeeRateTitle => '交易费用';
+
+  @override
+  String get infoFeeRateBody =>
+      '费用按交易大小的单位支付（sat/vB）：你想要确认的速度越快，支付的越多。经济型可能需要数小时，优先型只需几分钟。自定义适用于你知道当前 mempool 费率的情况。';
+
+  @override
+  String get infoBatchSendTitle => '多个收件人（批量）';
+
+  @override
+  String get infoBatchSendBody =>
+      '在单笔交易中，你可以支付给最多 5 个地址，分摊费用而不是每次转账支付一次。所有收件人在签名前都会在确认中显示。';
+
+  @override
+  String get infoBumpFeeTitle => '增加费用（RBF）';
+
+  @override
+  String get infoBumpFeeBody =>
+      '待处理交易可以被一笔支付更高费用的新交易替换（BIP125）。原始交易被取消，只有替换交易可以确认——目标地址和金额保持不变。';
+
+  @override
+  String get infoXpubTitle => '账户公钥（xpub）';
+
+  @override
+  String get infoXpubBody =>
+      'xpub 生成你所有的接收地址。它不能移动资金，但会揭示完整的余额和历史：只与你信任的应用分享（例如只读钱包）。';
+
+  @override
+  String get infoReceiveAddressTitle => '接收地址';
+
+  @override
+  String get infoReceiveAddressBody =>
+      '每次接收都会显示一个全新的地址，从未使用过的地址中选择：这样可以保持支付不可关联。重复使用地址不是错误，只是让你的交易更容易被追踪。';
+
+  @override
+  String get infoWatchOnlyTitle => '只读钱包';
+
+  @override
+  String get infoWatchOnlyBody =>
+      '你只导入了 xpub：应用可以看到余额和历史，但不持有私钥，因此无法签名。要从这个钱包支出，你需要持有 seed 的设备。';
+
+  @override
+  String get infoSignVerifyTitle => '签名/验证消息';
+
+  @override
+  String get infoSignVerifyBody =>
+      '签名证明一个地址是你的，而无需移动资金。任何人都可以随后针对该地址和相同消息验证签名。';
+
+  @override
+  String get infoChannelCapacityTitle => '通道容量';
+
+  @override
+  String get infoChannelCapacityBody =>
+      '通道中的聪的总金额，由你和你的节点伙伴平分。更多容量意味着能够处理更大的支付。容量 = 本地余额 + 远程余额。';
+
+  @override
+  String get infoChannelReserveTitle => '通道储备';
+
+  @override
+  String get infoChannelReserveBody =>
+      '你的一部分资金必须作为安全保证金保持锁定（\'储备金\'）。它确保双方都有损失——如果另一方恶意离线，储备金可用于在链上惩罚他们。';
+
+  @override
+  String get infoToSelfDelayTitle => '自延迟时间';
+
+  @override
+  String get infoToSelfDelayBody =>
+      '在强制关闭的情况下，你的链上输出将延迟此数量的区块（通常为 144 = ~1 天）。这给你的节点伙伴时间先领取他们的资金，防止通道状态上的双花攻击。';
+
+  @override
+  String get infoHtlcTitle => 'HTLC（哈希时间锁定合约）';
+
+  @override
+  String get infoHtlcBody =>
+      'HTLC 是一种条件支付：资金被锁定，直到接收方揭示哈希预映像。在 Lightning 网络中，HTLC 实现即时链下路由——你的支付跨越多个通道，而不信任任何中间人。';
+
+  @override
+  String get infoOpenChannelPrivateTitle => '私人通道';
+
+  @override
+  String get infoOpenChannelPrivateBody =>
+      '私人通道不会向网络公告。只有你和你的节点伙伴知道它的存在。当你不希望其他人通过它路由时使用（隐私），或者当通道太小不足以用于路由时。';
+
+  @override
+  String get infoRoutingFeesTitle => '路由费用';
+
+  @override
+  String get infoRoutingFeesBody =>
+      '当其他节点通过你的通道路由支付时，你赚取费用。基础费用（sat）按每次支付收取；费率（ppm）与金额成比例。CLTV 延迟限制转发的 HTLC 结算所需的时间。';
+
+  @override
+  String get infoForceCloseTitle => '强制关闭';
+
+  @override
+  String get infoForceCloseBody =>
+      '在你的链上广播最新的通道状态。这是不可逆的，需要等待自延迟时间后才能花费你的资金。仅在你的节点伙伴无响应或恶意时使用——合作关闭总是更快更便宜。';
+
+  @override
+  String get infoPeersTitle => '已连接的节点伙伴';
+
+  @override
+  String get infoPeersBody =>
+      '节点伙伴是与你通过 TCP/Tor 直接连接的其他 Lightning 节点。每个节点伙伴可以有一个或多个通道。你可以连接到新的节点伙伴以打开通道并增加你节点的流动性和路由能力。';
+
+  @override
+  String get infoNodeManagementTitle => '节点管理';
+
+  @override
+  String get infoNodeManagementBody =>
+      '你的 Lightning 节点身份：公钥、版本、活跃/待处理的通道和节点伙伴数量。此屏幕显示节点 bookkeeper 插件的会计数据和转发统计信息。';
+
+  @override
   String get appLockTitle => '应用已锁定';
 
   @override
@@ -192,16 +313,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutLicensesOpenOnline => '在线打开';
 
   @override
-  String homeCreated(Object date) {
-    return '创建于：$date';
-  }
-
-  @override
-  String homeLastTransfer(Object date) {
-    return '上次传输：$date';
-  }
-
-  @override
   String homeWalletSemantics(Object balance, Object name) {
     return '钱包 $name$balance';
   }
@@ -215,30 +326,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get walletDetailNoConnection => '无连接';
-
-  @override
-  String get walletDetailTransferSuccess => '钱包传输成功。本地种子已删除。';
-
-  @override
-  String walletDetailTransferError(Object error) {
-    return '传输错误：$error';
-  }
-
-  @override
-  String get walletDetailSeedCopied => '助记词已复制。将在 60 秒后删除。';
-
-  @override
-  String get walletDetailSeedWarning => '请安全保管！这是恢复您资金的唯一途径。';
-
-  @override
   String get walletDetailAddress => '地址';
-
-  @override
-  String get walletDetailName => '名称';
-
-  @override
-  String get walletDetailBalance => '余额';
 
   @override
   String get walletDetailTransactions => '交易';
@@ -262,10 +350,47 @@ class AppLocalizationsZh extends AppLocalizations {
   String get walletDetailTxError => '无法加载交易';
 
   @override
+  String get walletDetailTxExport => '导出';
+
+  @override
+  String get walletDetailTxExportCsv => 'CSV（表格）';
+
+  @override
+  String walletDetailTxExportCopied(String fileName) {
+    return '已复制到剪贴板（$fileName）';
+  }
+
+  @override
+  String walletDetailTxExportDownloaded(String fileName) {
+    return '已开始下载（$fileName）';
+  }
+
+  @override
+  String get walletDetailTxExportFailed => '导出失败';
+
+  @override
+  String get walletDetailTxExportJson => 'JSON（完整）';
+
+  @override
   String get walletDetailTxFee => '手续费';
 
   @override
   String get walletDetailTxIncoming => '收到';
+
+  @override
+  String get walletDetailTxNote => '备注';
+
+  @override
+  String get walletDetailTxNoteAdd => '添加备注';
+
+  @override
+  String get walletDetailTxNoteEdit => '编辑备注';
+
+  @override
+  String get walletDetailTxNoteHint => '私密备注，仅保存在本设备上';
+
+  @override
+  String get walletDetailTxNoteRemove => '移除';
 
   @override
   String get walletDetailTxOrphan => '孤儿 (丢失的区块)';
@@ -281,9 +406,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get walletDetailTxRetry => '重试';
-
-  @override
-  String get themeToggle => '切换主题';
 
   @override
   String get backupSeedTitle => '助记词备份';
@@ -333,34 +455,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get walletDetailReceive => '接收';
 
   @override
-  String get walletDetailTransfer => '传输';
-
-  @override
-  String get walletDetailTransferred => '已传输';
-
-  @override
-  String get walletDetailPending => '传输待处理';
-
-  @override
-  String get walletDetailNoName => '未命名钱包';
-
-  @override
-  String get walletDetailTransferredDesc => '此钱包已传输。只读模式。';
-
-  @override
   String get sendScreenTitle => '发送 BTC';
 
   @override
   String get sendScreenAddressLabel => '接收地址';
 
   @override
-  String get sendScreenAddressHint => 'bc1...';
-
-  @override
   String get sendScreenAmountLabel => '金额 (BTC)';
-
-  @override
-  String get sendScreenAmountHint => '0.00';
 
   @override
   String get sendScreenFeeLabel => '费用';
@@ -456,9 +557,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get walletDetailUtxoClearSelection => '清除选择';
 
   @override
-  String get walletDetailFirst100Addresses => '前 100 个地址';
-
-  @override
   String get walletDetailPasswordSeedReason => '确认密码以查看助记词';
 
   @override
@@ -514,6 +612,47 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sendScreenFeeTime2h => '约2小时';
 
   @override
+  String get sendBatchToggle => 'Multiple recipients';
+
+  @override
+  String get sendBatchToggleSingle => 'Single recipient';
+
+  @override
+  String sendBatchRecipientLabel(int index) {
+    return 'Recipient $index';
+  }
+
+  @override
+  String get sendBatchAddRecipient => 'Add recipient';
+
+  @override
+  String get sendBatchRemoveRecipient => 'Remove';
+
+  @override
+  String get sendBatchMaxRecipients => 'Maximum 20 recipients';
+
+  @override
+  String get sendBatchTotalLabel => 'Total to recipients';
+
+  @override
+  String get sendBatchDustError => 'Minimum 546 sat per recipient';
+
+  @override
+  String get sendBatchDuplicateError => 'Duplicate address';
+
+  @override
+  String get sendBatchMinRecipients =>
+      'Add at least 2 recipients to send a batch';
+
+  @override
+  String sendBatchConfirmRecipients(int count) {
+    return '$count recipients';
+  }
+
+  @override
+  String get sendBatchConfirmTitle => 'Confirm multiple payment';
+
+  @override
   String get sendScreenFeeTime1h => '约1小时';
 
   @override
@@ -558,7 +697,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String legalPrivacyContent(String holder, String email) {
-    return '本隐私政策为临时版本，官网正式版本发布后将被其取代。\n\n1) 设备上的数据。本应用不要求注册账户，也不会将个人数据保存在作者的服务器上。加密的助记词（AES-256-GCM）、偏好设置和同意记录仅保存在您的设备上。\n\n2) 为正常运行而发送给第三方的数据。为显示余额和手续费，本应用会查询第三方公共 API：\n• mempool.guide（区块链浏览器）。\n每次请求都会传输您的 IP 地址以及所查询钱包的公开地址。私钥和助记词绝不会被传输。\n\n3) 无追踪器。应用内不含任何分析、广告或 Cookie。\n\n4) 权利（GDPR 第 13-14 条）。您有权通过写信给数据控制者行使访问、更正、删除和反对的权利：$holder — $email。由于我们不存储个人数据，这些权利在很大程度上已经通过数据仅保存在您设备上这一事实得到保障。';
+    return '本隐私政策为临时版本，官网正式版本发布后将被其取代。\n\n1) 设备上的数据。本应用不要求注册账户，也不会将个人数据保存在作者的服务器上。加密的助记词（AES-256-GCM）、偏好设置和同意记录仅保存在您的设备上。\n\n2) 为正常运行而发送给第三方的数据。为显示余额和手续费，本应用会查询第三方公共 API：\n• mempool.guide（区块链浏览器）。\n• 如果 mempool.guide 不可用，本应用可能会查询两个社区维护的 Esplora 兼容镜像（mempool.kilombino.com、mempool.maveth.ca）。此选项可在设置中关闭。\n每次请求都会传输您的 IP 地址以及所查询钱包的公开地址。私钥和助记词绝不会被传输。\n\n3) 无追踪器。应用内不含任何分析、广告或 Cookie。\n\n4) 权利（GDPR 第 13-14 条）。您有权通过写信给数据控制者行使访问、更正、删除和反对的权利：$holder — $email。由于我们不存储个人数据，这些权利在很大程度上已经通过数据仅保存在您设备上这一事实得到保障。';
   }
 
   @override
@@ -572,11 +711,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String sendScreenSuccessTxid(Object txid) {
     return 'TXID：$txid';
-  }
-
-  @override
-  String sendScreenError(Object error) {
-    return '发送错误：$error';
   }
 
   @override
@@ -686,15 +820,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importScreenValidateInvalid => '助记词无效。请检查单词拼写。';
 
   @override
-  String get importScreenImporting => '导入中...';
-
-  @override
   String get importScreenImport => '导入';
-
-  @override
-  String importScreenError(Object error) {
-    return '导入错误：$error';
-  }
 
   @override
   String get importModeSeed => '助记词';
@@ -723,164 +849,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get watchOnlyBadge => '仅观察';
 
   @override
-  String get transferScreenTitle => '传输钱包';
-
-  @override
-  String get transferScreenScanning => '扫描接收方的二维码。';
-
-  @override
-  String get transferScreenProcessing => '处理和加密数据中...';
-
-  @override
-  String transferScreenScanError(Object error) {
-    return '扫描或加密错误：$error';
-  }
-
-  @override
-  String get transferScreenNearbyTitle => '扫描以接收';
-
-  @override
-  String get transferScreenNearbySubtitle => '让接收方扫描此二维码。';
-
-  @override
-  String transferScreenNearbyCode(Object code) {
-    return '手动代码：$code';
-  }
-
-  @override
-  String get transferScreenNearbyCancel => '取消';
-
-  @override
-  String get transferScreenNearbySuccess => '钱包通过蓝牙成功传输。本地种子已删除。';
-
-  @override
-  String transferScreenNearbyError(Object error) {
-    return '传输错误：$error';
-  }
-
-  @override
-  String get transferScreenWebRtcConnecting => '正在启动 WebRTC 连接...';
-
-  @override
-  String get transferScreenWebRtcTransferring => '通过 WebRTC 传输中...';
-
-  @override
-  String get transferScreenTransferComplete => '传输完成！';
-
-  @override
-  String get transferScreenMethodTitle => '选择传输方式';
-
-  @override
-  String get transferScreenMethodQr => '二维码（两阶段）';
-
-  @override
-  String get transferScreenMethodQrDesc => '扫描接收方的二维码，然后生成带有加密种子的二维码。';
-
-  @override
-  String get transferScreenMethodNearby => '蓝牙 P2P';
-
-  @override
-  String get transferScreenMethodNearbyDesc => '设备间直接传输。需要蓝牙。';
-
-  @override
-  String get transferScreenMethodWebRtc => 'WebRTC（互联网）';
-
-  @override
-  String get transferScreenMethodWebRtcDesc => '通过浏览器 P2P。需要两台设备都有互联网。';
-
-  @override
-  String get transferScreenWebRtcQrDescription =>
-      '接收方必须扫描此QR码。传输将通过WebRTC进行（无大小限制）。';
-
-  @override
-  String get transferScreenEncryptedQrDescription =>
-      '向接收设备显示此QR码。扫描并完成接收后，钱包将自动从此设备中移除。';
-
-  @override
-  String get transferScreenWebRtcTimeout => 'WebRTC连接在30秒后失败。请重试或使用两阶段QR码方法。';
-
-  @override
-  String get receiveScreenTitle => '接收钱包';
-
-  @override
-  String get receiveScreenInit => '正在初始化非对称密钥...';
-
-  @override
-  String get receiveScreenShowQr => '向发送方显示此二维码。';
-
-  @override
-  String get receiveScreenScanSender => '扫描发送方设备上的二维码。';
-
-  @override
-  String get receiveScreenAutoDetectMethod => '系统会自动检测发送方使用的传输方式。';
-
-  @override
-  String receiveScreenKeyError(Object error) {
-    return '密钥生成错误：$error';
-  }
-
-  @override
-  String get receiveScreenDecrypting => '数据已接收。解密和服务器验证中...';
-
-  @override
-  String get receiveScreenSuccess => '钱包接收并导入成功。';
-
-  @override
-  String get receiveScreenQrSuccess => '通过二维码接收钱包。';
-
-  @override
-  String receiveScreenNearbyConnecting(Object code) {
-    return '代码 $code 已读取。连接中...';
-  }
-
-  @override
-  String get receiveScreenNearbySuccess => '通过蓝牙 P2P 接收钱包。';
-
-  @override
-  String receiveScreenError(Object error) {
-    return '错误：$error';
-  }
-
-  @override
-  String get receiveScreenWebRtcTitle => 'WebRTC 房间';
-
-  @override
-  String get receiveScreenWebRtcConnect => '连接到房间';
-
-  @override
-  String get receiveScreenWebRtcShareQr => '与发送方分享此二维码';
-
-  @override
-  String get receiveScreenWebRtcScanQr => '扫描发送方的房间二维码';
-
-  @override
-  String get receiveScreenWebRtcWait => '等待发送方连接...';
-
-  @override
-  String receiveScreenRoomId(Object roomId) {
-    return '房间 ID：$roomId';
-  }
-
-  @override
   String get passwordDialogCreateTitle => '创建安全密码';
-
-  @override
-  String get passwordDialogCreateContent => '设置密码以保护此浏览器上的敏感操作。';
 
   @override
   String get passwordDialogCreateHint => '输入安全密码';
 
   @override
   String get passwordDialogCreateConfirm => '确认密码';
-
-  @override
-  String get passwordDialogCreateConfirmHint => '重新输入密码';
-
-  @override
-  String get passwordDialogCreateMismatch => '密码不匹配';
-
-  @override
-  String get passwordDialogCreateTooShort => '密码必须至少 8 个字符';
 
   @override
   String get passwordDialogCreate => '创建';
@@ -890,9 +865,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get passwordDialogEnterTitle => '输入密码';
-
-  @override
-  String get passwordDialogEnterContent => '输入您的安全密码以继续。';
 
   @override
   String get passwordDialogEnterHint => '输入您的密码';
@@ -953,9 +925,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get walletDetailType => '类型';
-
-  @override
-  String get walletDetailTypeValue => 'HD SegWit (BIP84 Bech32 Native)';
 
   @override
   String get walletTypeNativeSegwit => 'HD SegWit (BIP84 Bech32 Native)';
@@ -1048,9 +1017,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get walletDetailCreated => '创建于';
 
   @override
-  String get walletDetailTransferredOn => '传输于';
-
-  @override
   String get walletDetailClose => '关闭';
 
   @override
@@ -1106,9 +1072,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get walletDetailFirst100 => '前 100 个地址';
-
-  @override
   String get walletDetailValidSig => '签名有效 ✓';
 
   @override
@@ -1143,150 +1106,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get donateButton => '支持本项目 ❤️';
-
-  @override
-  String get multiTransferTitle => '多钱包发送';
-
-  @override
-  String get multiTransferSelectWallets => '选择要发送的钱包';
-
-  @override
-  String multiTransferSelectedCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '已选择 $count 个钱包',
-      one: '已选择 1 个钱包',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String multiTransferTotalValue(Object amount, Object ticker) {
-    return '总价值：$amount $ticker';
-  }
-
-  @override
-  String get multiTransferMethodLabel => '传输方式：';
-
-  @override
-  String multiTransferMethodWebRtc(Object max) {
-    return 'WebRTC（最多 $max 个）';
-  }
-
-  @override
-  String multiTransferMethodBluetooth(Object max) {
-    return '蓝牙（最多 $max 个）';
-  }
-
-  @override
-  String multiTransferMethodQr(Object max) {
-    return '二维码两阶段（最多 $max 个）';
-  }
-
-  @override
-  String multiTransferSendButton(Object amount, num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '发送 $count 个钱包',
-      one: '发送 1 个钱包',
-    );
-    return '$_temp0 · $amount BTC';
-  }
-
-  @override
-  String get multiTransferProgressTitle => '发送中...';
-
-  @override
-  String multiTransferProgressWallet(Object current, Object total) {
-    return '钱包 $current/$total';
-  }
-
-  @override
-  String multiTransferSuccess(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 个钱包发送成功',
-      one: '1 个钱包发送成功',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String multiTransferPartialSuccess(Object failed, Object success) {
-    return '$success 个成功，$failed 个失败';
-  }
-
-  @override
-  String get multiTransferNoLockedWallets => '没有可传输的钱包。只有已锁定的钱包才能传输。';
-
-  @override
-  String multiTransferLimitExceeded(
-      Object max, Object method, Object selected) {
-    return '您选择了 $selected 个钱包。$method 的最大数量为 $max。';
-  }
-
-  @override
-  String get multiTransferReceivingTitle => '多钱包接收';
-
-  @override
-  String multiTransferReceivingProgress(Object received, Object total) {
-    return '已接收 $received/$total 个钱包';
-  }
-
-  @override
-  String get multiTransferMethodUnavailable => '此平台不可用';
-
-  @override
-  String multiTransferSendingWallet(Object current, Object total) {
-    return '正在发送钱包 $current/$total...';
-  }
-
-  @override
-  String get multiTransferPreparing => '正在准备钱包...';
-
-  @override
-  String get multiTransferWaitingReceiver => '等待接收方...';
-
-  @override
-  String get multiTransferCompleted => '已完成';
-
-  @override
-  String get multiTransferFailed => '失败';
-
-  @override
-  String multiTransferMethodQrDesc(Object max) {
-    return '通过二维码手动两阶段传输。最多 $max 个钱包。';
-  }
-
-  @override
-  String multiTransferMethodWebRtcDesc(Object max) {
-    return '通过互联网快速 P2P 传输。最多 $max 个钱包。';
-  }
-
-  @override
-  String multiTransferMethodBluetoothDesc(Object max) {
-    return '设备间直接传输。最多 $max 个钱包。';
-  }
-
-  @override
-  String get multiTransferNoBalance => '余额不可用';
-
-  @override
-  String get multiTransferConfirmTitle => '确认发送';
-
-  @override
-  String multiTransferConfirmMessage(Object amount, num count, Object ticker) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 个钱包',
-      one: '1 个钱包',
-    );
-    return '您即将发送 $_temp0，总计 $amount $ticker。是否继续？';
-  }
 
   @override
   String get onboardingTitle => '欢迎使用 Btc Blake2b Wallet';
@@ -1335,9 +1154,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get onboardingValidationResidence => '选择您的税务居住国';
-
-  @override
-  String get onboardingValidationCheckbox => '您必须接受所有声明';
 
   @override
   String get onboardingLinkTerms => '服务条款';
@@ -1435,6 +1251,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lightningConnectInvalidUri => '连接字符串无效';
+
+  @override
+  String get lightningConnectRecentNodes => '最近使用的节点';
 
   @override
   String get lightningConnectInfo => '节点必须授权此应用（grant）：请检查节点的控制面板。';
@@ -2015,4 +1834,253 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lightningKeysendSend => '发送';
+
+  @override
+  String get walletAddressesTitle => '地址与 UTXO';
+
+  @override
+  String get walletAddressesTabAddresses => '地址';
+
+  @override
+  String get walletAddressesTabUtxos => 'UTXO';
+
+  @override
+  String get walletAddressesReceiveBranch => '收款 (/0)';
+
+  @override
+  String get walletAddressesChangeBranch => '找零 (/1)';
+
+  @override
+  String get walletAddressesStatusUnused => '从未使用';
+
+  @override
+  String get walletAddressesStatusUsed => '已使用';
+
+  @override
+  String get walletAddressesStatusFunds => '有余额';
+
+  @override
+  String walletAddressesTxCount(int count) {
+    return '$count 笔交易';
+  }
+
+  @override
+  String get walletAddressesEmpty => '没有可显示的地址';
+
+  @override
+  String get walletAddressesHintTap => '点击地址即可复制';
+
+  @override
+  String get lightningPeeringGateTitle => '仅允许 bit 68 版本的节点互联';
+
+  @override
+  String get lightningPeeringGateBody =>
+      '此节点在握手时要求 option_blake2b（bit 68），因此旧版本节点无法连接。这是节点的选择，不是应用或桥接的问题。请使用 .4 或更新版本的节点，或等待社区将该 bit 改为可选。';
+
+  @override
+  String get lightningPeeringGateLink => '兼容性矩阵';
+
+  @override
+  String lightningPeersRegisteredOnly(int count) {
+    return '$count 个已注册节点，均未连接';
+  }
+
+  @override
+  String get lightningSwapOpen => '无需节点支付发票（swap）';
+
+  @override
+  String get lightningSwapWebOnlyNote =>
+      '网页版：Lightning 支付通过交换（swap）服务商完成，无需节点。连接自己的节点请使用 Android 应用。';
+
+  @override
+  String get lightningSwapTitle => '通过服务商进行 Lightning 支付';
+
+  @override
+  String get lightningSwapIntro =>
+      '资金始终由你保管：它们进入链上 HTLC（P2WSH），只有在服务商支付你的发票时才会释放。若支付失败，时间锁到期后可取回资金。';
+
+  @override
+  String get lightningSwapProviderUriHint => '服务商 URI（nostr+swap://...）';
+
+  @override
+  String get lightningSwapProviderConnect => '连接服务商';
+
+  @override
+  String lightningSwapProviderConnected(String pubkey) {
+    return '服务商已连接：$pubkey';
+  }
+
+  @override
+  String get lightningSwapProviderDisconnect => '断开连接';
+
+  @override
+  String get lightningSwapInvoiceHint => 'Lightning 发票（lnbc...）';
+
+  @override
+  String get lightningSwapStart => '继续';
+
+  @override
+  String get lightningSwapAmount => '发票金额';
+
+  @override
+  String get lightningSwapFees => '费用（claim + 服务）';
+
+  @override
+  String get lightningSwapTotal => '需锁定的总额';
+
+  @override
+  String get lightningSwapFund => '发送资金并开始 swap';
+
+  @override
+  String get lightningSwapFundHint => '资金将发送到上方显示的 HTLC 地址。1 次确认后开始支付。';
+
+  @override
+  String get lightningSwapStateLabel => '状态';
+
+  @override
+  String get lightningSwapHtlc => 'HTLC 地址';
+
+  @override
+  String lightningSwapCltv(int height) {
+    return '可从区块 $height 开始退款';
+  }
+
+  @override
+  String get swapStateAwaitingFunding => '等待链上资金';
+
+  @override
+  String get swapStateConfirming => '等待确认';
+
+  @override
+  String get swapStatePaying => 'Lightning 支付进行中';
+
+  @override
+  String get swapStatePaid => '发票已支付，claim 进行中';
+
+  @override
+  String get swapStateClaiming => 'Claim 进行中';
+
+  @override
+  String get swapStateCompleted => '已完成';
+
+  @override
+  String get swapStatePaymentFailed => '支付失败 —— 资金可恢复';
+
+  @override
+  String get swapStateExpired => '已过期 —— 资金可恢复';
+
+  @override
+  String get swapStateRefunded => '已退款';
+
+  @override
+  String get lightningSwapRecoveryTitle => '资金恢复';
+
+  @override
+  String get lightningSwapRecoveryHint => '恢复 blob（swaprecover1....）';
+
+  @override
+  String get lightningSwapRecoveryImport => '导入会话';
+
+  @override
+  String get lightningSwapRefund => '恢复资金（refund）';
+
+  @override
+  String lightningSwapRefundNotYet(int height) {
+    return '暂时无法退款：从区块 $height 起可退款';
+  }
+
+  @override
+  String get lightningSwapCopyBlob => '复制恢复 blob';
+
+  @override
+  String get lightningSwapBlobCopied => '恢复 blob 已复制';
+
+  @override
+  String get lightningSwapClaimTxid => 'Claim 交易 ID';
+
+  @override
+  String get lightningSwapClaimHint =>
+      'Claim 是一笔链上交易：将在下一个区块（约 12 分钟）确认。点击链接进行验证。';
+
+  @override
+  String get lightningSwapInvalidInvoice => '这不像是一个 Lightning 发票';
+
+  @override
+  String get lightningSwapWatchOnly => 'Swap 需要带 seed 的钱包（不支持 watch-only）';
+
+  @override
+  String get lightningSwapNoUtxos => '此钱包没有可花费的资金';
+
+  @override
+  String lightningSwapErrorGeneric(String message) {
+    return '错误：$message';
+  }
+
+  @override
+  String get lightningSwapKnownUris => '已保存的服务商 URI';
+
+  @override
+  String get lightningSwapWalletLabel => '钱包';
+
+  @override
+  String lightningSwapWalletBalance(String balance) {
+    return '余额：$balance sat';
+  }
+
+  @override
+  String lightningSwapInsufficientFunds(String needed, String available) {
+    return '资金不足：需要 $needed sat，可用 $available sat';
+  }
+
+  @override
+  String get lightningSwapCancel => '取消 swap';
+
+  @override
+  String get lightningSwapErrorConnectFailed => '无法连接到服务商。请检查网络后重试。';
+
+  @override
+  String get lightningSwapErrorDisconnected => '与服务商的连接已断开。请重新连接。';
+
+  @override
+  String get lightningSwapErrorNotConnected => '服务商未连接。';
+
+  @override
+  String get lightningSwapErrorRelayNotAllowed =>
+      '该服务商使用的中继在网页版无法访问。请在手机上使用移动版完成支付。';
+
+  @override
+  String get lightningSwapCancelTitle => '取消此 swap？';
+
+  @override
+  String get lightningSwapCancelBody =>
+      '应用将忘记此 swap。服务商会在到期前自行丢弃，不会锁定任何资金。若要在同一发票上重试，需等其过期后才能新建会话，否则请生成新发票。';
+
+  @override
+  String get lightningSwapCancelConfirm => '是的，取消';
+
+  @override
+  String get lightningSwapWalletMissing => '与此 swap 关联的钱包已不可用';
+
+  @override
+  String lightningSwapBoundWallet(String name) {
+    return '关联钱包：$name';
+  }
+
+  @override
+  String get lightningInvoiceDelete => '删除发票';
+
+  @override
+  String get lightningInvoiceDeleteTitle => '删除此发票？';
+
+  @override
+  String get lightningInvoiceDeleteBody => '发票将从节点中删除。若未支付，将无法再支付。';
+
+  @override
+  String get lightningInvoiceDeleteConfirm => '是的，删除';
+
+  @override
+  String get lightningInvoiceDeleted => '发票已删除';
+
+  @override
+  String get lightningChannelPeerAddress => '对等节点地址';
 }

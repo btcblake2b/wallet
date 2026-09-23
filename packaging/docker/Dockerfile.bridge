@@ -1,0 +1,51 @@
+# syntax=docker/dockerfile:1
+#
+# Immagine del bridge NWC/NCC (usata dai package Umbrel e Start9).
+#
+# Build multi-arch (Raspberry Pi incluso):
+#   docker buildx build --platform linux/amd64,linux/arm64 \
+#     -f packaging/docker/Dockerfile.bridge -t ghcr.io/btcblake2b/nwc-cln-bridge:0.1.0 .
+#
+# Note:
+# - base runtime glibc (il binario AOT di Dart non gira su musl/alpine)
+# - utente non privilegiato + volume /data persistente (config.json, uri.txt)
+# - il bridge ascolta le richieste dell'app: nessuna porta in ingresso obbligatoria
+FROM dart:stable AS build
+WORKDIR /src
+COPY bridge/pubspec.* ./
+RUN dart pub get
+COPY bridge/ ./
+# // PERCHÉ: (1) `/out` va creata: `dart compile exe` non crea le directory di
+# destinazione e fallisce con PathNotFoundException (exit 254);
+# (2) il context può contenere artefatti locali (.dart_tool con path assoluti di
+# Windows, build/): vanno rimossi e la risoluzione rifatta.
+RUN mkdir -p /out && \
+    rm -rf .dart_tool build && \
+    dart pub get && \
+    dart compile exe bin/bridge.dart -o /out/bridge-exe
+
+FROM debian:bookworm-slim
+# // PERCHÉ: debian-slim non include le CA di sistema: senza ca-certificates il
+# client TLS non valida i certificati e la connessione wss:// al relay muore con
+# "CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate" (verificato
+# nel primo test in container).
+# uid 1000 = utente applicativo atteso da umbrelOS/StartOS per i volumi.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -u 1000 bridge \
+    && install -d -o bridge -g bridge /data
+COPY --from=build /out/bridge-exe /usr/local/bin/bridge-exe
+USER bridge
+VOLUME ["/data"]
+EXPOSE 3000
+# // PERCHÉ: health check nativo per Umbrel/Start9 — esce 0 solo se il nodo
+# risponde davvero (rune valida + clnrest raggiungibile), non se il processo è
+# semplicemente vivo.
+HEALTHCHECK --interval=60s --timeout=15s --start-period=30s --retries=3 \
+    CMD ["/usr/local/bin/bridge-exe","--ensure-config","--health","--config=/data/config.json"]
+# // PERCHÉ: ENTRYPOINT + CMD separati — i package (StartOS) passano il proprio
+# `command` argv e restano compatibili in entrambe le interpretazioni
+# (sostituzione del CMD o dell'intero comando).
+ENTRYPOINT ["/usr/local/bin/bridge-exe"]
+CMD ["--ensure-config","--config=/data/config.json"]

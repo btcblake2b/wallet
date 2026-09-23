@@ -43,6 +43,7 @@ void main() {
     await tester.tap(find.byType(LightningChannelCard).first);
     await tester.pumpAndSettle();
 
+    // Il titolo "Channel details" appare nell'AppBar della schermata dettaglio.
     expect(find.text('Channel details'), findsOneWidget);
     // La sezione fee allunga il dettaglio: il pulsante è sotto la piega.
     await tester.scrollUntilVisible(find.text('Close channel'), 200);

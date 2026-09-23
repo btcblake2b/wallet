@@ -1,18 +1,38 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:btc_blake2b_wallet/core/models/transaction_record.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/explorer_api.dart';
+import 'package:btc_blake2b_wallet/core/services/explorer_mirrors.dart';
 import 'package:btc_blake2b_wallet/core/services/pending_send_registry.dart';
+
+class MockStorage extends Mock implements FlutterSecureStorage {}
+
+/// Imposta la politica dei mirror come farebbe l'utente dalle Impostazioni.
+Future<void> _setMirrors(bool enabled) async {
+  final storage = MockStorage();
+  when(
+    () => storage.write(
+      key: any(named: 'key'),
+      value: any(named: 'value'),
+    ),
+  ).thenAnswer((_) async {});
+  ExplorerMirrors.instance = ExplorerMirrors(storage: storage);
+  if (!enabled) await ExplorerMirrors.instance.setEnabled(false);
+}
 
 /// Test vector BIP39/BIP84 noto:
 /// Mnemonic: abandon abandon ... about
 /// Derivation path: m/84'/0'/0'/0/0
-/// Expected address (mainnet): bc1qcr8te4kr609gcawutmrza83j4j3l68v2p8s8p4
+/// Expected address (mainnet): bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu
+/// (valore verificato dal benchmark `wallet_derivation_perf_test.dart`:
+/// il precedente …83j4j3l68v… era un refuso nel commento)
 void main() {
   late BitcoinService bitcoinService;
 
@@ -21,6 +41,8 @@ void main() {
     // PERCHÉ (audit P1-c): il registro è statico per-isolate — un broadcast
     // di un test precedente aggiungerebbe righe sintetiche ai test history.
     PendingSendRegistry.resetForTest();
+    // PERCHÉ: anche la politica dei mirror è di processo (default ON).
+    ExplorerMirrors.resetForTest();
   });
 
   group('BitcoinService - BIP39/BIP84 derivation (mainnet)', () {
@@ -708,7 +730,8 @@ void main() {
       expect(utxoCalls, lessThanOrEqualTo(4));
     });
 
-    test('scanDerivedAddressesForUtxos propaga l\'errore UTXO (mai vuoto finto)',
+    test(
+        'scanDerivedAddressesForUtxos propaga l\'errore UTXO (mai vuoto finto)',
         () async {
       // PERCHÉ (F5): un errore su /utxo non equivale a "indirizzo vuoto" —
       // mascherarlo produrrebbe un saldo 0/parziale presentato come vero.
@@ -1002,6 +1025,182 @@ void main() {
       // PERCHÉ: netto = ricevuto (90000 change riconosciuto) − speso (100000)
       // = −10000 → outgoing 10000 (non lordo 100000 come senza change).
       expect(txs.first.amountSats, 10000);
+    });
+  });
+
+  group('BitcoinService - failover Esplora (2026-09-16)', () {
+    // PERCHÉ: mempool.guide resta il primario; i mirror comunitari
+    // (kilombino, maveth) subentrano SOLO su errore di disponibilità.
+
+    test('fetchAddressInfo: primario 503 → saldo reale dal mirror', () async {
+      final hostsHit = <String>[];
+      final mock = MockClient((request) async {
+        hostsHit.add(request.url.host);
+        if (request.url.host == 'mempool.guide') {
+          return http.Response('{"error":"node_unavailable"}', 503);
+        }
+        return http.Response(
+          jsonEncode({
+            'chain_stats': {
+              'funded_txo_sum': 90000,
+              'spent_txo_sum': 0,
+              'tx_count': 2,
+            },
+            'mempool_stats': {
+              'funded_txo_sum': 0,
+              'spent_txo_sum': 0,
+              'tx_count': 0,
+            },
+          }),
+          200,
+        );
+      });
+      final service = BitcoinService(client: mock);
+
+      final info = await service.fetchAddressInfo('bc1qtest');
+
+      expect(info['balance'], equals(90000));
+      expect(hostsHit.first, equals('mempool.guide'));
+      expect(hostsHit.last, equals('mempool.kilombino.com'));
+    });
+
+    test('fetchUtxos: primario 503 su /utxo → UTXO dal mirror', () async {
+      final mock = MockClient((request) async {
+        final isPrimary = request.url.host == 'mempool.guide';
+        if (request.url.path.endsWith('/utxo')) {
+          if (isPrimary) {
+            return http.Response('{"error":"node_unavailable"}', 503);
+          }
+          return http.Response(
+            jsonEncode([
+              {'txid': 'aabbccdd', 'vout': 0, 'value': 5000},
+            ]),
+            200,
+          );
+        }
+        if (request.url.path.endsWith('/tx/aabbccdd')) {
+          return http.Response(
+            jsonEncode({
+              'vout': [
+                {
+                  'scriptpubkey': '0014abcd',
+                  'scriptpubkey_type': 'v0_p2wpkh',
+                  'scriptpubkey_address': 'bc1qtest',
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        return http.Response('not found', 404);
+      });
+      final service = BitcoinService(client: mock);
+
+      final utxos = await service.fetchUtxos('bc1qtest', tipHeight: 100);
+
+      expect(utxos, hasLength(1));
+      expect(utxos.first.valueSat, equals(5000));
+    });
+
+    test('fetchFeeEstimates: primario 500 → fee dal mirror (non i default)',
+        () async {
+      final mock = MockClient((request) async {
+        if (request.url.host == 'mempool.guide') {
+          return http.Response('error', 500);
+        }
+        return http.Response(
+          jsonEncode({'economyFee': 1, 'hourFee': 1, 'fastestFee': 1}),
+          200,
+        );
+      });
+      final service = BitcoinService(client: mock);
+
+      final fees = await service.fetchFeeEstimates();
+
+      // PERCHÉ: i default hardcoded sarebbero 1/2/3 — qui si osserva il valore
+      // del mirror (fastestFee 1), prova che i default NON sono stati usati.
+      expect(fees.lowSatVb, equals(1));
+      expect(fees.normalSatVb, equals(1));
+      expect(fees.highSatVb, equals(1));
+    });
+
+    test('broadcast: errore di trasporto sul primario → POST sul mirror',
+        () async {
+      final posts = <String>[];
+      final mock = MockClient((request) async {
+        if (request.method == 'POST') {
+          posts.add(request.url.host);
+          if (request.url.host == 'mempool.guide') {
+            throw http.ClientException('connection reset');
+          }
+          return http.Response('f' * 64, 200);
+        }
+        return http.Response('not found', 404);
+      });
+      final service = BitcoinService(client: mock);
+
+      final txid = await service.broadcastTransaction('deadbeef');
+
+      expect(txid, equals('f' * 64));
+      expect(posts, equals(['mempool.guide', 'mempool.kilombino.com']));
+      // PERCHÉ: maveth.ca non espone POST /tx → non va mai contattato.
+      expect(posts.contains('mempool.maveth.ca'), isFalse);
+    });
+
+    test('broadcast: HTTP 400 dal primario → nessun failover (definitivo)',
+        () async {
+      var posts = 0;
+      final mock = MockClient((request) async {
+        if (request.method == 'POST') {
+          posts++;
+          return http.Response('bad-txns-inputs-missingorspent', 400);
+        }
+        return http.Response('not found', 404);
+      });
+      final service = BitcoinService(client: mock);
+
+      await expectLater(
+        service.broadcastTransaction('deadbeef'),
+        throwsA(isA<Exception>()),
+      );
+      expect(posts, equals(1)); // una sola POST: esito definitivo
+    });
+
+    // ── Interruttore "usa solo mempool.guide" (Impostazioni) ──
+
+    test('interruttore OFF: /utxo 503 sul primario → nessun mirror', () async {
+      await _setMirrors(false);
+      final hostsHit = <String>[];
+      final mock = MockClient((request) async {
+        hostsHit.add(request.url.host);
+        return http.Response('{"error":"node_unavailable"}', 503);
+      });
+      final service = BitcoinService(client: mock);
+
+      await expectLater(
+        service.fetchUtxos('bc1qtest', tipHeight: 100),
+        throwsA(isA<Exception>()),
+      );
+      expect(hostsHit, equals(['mempool.guide']));
+    });
+
+    test('interruttore OFF: broadcast senza mirror (una sola POST)', () async {
+      await _setMirrors(false);
+      final posts = <String>[];
+      final mock = MockClient((request) async {
+        if (request.method == 'POST') {
+          posts.add(request.url.host);
+          throw http.ClientException('connection reset');
+        }
+        return http.Response('not found', 404);
+      });
+      final service = BitcoinService(client: mock);
+
+      await expectLater(
+        service.broadcastTransaction('deadbeef'),
+        throwsA(isA<Exception>()),
+      );
+      expect(posts, equals(['mempool.guide']));
     });
   });
 }

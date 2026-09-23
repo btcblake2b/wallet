@@ -243,4 +243,185 @@ void main() {
 
     expect(find.text('Increase fee'), findsNothing);
   });
+
+  group('note per transazione (P2)', () {
+    testWidgets('mostra la nota sul tile accanto alla data', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: [_tx()],
+            isLoading: false,
+            noteFor: (tx) => 'colazione',
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+
+      expect(find.text('colazione'), findsOneWidget);
+    });
+
+    testWidgets('senza onSetNote la matita non è offerta (regressione)',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: [_tx()],
+            isLoading: false,
+            noteFor: (tx) => 'colazione',
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Note'), findsOneWidget);
+      expect(find.byIcon(Icons.edit_note), findsNothing);
+    });
+
+    testWidgets('la matita salva la nota tramite onSetNote', (tester) async {
+      TransactionRecord? savedTx;
+      String? savedNote;
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: [_tx()],
+            isLoading: false,
+            noteFor: (tx) => null,
+            onSetNote: (tx, note) async {
+              savedTx = tx;
+              savedNote = note;
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Note'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.edit_note));
+      await tester.pumpAndSettle();
+
+      // Senza nota esistente non c'è nulla da rimuovere.
+      expect(find.text('Remove'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'colazione');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(savedTx?.txid, 'tx123');
+      expect(savedNote, 'colazione');
+    });
+
+    testWidgets('annullare l editor non chiama onSetNote', (tester) async {
+      var called = false;
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: [_tx()],
+            isLoading: false,
+            noteFor: (tx) => 'vecchia',
+            onSetNote: (tx, note) async => called = true,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.edit_note));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'scartata');
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      expect(called, isFalse);
+    });
+
+    testWidgets('Rimuovi restituisce stringa vuota (nota cancellata)',
+        (tester) async {
+      String? savedNote = 'sentinel';
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: [_tx()],
+            isLoading: false,
+            noteFor: (tx) => 'vecchia',
+            onSetNote: (tx, note) async => savedNote = note,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.edit_note));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove'), findsOneWidget);
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+
+      expect(savedNote, '');
+    });
+  });
+
+  group('export storico', () {
+    testWidgets('senza onExport l azione non è offerta (regressione)',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: [_tx()],
+            isLoading: false,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+
+      expect(find.text('Export'), findsNothing);
+    });
+
+    testWidgets('con onExport e transazioni il pulsante invoca il callback',
+        (tester) async {
+      var exported = false;
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: [_tx()],
+            isLoading: false,
+            onExport: () => exported = true,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+
+      expect(find.text('Export'), findsOneWidget);
+      await tester.tap(find.text('Export'));
+      expect(exported, isTrue);
+    });
+
+    testWidgets('storico vuoto: niente export', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          TransactionHistorySection(
+            transactions: const [],
+            isLoading: false,
+            onExport: () {},
+          ),
+        ),
+      );
+      await tester.tap(find.text('Transactions'));
+      await tester.pump();
+
+      expect(find.text('Export'), findsNothing);
+    });
+  });
 }

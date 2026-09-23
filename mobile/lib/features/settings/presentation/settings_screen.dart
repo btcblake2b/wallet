@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/services/app_lock_service.dart';
 import '../../../core/services/biometric_service.dart';
+import '../../../core/services/explorer_mirrors.dart';
+import '../../../core/services/info_hints.dart';
 import '../../../core/services/locale_provider.dart';
 import '../../../core/services/theme_provider.dart';
 import '../../../core/services/wallet_repository.dart';
@@ -195,6 +197,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Attiva/disattiva il fallback sui mirror Esplora comunitari.
+  /// PERCHÉ: OFF = una sola fonte (mempool.guide) per letture e broadcast —
+  /// nessun dato dell'utente inviato ai mirror.
+  Future<void> _toggleExplorerMirrors(bool value) async {
+    await ExplorerMirrors.instance.setEnabled(value);
+  }
+
+  /// Mostra/nasconde i pallini "info" in tutta l'app.
+  /// PERCHÉ: preferenza di processo → il merge di Listenable in build
+  /// ricostruisce la pagina, e ogni InfoDot ascolta la stessa istanza.
+  Future<void> _toggleInfoHints(bool value) async {
+    await InfoHints.instance.setEnabled(value);
+  }
+
   Widget _sectionCard(List<Widget> tiles) {
     return GlassContainer(
       margin: const EdgeInsets.only(bottom: 16),
@@ -220,6 +236,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             widget.appLockService,
             widget.localeProvider,
             widget.themeProvider,
+            // PERCHÉ: lo switch dei mirror vive in un registro di processo:
+            // l'UI si aggiorna notificando l'istanza.
+            ExplorerMirrors.instance,
+            // PERCHÉ (pallini info): il toggle è un ChangeNotifier di processo;
+            // ListenableBuilder ricostruisce la pagina e ogni InfoDot ascolta
+            // la stessa istanza → nasconde i pallini anche nelle schermate
+            // GIÀ montate.
+            InfoHints.instance,
           ]),
           builder: (context, _) {
             final themeProvider = widget.themeProvider;
@@ -267,6 +291,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: _showLanguagePicker,
                   ),
                 ]),
+                // ── Interfaccia ──
+                _sectionTitle(loc.settingsSectionInterface),
+                _sectionCard([
+                  SwitchListTile(
+                    secondary: const Icon(Icons.info_outline),
+                    title: Text(loc.settingsInfoDots),
+                    subtitle: Text(loc.settingsInfoDotsDesc),
+                    value: InfoHints.instance.enabled,
+                    onChanged: _toggleInfoHints,
+                  ),
+                ]),
                 // ── Strumenti ──
                 _sectionTitle(loc.settingsSectionTools),
                 _sectionCard([
@@ -275,6 +310,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Text(loc.explorerTitle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _push(const ExplorerScreen()),
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.hub_outlined),
+                    title: Text(loc.settingsExplorerMirrors),
+                    subtitle: Text(loc.settingsExplorerMirrorsDesc),
+                    value: ExplorerMirrors.instance.enabled,
+                    onChanged: _toggleExplorerMirrors,
                   ),
                 ]),
                 // ── Informazioni ──

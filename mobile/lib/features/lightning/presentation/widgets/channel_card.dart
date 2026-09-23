@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/models/lightning_channel.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/info_dot.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../l10n/info_hints_l10n.dart';
 
 /// Card di un canale Lightning: stato, peer, capacità e saldi (in **sat**).
 ///
@@ -103,6 +105,7 @@ class LightningChannelCard extends StatelessWidget {
                     label: loc.lightningChannelCapacity,
                     value: '${_fmt(channel.capacitySats)} sat',
                   ),
+                  const InfoDot(id: InfoHintId.channelCapacity),
                   _ChannelStat(
                     label: loc.lightningChannelSpendable,
                     value: channel.spendableSats == null

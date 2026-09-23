@@ -12,12 +12,17 @@ import '../utils/crypto_utils.dart';
 import '../utils/watch_only_derivation.dart';
 import '../config/bitcoin_network_config.dart';
 import '../models/transaction_record.dart';
+import '../models/send_output.dart';
 import '../models/utxo_info.dart';
+import '../models/wallet_address.dart';
 import '../models/wallet_balance.dart';
 import '../models/wallet_snapshot.dart';
+import 'address_pool.dart';
 import 'explorer_api.dart';
+import 'explorer_mirrors.dart';
 import 'pending_send_registry.dart';
 import 'rbf_params_registry.dart';
+import 'swap/swap_script.dart';
 import 'unified_sighash.dart';
 
 // PERCHÉ: UtxoInfo ora vive in core/models (evita import circolare con
@@ -88,20 +93,32 @@ class FeeEstimates {
     required this.normalSatVb,
     required this.highSatVb,
   });
+
+  /// Tier di ALTA priorità: il massimo tra la stima alta e il pavimento di rete.
+  ///
+  /// // PERCHÉ (18/09/2026): quando il mercato è al minimo `highSatVb` vale
+  /// // quanto gli altri tier (1 sat/vB) e scegliere "Alta" non cambierebbe
+  /// // nulla; il pavimento di rete (bitcoin_network_config) garantisce la
+  /// // priorità. Se il mercato sale, prevale la stima dell'API.
+  int get prioritySatVb {
+    final floor = BitcoinNetworkConfig.priorityFeeFloorSatVb;
+    return highSatVb > floor ? highSatVb : floor;
+  }
 }
 
 class BuildTxData {
   final String mnemonic;
-  final String toAddress;
-  final int amountSats;
+
+  /// // PERCHÉ (P3): lista di destinatari — il caso singolo è una lista di un
+  /// // elemento, così la firma UNIFIED (già multi-output) è l'unica via.
+  final List<SendOutput> outputs;
   final int feeRateSatVb;
   final List<UtxoInfo> utxos;
   final String derivationPath;
   final bool enableRBF;
   BuildTxData({
     required this.mnemonic,
-    required this.toAddress,
-    required this.amountSats,
+    required this.outputs,
     required this.feeRateSatVb,
     required this.utxos,
     required this.derivationPath,
@@ -313,7 +330,8 @@ UtxoWithAddress _utxoWithAddressFor(UtxoInfo u, _InputKey key) {
 }
 
 /// Stima i vB (vsize) di una transazione: header 10 + Σ input (peso
-/// vB-equivalente PER TIPO, witness discount incluso) + 31 vB per output.
+/// vB-equivalente PER TIPO, witness discount incluso) + 43 vB per output
+/// (caso peggiore: P2WSH/P2TR, script di 34 byte).
 /// PERCHÉ (audit MED-1): per gli input segwit il peso NON è solo la parte
 /// base: va sommata la witness (sig+pub) divisa per 4. Prima si stimava un
 /// P2WPKH a 41 vB ma una tx reale 1-in/1-out pesa ~112 vB (non 82): con fee
@@ -321,6 +339,13 @@ UtxoWithAddress _utxoWithAddressFor(UtxoInfo u, _InputKey key) {
 /// native ≈ 68 vB/input, nested ≈ 91 vB/input, legacy ≈ 148 vB/input.
 /// Aggiunti 3 vB fissi per tx con witness (marker/flag/count + margine) per
 /// non sotto-stimare mai la fee.
+///
+/// // PERCHÉ 43 vB/output (18/09/2026): con 31 vB/out il funding di uno swap
+/// // (output HTLC P2WSH) risultava stimato 143 vB contro 152 reali → a
+/// // 1 sat/vB la fee effettiva scendeva a 0,94 sat/vB, sotto il minimo di
+/// // inclusione della chain, e la tx è rimasta ferma per blocchi. Meglio
+/// // sovrastimare ~12 vB per output (≈24-36 sat) che rischiare una tx
+/// // sotto soglia: la fee EFFETTIVA non deve mai scendere sotto il tier scelto.
 int estimateTxVbytes(Iterable<UtxoInfo> utxos, int outputCount) {
   var size = 10;
   var hasSegwit = false;
@@ -337,7 +362,7 @@ int estimateTxVbytes(Iterable<UtxoInfo> utxos, int outputCount) {
     }
   }
   if (hasSegwit) size += 3;
-  return size + 31 * outputCount;
+  return size + 43 * outputCount;
 }
 
 Uint8List _hexToBytes(String hex) {
@@ -413,6 +438,25 @@ String _buildAndSignTx(BuildTxData data) {
   // Derive key using same path as crypto_utils.dart
   final networkType = BitcoinNetworkConfig.bip32NetworkType;
   final root = bip32.BIP32.fromSeed(seed, networkType);
+
+  // FLOW: Invio Transazione Wallet
+  // STEP: 1 — validazione destinatari (P3: N output, minimo dust per riga)
+  // PERCHÉ (P3): il servizio è chiamabile da test e da percorsi futuri → la
+  // guardia dust non può vivere solo nella UI.
+  if (data.outputs.isEmpty) {
+    throw Exception('Nessun destinatario specificato.');
+  }
+  for (final o in data.outputs) {
+    if (o.isDust) {
+      throw Exception(
+        'Importo sotto il minimo dust (${SendOutput.dustLimitSats} sat) '
+        'per ${o.address}.',
+      );
+    }
+  }
+  final recipientCount = data.outputs.length;
+  final totalOut = data.outputs.fold<int>(0, (sum, o) => sum + o.amountSats);
+
   // PERCHÉ (audit MED-2): il change va sulla catena INTERNA /1/N (BIP44),
   // mai sull'indirizzo esterno /0/0 (address reuse totale). Si usa il primo
   // indice /1 non ancora presente tra gli UTXO spendibili passati.
@@ -430,11 +474,17 @@ String _buildAndSignTx(BuildTxData data) {
   // PERCHÉ (BIP49): il change mantiene il tipo dell'account di origine.
   final changeAddress = _changeAddressFor(changeKey, data.derivationPath);
 
-  // Destination address
-  final destAddress = BitcoinAddress(
-    data.toAddress,
-    network: BitcoinNetworkConfig.bitcoinBaseNetwork,
-  ).baseAddress;
+  // Destination addresses — P3: N output, uno per destinatario.
+  final destOutputs = <BitcoinOutput>[
+    for (final o in data.outputs)
+      BitcoinOutput(
+        address: BitcoinAddress(
+          o.address,
+          network: BitcoinNetworkConfig.bitcoinBaseNetwork,
+        ).baseAddress,
+        value: BigInt.from(o.amountSats),
+      ),
+  ];
 
   // Select UTXOs (greedy: take until enough). Support native P2WPKH and P2SH-P2WPKH.
   final selectedUtxos = <({UtxoInfo utxo, _InputKey key})>[];
@@ -444,6 +494,9 @@ String _buildAndSignTx(BuildTxData data) {
   // DEBUG: log all received UTXOs (only in debug mode)
   if (kDebugMode) {
     debugPrint('[DEBUG _buildAndSignTx] received utxos: ${data.utxos.length}');
+    debugPrint(
+      '[DEBUG _buildAndSignTx] destinatari: $recipientCount, totale: $totalOut sat',
+    );
     for (final u in data.utxos) {
       debugPrint(
         '[DEBUG _buildAndSignTx]   UTXO: txid=${u.txid.substring(0, 8)}... vout=${u.vout} value=${u.valueSat} type=${u.scriptPubKeyType} addr=${u.ownerAddress}',
@@ -458,47 +511,47 @@ String _buildAndSignTx(BuildTxData data) {
     selectedUtxos.add((utxo: u, key: inputKey));
     totalIn += u.valueSat;
 
-    // Estimate assuming 2 outputs (destination + change)
-    var outputCount = 2;
+    // Estimate assuming N+1 outputs (destinatari + change)
+    var outputCount = recipientCount + 1;
     var estimatedSize = estimateTxVbytes(
       selectedUtxos.map((e) => e.utxo),
       outputCount,
     );
     var estimatedFee = estimatedSize * data.feeRateSatVb;
-    var estimatedChange = totalIn - data.amountSats - estimatedFee;
+    var estimatedChange = totalIn - totalOut - estimatedFee;
 
-    // If estimated change would be dust, re-estimate assuming no change output
+    // If estimated change would be dust, re-estimate without change output
     if (estimatedChange <= dustLimit) {
-      outputCount = 1;
+      outputCount = recipientCount;
       estimatedSize = estimateTxVbytes(
         selectedUtxos.map((e) => e.utxo),
         outputCount,
       );
       estimatedFee = estimatedSize * data.feeRateSatVb;
-      estimatedChange = totalIn - data.amountSats - estimatedFee;
+      estimatedChange = totalIn - totalOut - estimatedFee;
     }
 
-    if (totalIn >= data.amountSats + estimatedFee && estimatedChange >= 0) {
+    if (totalIn >= totalOut + estimatedFee && estimatedChange >= 0) {
       break;
     }
   }
 
-  // Final calculation: determine actual output count (prefer 2 outputs)
+  // Final calculation: determine actual output count (prefer N+1 outputs)
   var txSize = estimateTxVbytes(
     selectedUtxos.map((e) => e.utxo),
-    2,
+    recipientCount + 1,
   );
   var fee = txSize * data.feeRateSatVb;
-  var change = totalIn - data.amountSats - fee;
+  var change = totalIn - totalOut - fee;
 
-  // If change would be dust or negative (2-output fee too high), adjust to 1 output
+  // If change would be dust or negative (N+1-output fee too high), drop change
   if (change < dustLimit) {
     txSize = estimateTxVbytes(
       selectedUtxos.map((e) => e.utxo),
-      1,
+      recipientCount,
     );
     fee = txSize * data.feeRateSatVb;
-    change = totalIn - data.amountSats - fee;
+    change = totalIn - totalOut - fee;
   }
 
   // DEBUG: log UTXO selection and fee/change calculation (only in debug mode)
@@ -507,10 +560,10 @@ String _buildAndSignTx(BuildTxData data) {
       '[DEBUG _buildAndSignTx] selectedUtxos: ${selectedUtxos.length}',
     );
     debugPrint('[DEBUG _buildAndSignTx] totalIn: $totalIn sats');
-    debugPrint('[DEBUG _buildAndSignTx] amount: ${data.amountSats} sats');
+    debugPrint('[DEBUG _buildAndSignTx] amount: $totalOut sats');
     debugPrint('[DEBUG _buildAndSignTx] feeRate: ${data.feeRateSatVb} sat/vB');
     debugPrint(
-      '[DEBUG _buildAndSignTx] txSize: $txSize vB, outputs: ${change > 546 ? 2 : 1}',
+      '[DEBUG _buildAndSignTx] txSize: $txSize vB, outputs: ${change > 546 ? recipientCount + 1 : recipientCount}',
     );
     debugPrint('[DEBUG _buildAndSignTx] fee: $fee sats');
     debugPrint('[DEBUG _buildAndSignTx] change: $change sats');
@@ -538,13 +591,13 @@ String _buildAndSignTx(BuildTxData data) {
     return _utxoWithAddressFor(entry.utxo, entry.key);
   }).toList();
 
-  // Build outputs
-  final outputs = <BitcoinOutput>[
-    BitcoinOutput(address: destAddress, value: BigInt.from(data.amountSats)),
-  ];
+  // Build outputs: N destinatari + eventuale change
+  final outputs = <BitcoinOutput>[...destOutputs];
 
   // Add change output if above dust (546 sats)
-  final actualFee = change > 546 ? fee : totalIn - data.amountSats;
+  // PERCHÉ (P3): comportamento IDENTICO al mono-destinatario — se il change non
+  // supera dust, il residuo finisce nella fee (niente output polvere).
+  final actualFee = change > 546 ? fee : totalIn - totalOut;
   if (change > 546) {
     outputs.add(
       BitcoinOutput(
@@ -558,7 +611,7 @@ String _buildAndSignTx(BuildTxData data) {
   // PERCHÉ: il builder di bitcoin_base firma solo con BIP-143; la firma
   // UNIFIED è implementata in unified_sighash.dart (Bitcoin Knots PR #357).
   // FLOW: Invio Transazione Wallet
-  // STEP: 1 — costruzione + firma UNIFIED
+  // STEP: 2 — costruzione + firma UNIFIED
   return buildAndSignUnifiedTx(
     utxoWithAddresses: utxoWithAddresses,
     outputs: outputs,
@@ -566,6 +619,91 @@ String _buildAndSignTx(BuildTxData data) {
     fee: BigInt.from(actualFee),
     enableRBF: data.enableRBF,
   );
+}
+
+/// Dati per la tx di refund HTLC (P9) — gira nell'isolate di `compute`.
+class BuildRefundTxData {
+  const BuildRefundTxData({
+    required this.mnemonic,
+    required this.refundDerivationPath,
+    required this.paymentHashHex,
+    required this.claimPubkeyHex,
+    required this.refundPubkeyHex,
+    required this.cltvHeight,
+    required this.witnessScriptHex,
+    required this.fundingTxid,
+    required this.fundingVout,
+    required this.fundingAmountSats,
+    required this.destinationAddress,
+    required this.feeRateSatVb,
+  });
+
+  final String mnemonic;
+  final String refundDerivationPath;
+  final String paymentHashHex;
+  final String claimPubkeyHex;
+  final String refundPubkeyHex;
+  final int cltvHeight;
+  final String witnessScriptHex;
+  final String fundingTxid;
+  final int fundingVout;
+  final int fundingAmountSats;
+  final String destinationAddress;
+  final int feeRateSatVb;
+}
+
+// ---------- Top-level isolate function (refund swap P9) ----------
+String _buildAndSignRefundTx(BuildRefundTxData data) {
+  final seed = bip39.mnemonicToSeed(data.mnemonic);
+  final root = bip32.BIP32.fromSeed(
+    seed,
+    BitcoinNetworkConfig.bip32NetworkType,
+  );
+  // PERCHÉ: chiave DEDICATA dello swap (m/84'/coin'/2'/0/x) — l'HTLC non
+  // tocca mai le chiavi dell'account principale (0').
+  final child = root.derivePath(data.refundDerivationPath);
+  final refundKey = ECPrivate.fromBytes(child.privateKey!);
+  final feeSats = kSwapRefundTxVbytes * data.feeRateSatVb;
+  // FLOW: Pagamento LN via swap (P9) — app
+  // STEP: 5 — costruzione + firma UNIFIED della tx di refund
+  return buildSignedRefundTxHex(
+    refundKey: refundKey,
+    scriptParams: SwapScriptParams(
+      paymentHashHex: data.paymentHashHex,
+      claimPubkeyHex: data.claimPubkeyHex,
+      refundPubkeyHex: data.refundPubkeyHex,
+      cltvHeight: data.cltvHeight,
+    ),
+    witnessScriptHex: data.witnessScriptHex,
+    fundingTxid: data.fundingTxid,
+    fundingVout: data.fundingVout,
+    fundingAmountSats: data.fundingAmountSats,
+    destinationAddress: data.destinationAddress,
+    feeSats: feeSats,
+  );
+}
+
+/// Dati per la derivazione della pubkey di refund swap (P9).
+class SwapRefundKeyData {
+  const SwapRefundKeyData({
+    required this.mnemonic,
+    required this.refundDerivationPath,
+  });
+
+  final String mnemonic;
+  final String refundDerivationPath;
+}
+
+// ---------- Top-level isolate function (pubkey refund swap P9) ----------
+String _deriveSwapRefundPubkey(SwapRefundKeyData data) {
+  final seed = bip39.mnemonicToSeed(data.mnemonic);
+  final root = bip32.BIP32.fromSeed(
+    seed,
+    BitcoinNetworkConfig.bip32NetworkType,
+  );
+  final child = root.derivePath(data.refundDerivationPath);
+  // PERCHÉ: pubkey COMPRESSA (33B) — è il formato richiesto dall'HTLC.
+  return ECPublic.fromBytes(child.publicKey).toHex();
 }
 
 // ---------- BitcoinService ----------
@@ -583,7 +721,74 @@ class BitcoinService {
   // MockClient, senza colpire le API Blockstream reali durante la suite.
   final http.Client _client;
 
+  // PERCHÉ (2026-09-16): host corrente delle letture on-chain (sticky). Dopo
+  // un failover riuscito resta l'host che ha risposto, così lo scan gap-limit
+  // non ripaga il timeout del primario a ogni richiesta.
+  String _activeBaseUrl = _kBaseUrl;
+
   BitcoinService({http.Client? client}) : _client = client ?? http.Client();
+
+  /// GET con failover fra gli host Esplora configurati.
+  ///
+  /// Ritorna la prima risposta 200; se nessun host risponde 200 ritorna la
+  /// risposta dell'host corrente (semantica dei chiamanti invariata: es.
+  /// "HTTP 500"); se nessun host risponde affatto rilancia l'errore di
+  /// trasporto ricevuto.
+  Future<http.Response> _getWithFailover(
+    String path, {
+    required Duration timeout,
+  }) async {
+    // FLOW: Lettura on-chain con failover Esplora
+    // PERCHÉ: la lista arriva dalla politica di processo — se l'utente ha
+    // disattivato i mirror, un eventuale host sticky su mirror non è più
+    // permesso e si torna al primario già da questa richiesta.
+    final allowed = ExplorerMirrors.instance.readHosts;
+    if (!allowed.contains(_activeBaseUrl)) {
+      _activeBaseUrl = allowed.first;
+    }
+    final hosts = <String>[
+      _activeBaseUrl,
+      ...allowed.where((h) => h != _activeBaseUrl),
+    ];
+    http.Response? reportedResponse;
+    Object? reportedError;
+
+    // STEP: 1 — host in ordine di priorità (sticky per primo).
+    for (final host in hosts) {
+      final isCurrentHost = host == _activeBaseUrl;
+      http.Response response;
+      try {
+        response = await _client
+            .get(Uri.parse('$host/$path'), headers: _kApiHeaders)
+            .timeout(timeout);
+      } on Exception catch (e) {
+        // PERCHÉ: errore di trasporto (timeout/rete) → host successivo.
+        reportedError ??= e;
+        continue;
+      }
+      if (response.statusCode == 200) {
+        // STEP: 2 — host sticky: le richieste successive restano qui.
+        if (!isCurrentHost) {
+          debugPrint('[BitcoinService] failover attivo su $host (/$path)');
+          _activeBaseUrl = host;
+        }
+        return response;
+      }
+      // PERCHÉ: 404 e altri esiti definitivi NON fanno failover — è una
+      // risposta valida del servizio (tx sconosciuta, indirizzo senza dati).
+      if (!_isFailoverStatusCode(response.statusCode)) return response;
+      reportedResponse ??= response; // 429/500/502/503 → host successivo
+    }
+    if (reportedResponse != null) return reportedResponse;
+    throw reportedError ?? Exception('Errore fetch $path');
+  }
+
+  /// True se lo status HTTP giustifica il tentativo su un altro host.
+  static bool _isFailoverStatusCode(int statusCode) =>
+      statusCode == 429 ||
+      statusCode == 500 ||
+      statusCode == 502 ||
+      statusCode == 503;
 
   String generateMnemonic() => bip39.generateMnemonic();
 
@@ -659,36 +864,57 @@ class BitcoinService {
   /// (cap [maxAddresses]). L'ownerDerivationPath include il ramo (/0 o /1).
   /// Returns a map address -> list of UtxoInfo (solo indirizzi con UTXO).
   ///
-  /// PERCHÉ (P1 watch-only): deriva dal mnemonic e delega lo scan a
-  /// [_scanAddressListsForUtxos] (che opera su liste di indirizzi già
-  /// derivate) — il percorso watch-only riusa identica logica di gap.
+  /// // PERCHÉ (P8-b): la derivazione è LAZY a blocchi (gap-limit) — prima si
+  /// derivavano 100+100 indirizzi a ogni snapshot, mentre lo scan si ferma
+  /// molto prima nel caso tipico.
   Future<Map<String, List<UtxoInfo>>> scanDerivedAddressesForUtxos(
     String mnemonic, {
     String? derivationPath,
     int gapLimit = 20,
     int maxAddresses = 100,
   }) async {
-    final result = await deriveWalletDataFromMnemonic(
-      mnemonic,
+    final pool = _newPool(
+      mnemonic: mnemonic,
       derivationPath: derivationPath,
-      addressCount: maxAddresses,
+      maxAddresses: maxAddresses,
     );
-    return _scanAddressListsForUtxos(
-      externalAddresses: result.addresses,
-      changeAddresses: result.changeAddresses,
-      derivationPath: result.derivationPath,
+    return _scanPoolForUtxos(
+      pool: pool,
+      derivationPath:
+          derivationPath ?? BitcoinNetworkConfig.defaultDerivationPath,
       gapLimit: gapLimit,
     );
   }
 
-  /// Scan con gap-limit su liste di indirizzi GIÀ derivate (external + change).
+  /// Costruisce un pool di derivazione: hot dal seed, watch-only dall'xpub.
+  AddressPool _newPool({
+    String? mnemonic,
+    String? accountXpub,
+    WalletScriptType scriptType = WalletScriptType.p2wpkh,
+    String? derivationPath,
+    int maxAddresses = 100,
+  }) {
+    return AddressPool(
+      maxAddresses: maxAddresses,
+      requestFor: (start, count) => AddressBlockRequest(
+        mnemonic: mnemonic,
+        accountXpub: accountXpub,
+        scriptType: scriptType,
+        derivationPath: derivationPath,
+        start: start,
+        count: count,
+      ),
+    );
+  }
+
+  /// Scan UTXO con gap-limit su un [pool] di indirizzi derivati a blocchi.
   ///
-  /// PERCHÉ (P1 watch-only): la logica di scan (batch da [gapLimit] + stop al
-  /// primo gap) è identica sia per wallet con seed sia per wallet watch-only
-  /// (xpub) — l'unica differenza è COME si ottengono gli indirizzi.
-  Future<Map<String, List<UtxoInfo>>> _scanAddressListsForUtxos({
-    required List<String> externalAddresses,
-    required List<String> changeAddresses,
+  /// // PERCHÉ (P8-b): il criterio di gap è IDENTICO a prima (batch da
+  /// // [gapLimit], stop al primo gap, cap `pool.maxAddresses`); cambia solo
+  /// // QUANDO si deriva — il blocco successivo si chiede al pool solo se il
+  /// // gap non è ancora chiuso. Vale sia per hot sia per watch-only.
+  Future<Map<String, List<UtxoInfo>>> _scanPoolForUtxos({
+    required AddressPool pool,
     required String derivationPath,
     int gapLimit = 20,
   }) async {
@@ -698,13 +924,18 @@ class BitcoinService {
     final tipHeight = await _fetchTipHeight();
 
     Future<Map<String, List<UtxoInfo>>> scanChain(int chainIndex) async {
-      final chainAddrs = chainIndex == 0 ? externalAddresses : changeAddresses;
       final found = <String, List<UtxoInfo>>{};
       var consecutiveEmpty = 0;
-      for (var start = 0;
-          start < chainAddrs.length && consecutiveEmpty < gapLimit;
-          start += gapLimit) {
-        final batch = chainAddrs.skip(start).take(gapLimit).toList();
+      var start = 0;
+      while (consecutiveEmpty < gapLimit && start < pool.maxAddresses) {
+        // Deriva il blocco corrente solo se serve davvero.
+        await pool.ensure(start + gapLimit);
+        final chainAddrs = chainIndex == 0 ? pool.external : pool.change;
+        if (start >= chainAddrs.length) break; // cap raggiunto
+        final end = (start + gapLimit) > chainAddrs.length
+            ? chainAddrs.length
+            : start + gapLimit;
+        final batch = chainAddrs.sublist(start, end);
         // PERCHÉ (F5): un errore di fetch NON equivale a "indirizzo vuoto" —
         // mascherarlo con [] produrrebbe un saldo parziale o 0 presentato
         // come vero. L'errore si propaga: lo snapshot fallisce e la UI
@@ -739,6 +970,7 @@ class BitcoinService {
           }
         }
         if (stop) break;
+        start = end;
       }
       return found;
     }
@@ -752,7 +984,9 @@ class BitcoinService {
     final t1 = DateTime.now().millisecondsSinceEpoch;
     if (kDebugMode) {
       debugPrint(
-        'bitcoin: _scanAddressListsForUtxos dt=${t1 - t0}ms (gap=$gapLimit, found=${found.length})',
+        'bitcoin: _scanPoolForUtxos dt=${t1 - t0}ms (gap=$gapLimit, '
+        'derivati=${pool.derivedCount}, blocchi=${pool.derivationRuns}, '
+        'found=${found.length})',
       );
     }
     return found;
@@ -773,6 +1007,102 @@ class BitcoinService {
     final utxos = found.values.expand((items) => items).toList();
     utxos.sort((a, b) => b.valueSat.compareTo(a.valueSat));
     return utxos;
+  }
+
+  /// Elenco degli indirizzi del wallet (ricezione `/0` e resto `/1`) con stato
+  /// e saldo per indirizzo — base della schermata "Indirizzi".
+  ///
+  /// // PERCHÉ (P7): schermata di sola LETTURA. Il criterio di gap è diverso da
+  /// quello del saldo: qui conta l'ATTIVITÀ (`tx_count`), non la presenza di
+  /// UTXO — un indirizzo usato e poi speso non ha UTXO ma NON è un indirizzo
+  /// nuovo, altrimenti verrebbe mostrato come "mai usato" (dato falso).
+  /// La logica del saldo resta intatta: nessuna modifica a scan/snapshot.
+  ///
+  /// Un errore di rete si PROPAGA (mai un saldo 0 spacciato per vero — F5).
+  /// Deriva dal seed (hot) oppure dall'xpub (watch-only), come i flussi P1.
+  Future<List<WalletAddress>> fetchWalletAddresses({
+    String? mnemonic,
+    String? accountXpub,
+    WalletScriptType scriptType = WalletScriptType.p2wpkh,
+    String? derivationPath,
+    int gapLimit = 20,
+    int maxAddresses = 100,
+  }) async {
+    final t0 = DateTime.now().millisecondsSinceEpoch;
+
+    // STEP: 1 — pool di derivazione lazy (hot da seed, watch-only da xpub):
+    // si deriva un blocco per ramo alla volta, solo finché il gap è aperto.
+    final basePath = mnemonic != null
+        ? (derivationPath ?? BitcoinNetworkConfig.defaultDerivationPath)
+        : scriptType.accountPath();
+    final pool = _newPool(
+      mnemonic: mnemonic,
+      accountXpub: accountXpub,
+      scriptType: scriptType,
+      derivationPath: derivationPath,
+      maxAddresses: maxAddresses,
+    );
+
+    // STEP: 2 — stato on-chain per indirizzo, con gap-limit sull'attività.
+    // Batch da [gapLimit] in parallelo, come lo scan UTXO (stesso ordine di
+    // grandezza di richieste che l'app fa già per il saldo).
+    Future<List<WalletAddress>> scanBranch(
+      WalletAddressBranch branch,
+      int chainIndex,
+    ) async {
+      final out = <WalletAddress>[];
+      var idle = 0;
+      var start = 0;
+      while (idle < gapLimit && start < pool.maxAddresses) {
+        await pool.ensure(start + gapLimit);
+        final addresses = chainIndex == 0 ? pool.external : pool.change;
+        if (start >= addresses.length) break; // cap raggiunto
+        final end = (start + gapLimit) > addresses.length
+            ? addresses.length
+            : start + gapLimit;
+        final batch = addresses.sublist(start, end);
+        final infos = await Future.wait(batch.map(fetchAddressInfo));
+        var stop = false;
+        for (var j = 0; j < batch.length; j++) {
+          final balance = (infos[j]['balance'] as num?)?.toInt() ?? 0;
+          final txCount = (infos[j]['tx_count'] as num?)?.toInt() ?? 0;
+          out.add(
+            WalletAddress(
+              address: batch[j],
+              branch: branch,
+              index: start + j,
+              derivationPath: '$basePath/$chainIndex/${start + j}',
+              balanceSats: balance,
+              txCount: txCount,
+            ),
+          );
+          if (txCount == 0 && balance == 0) {
+            idle++;
+            if (idle >= gapLimit) {
+              stop = true;
+              break;
+            }
+          } else {
+            idle = 0;
+          }
+        }
+        if (stop) break;
+        start = end;
+      }
+      return out;
+    }
+
+    final branches = await Future.wait([
+      scanBranch(WalletAddressBranch.external, 0),
+      scanBranch(WalletAddressBranch.change, 1),
+    ]);
+
+    final t1 = DateTime.now().millisecondsSinceEpoch;
+    debugPrint(
+      '[LoopEngineer] fetchWalletAddresses dt=${t1 - t0}ms '
+      '(ricezione=${branches[0].length}, resto=${branches[1].length})',
+    );
+    return [...branches[0], ...branches[1]];
   }
 
   /// Saldo (chain+mempool) e tx_count di un singolo indirizzo.
@@ -841,11 +1171,18 @@ class BitcoinService {
     int limit = 25,
     bool includeHistory = true,
   }) async {
-    final found = await scanDerivedAddressesForUtxos(
-      mnemonic,
+    // PERCHÉ (P8-b): UN pool per snapshot — scan UTXO e storico condividono la
+    // stessa derivazione (prima erano due derive complete di 100+100 indirizzi).
+    final pool = _newPool(
+      mnemonic: mnemonic,
       derivationPath: derivationPath,
-      gapLimit: gapLimit,
       maxAddresses: maxAddresses,
+    );
+    final found = await _scanPoolForUtxos(
+      pool: pool,
+      derivationPath:
+          derivationPath ?? BitcoinNetworkConfig.defaultDerivationPath,
+      gapLimit: gapLimit,
     );
 
     var total = 0;
@@ -862,10 +1199,8 @@ class BitcoinService {
     List<TransactionRecord>? transactions;
     if (includeHistory) {
       transactions = await _safeWalletHistory(
-        mnemonic,
-        derivationPath: derivationPath,
+        pool,
         gapLimit: gapLimit,
-        maxAddresses: maxAddresses,
         limit: limit,
       );
     }
@@ -884,7 +1219,7 @@ class BitcoinService {
   /// pubblica estesa invece che dal seed — nessuna chiave privata coinvolta.
   ///
   /// PERCHÉ (P1 watch-only): riusa la stessa logica di scan/history
-  /// (_scanAddressListsForUtxos / _fetchHistoryForAddressLists) → saldo,
+  /// (_scanPoolForUtxos / _historyFromPool) → saldo,
   /// UTXO e storico coerenti con i wallet hot. Il [scriptType] serve perché
   /// lo stesso xpub può essere monitorato con encoding diversi (BIP84/49/44).
   // FLOW: Visualizzazione Saldo Wallet (watch-only)
@@ -899,20 +1234,17 @@ class BitcoinService {
     int limit = 25,
     bool includeHistory = true,
   }) async {
-    // STEP: 1 — derivazione (compute puro, come la derivazione hot)
-    final derived = await compute(
-      deriveWatchOnlyAddresses,
-      WatchOnlyDerivationData(
-        accountXpub: accountXpub,
-        scriptType: scriptType,
-        addressCount: maxAddresses,
-      ),
+    // STEP: 1 — pool lazy dall'xpub (nessun seed, nessuna chiave privata)
+    final pool = _newPool(
+      accountXpub: accountXpub,
+      scriptType: scriptType,
+      derivationPath: scriptType.accountPath(),
+      maxAddresses: maxAddresses,
     );
 
-    // STEP: 2 — scan UTXO con gap-limit (riuso helper condiviso)
-    final found = await _scanAddressListsForUtxos(
-      externalAddresses: derived.externalAddresses,
-      changeAddresses: derived.changeAddresses,
+    // STEP: 2 — scan UTXO con gap-limit (stesso helper del percorso hot)
+    final found = await _scanPoolForUtxos(
+      pool: pool,
       derivationPath: scriptType.accountPath(),
       gapLimit: gapLimit,
     );
@@ -932,9 +1264,8 @@ class BitcoinService {
     if (includeHistory) {
       // STEP: 3 — storico "safe": mai fa fallire lo snapshot
       try {
-        transactions = await _fetchHistoryForAddressLists(
-          externalAddresses: derived.externalAddresses,
-          changeAddresses: derived.changeAddresses,
+        transactions = await _historyFromPool(
+          pool: pool,
           gapLimit: gapLimit,
           limit: limit,
         );
@@ -956,19 +1287,19 @@ class BitcoinService {
   }
 
   /// Storico "safe": mai fa fallire lo snapshot (catch interno → lista vuota).
+  /// Storico "safe" dal pool condiviso: mai fa fallire lo snapshot.
+  ///
+  /// // PERCHÉ (P8-b): riceve il pool dello snapshot — la derivazione fatta per
+  /// // lo scan UTXO viene riusata (prima lo storico ri-derivava per conto suo).
   Future<List<TransactionRecord>> _safeWalletHistory(
-    String mnemonic, {
-    String? derivationPath,
+    AddressPool pool, {
     int gapLimit = 20,
-    int maxAddresses = 100,
     int limit = 25,
   }) async {
     try {
-      return await fetchWalletHistory(
-        mnemonic,
-        derivationPath: derivationPath,
+      return await _historyFromPool(
+        pool: pool,
         gapLimit: gapLimit,
-        maxAddresses: maxAddresses,
         limit: limit,
       );
     } catch (e) {
@@ -977,6 +1308,85 @@ class BitcoinService {
       }
       return const [];
     }
+  }
+
+  /// Storico su un [pool] di indirizzi derivati a blocchi (gap-limit).
+  ///
+  /// // PERCHÉ (P8-b): stessa logica di gap di `_fetchHistoryForAddressLists`,
+  /// // ma gli indirizzi si chiedono al pool condiviso con lo scan UTXO.
+  /// Il set usato per il ricalcolo del netto è quello derivato finora: un
+  /// indirizzo oltre il gap-limit non è visibile nemmeno dal saldo (stessa
+  /// regola BIP44), quindi il comportamento resta coerente.
+  Future<List<TransactionRecord>> _historyFromPool({
+    required AddressPool pool,
+    int gapLimit = 20,
+    int limit = 25,
+  }) async {
+    final tipHeight = await _fetchTipHeight();
+
+    Future<List<Map<String, dynamic>>> fetchChainTxs(int chainIndex) async {
+      final collected = <Map<String, dynamic>>[];
+      var consecutiveEmpty = 0;
+      var start = 0;
+      while (consecutiveEmpty < gapLimit && start < pool.maxAddresses) {
+        await pool.ensure(start + gapLimit);
+        final chainAddrs = chainIndex == 0 ? pool.external : pool.change;
+        if (start >= chainAddrs.length) break; // cap raggiunto
+        final end = (start + gapLimit) > chainAddrs.length
+            ? chainAddrs.length
+            : start + gapLimit;
+        final batch = chainAddrs.sublist(start, end);
+        final batchResults = await Future.wait(
+          batch.map((addr) => _fetchAddressTxsJson(addr, limit: limit)),
+        );
+        var stop = false;
+        for (var j = 0; j < batch.length; j++) {
+          final txs = batchResults[j];
+          if (txs.isEmpty) {
+            consecutiveEmpty++;
+            if (consecutiveEmpty >= gapLimit) {
+              stop = true;
+              break;
+            }
+          } else {
+            consecutiveEmpty = 0;
+            collected.addAll(txs);
+          }
+        }
+        if (stop) break;
+        start = end;
+      }
+      return collected;
+    }
+
+    final chainTxLists = await Future.wait([
+      fetchChainTxs(0),
+      fetchChainTxs(1),
+    ]);
+
+    // Set COMPLETO degli indirizzi noti (dopo l'estensione del pool): serve per
+    // attribuire correttamente vin/vout di una tx che tocca più nostre chiavi.
+    final walletAddresses = {...pool.external, ...pool.change};
+
+    final byTxid = <String, Map<String, dynamic>>{};
+    for (final txs in chainTxLists) {
+      for (final json in txs) {
+        final txid = json['txid'] as String? ?? '';
+        if (txid.isNotEmpty) byTxid[txid] = json;
+      }
+    }
+
+    final records = byTxid.values
+        .map(
+          (json) => TransactionRecord.fromExplorerJson(
+            json,
+            walletAddresses: walletAddresses,
+            tipHeight: tipHeight,
+          ),
+        )
+        .toList();
+    records.sort(_compareByTimestamp);
+    return _appendPendingState(records);
   }
 
   Future<List<UtxoInfo>> fetchUtxos(String address, {int? tipHeight}) async {
@@ -989,12 +1399,10 @@ class BitcoinService {
       // assente (fallback onesto: _fetchTipHeight ritorna null su errore).
       final tip = tipHeight ?? await _fetchTipHeight();
 
-      final response = await _client
-          .get(
-            Uri.parse('$_kBaseUrl/address/$address/utxo'),
-            headers: _kApiHeaders,
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await _getWithFailover(
+        'address/$address/utxo',
+        timeout: const Duration(seconds: 10),
+      );
       if (response.statusCode != 200) {
         throw Exception('Errore fetch UTXO: HTTP ${response.statusCode}');
       }
@@ -1033,12 +1441,10 @@ class BitcoinService {
     int? tipHeight,
   }) async {
     try {
-      final txResp = await _client
-          .get(
-            Uri.parse('$_kBaseUrl/tx/$txid'),
-            headers: _kApiHeaders,
-          )
-          .timeout(const Duration(seconds: 5));
+      final txResp = await _getWithFailover(
+        'tx/$txid',
+        timeout: const Duration(seconds: 5),
+      );
       if (txResp.statusCode == 200) {
         final txJson = jsonDecode(txResp.body) as Map<String, dynamic>;
         final vouts = txJson['vout'] as List<dynamic>;
@@ -1085,16 +1491,21 @@ class BitcoinService {
     );
   }
 
+  /// Altezza corrente del tip (null se la rete/API non risponde).
+  ///
+  /// // PERCHÉ: le tx con nLockTime (refund swap, P9) sono trasmissibili solo
+  /// // dall'altezza del timelock; il servizio swap usa questo check per dare
+  /// // un messaggio chiaro invece dell'errore grezzo del nodo.
+  Future<int?> fetchTipHeight() => _fetchTipHeight();
+
   /// Altezza del blocco tip, per calcolare le conferme reali.
   /// Fallback: null (le confermate mostreranno 1+).
   Future<int?> _fetchTipHeight() async {
     try {
-      final response = await _client
-          .get(
-            Uri.parse('$_kBaseUrl/blocks/tip/height'),
-            headers: _kApiHeaders,
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await _getWithFailover(
+        'blocks/tip/height',
+        timeout: const Duration(seconds: 10),
+      );
       if (response.statusCode == 200) {
         return int.tryParse(response.body.trim());
       }
@@ -1112,12 +1523,10 @@ class BitcoinService {
   }) async {
     return _cb.call(() async {
       try {
-        final response = await _client
-            .get(
-              Uri.parse('$_kBaseUrl/address/$address/txs'),
-              headers: _kApiHeaders,
-            )
-            .timeout(const Duration(seconds: 10));
+        final response = await _getWithFailover(
+          'address/$address/txs',
+          timeout: const Duration(seconds: 10),
+        );
         if (response.statusCode != 200) return const [];
         final list = jsonDecode(response.body) as List<dynamic>;
         return list.take(limit).map((e) => e as Map<String, dynamic>).toList();
@@ -1346,15 +1755,11 @@ class BitcoinService {
     // PERCHÉ: Circuit breaker — previene chiamate a cascata se API down
     return _cb.call(() async {
       try {
-        // Mempool.space fee estimates
-        final response = await _client
-            .get(
-              Uri.parse(
-                '${BitcoinNetworkConfig.mempoolApiBaseUrl}/v1/fees/recommended',
-              ),
-              headers: _kApiHeaders,
-            )
-            .timeout(const Duration(seconds: 10));
+        // Mempool.space fee estimates (stessa rotta Esplora sui mirror)
+        final response = await _getWithFailover(
+          'v1/fees/recommended',
+          timeout: const Duration(seconds: 10),
+        );
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           return FeeEstimates(
@@ -1379,23 +1784,49 @@ class BitcoinService {
     // il POST fallisce e il SUO breaker si apre dopo 3 tentativi — senza
     // bloccare le letture (saldo/storico) e viceversa.
     return _cbBroadcast.call(() async {
-      final response = await _client
-          .post(
-            Uri.parse('$_kBaseUrl/tx'),
-            headers: {..._kApiHeaders, 'Content-Type': 'text/plain'},
-            body: rawHex,
-          )
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode == 200) {
-        return response.body.trim(); // txid
+      // STEP: 1 — host abilitati al broadcast (mempool.guide, kilombino).
+      // PERCHÉ (2026-09-16): il failover scatta SOLO se il POST non ha
+      // ricevuto alcuna risposta HTTP (errore di trasporto): una risposta di
+      // errore (400 tx invalida, 500…) è un esito definitivo e non va
+      // ritentata altrove. La lista esclude maveth.ca, che risponde 404 su
+      // POST /tx (verificato il 2026-09-16).
+      // PERCHÉ: lista di broadcast dalla politica di processo — se i mirror
+      // sono disattivati resta il solo primario (nessuna tx ai mirror).
+      final hosts = ExplorerMirrors.instance.broadcastHosts;
+      Object? lastTransportError;
+      for (final host in hosts) {
+        http.Response response;
+        try {
+          response = await _client
+              .post(
+                Uri.parse('$host/tx'),
+                headers: {..._kApiHeaders, 'Content-Type': 'text/plain'},
+                body: rawHex,
+              )
+              .timeout(const Duration(seconds: 30));
+        } on Exception catch (e) {
+          // Nessuna risposta HTTP → la tx non è stata relayata: si prova
+          // l'host successivo.
+          lastTransportError = e;
+          continue;
+        }
+        if (response.statusCode == 200) {
+          return response.body.trim(); // txid
+        }
+        throw Exception(
+          'Broadcast fallito (${response.statusCode}): ${response.body}',
+        );
       }
-      throw Exception(
-        'Broadcast fallito (${response.statusCode}): ${response.body}',
-      );
+      throw lastTransportError ??
+          Exception('Broadcast fallito: nessun host disponibile');
     });
   }
 
-  /// Build, sign and broadcast. Returns the txid.
+  /// Build, sign and broadcast verso UN destinatario (percorso storico).
+  ///
+  /// PERCHÉ (P3): il caso singolo è una lista di un elemento — la logica vive in
+  /// [buildSignAndSendBatch]. Il wrapper conserva firma e comportamento identici
+  /// a prima, così `send_screen` (N=1) e i test esistenti non cambiano.
   ///
   /// PERCHÉ (S8 RBF): [enableRBF] default true — ogni nuova tx dell'app è
   /// replaceable (BIP125), prerequisito per un eventuale bump fee futuro.
@@ -1407,13 +1838,110 @@ class BitcoinService {
     required List<UtxoInfo> utxos,
     required String derivationPath,
     bool enableRBF = true,
+  }) {
+    return buildSignAndSendBatch(
+      mnemonic: mnemonic,
+      outputs: [SendOutput(address: toAddress, amountSats: amountSats)],
+      feeRateSatVb: feeRateSatVb,
+      utxos: utxos,
+      derivationPath: derivationPath,
+      enableRBF: enableRBF,
+    );
+  }
+
+  /// Deriva la pubkey di refund dello swap (33B compressa, hex) dal mnemonic.
+  ///
+  /// // PERCHÉ: la richiesta di quote richiede la refund_pubkey PRIMA della
+  /// // creazione della sessione; l'app la deriva dal seed dell'utente (mai
+  /// // chiederla all'esterno) usando SEMPRE l'account dedicato 2'.
+  Future<String> deriveSwapRefundPubkey({
+    required String mnemonic,
+    required String refundDerivationPath,
+  }) =>
+      compute(
+        _deriveSwapRefundPubkey,
+        SwapRefundKeyData(
+          mnemonic: mnemonic,
+          refundDerivationPath: refundDerivationPath,
+        ),
+      );
+
+  /// Costruisce e firma (SENZA trasmettere) la tx di REFUND dell'HTLC swap.
+  ///
+  /// // FLOW: Pagamento LN via swap (P9) — app
+  /// // STEP: recupero — se il pagamento LN non riesce entro il CLTV, l'utente
+  /// // spende l'HTLC col ramo OP_ELSE firmando con la chiave DEDICATA dello
+  /// // swap ([refundDerivationPath], account 2'): mai l'account principale.
+  ///
+  /// Ritorna la raw hex: broadcast e txid restano al chiamante (il servizio
+  /// swap, che conosce il ciclo di vita della sessione).
+  Future<String> buildSignedRefundTx({
+    required String mnemonic,
+    required String refundDerivationPath,
+    required String paymentHashHex,
+    required String claimPubkeyHex,
+    required String refundPubkeyHex,
+    required int cltvHeight,
+    required String witnessScriptHex,
+    required String fundingTxid,
+    required int fundingVout,
+    required int fundingAmountSats,
+    required String destinationAddress,
+    required int feeRateSatVb,
+  }) {
+    return compute(
+      _buildAndSignRefundTx,
+      BuildRefundTxData(
+        mnemonic: mnemonic,
+        refundDerivationPath: refundDerivationPath,
+        paymentHashHex: paymentHashHex,
+        claimPubkeyHex: claimPubkeyHex,
+        refundPubkeyHex: refundPubkeyHex,
+        cltvHeight: cltvHeight,
+        witnessScriptHex: witnessScriptHex,
+        fundingTxid: fundingTxid,
+        fundingVout: fundingVout,
+        fundingAmountSats: fundingAmountSats,
+        destinationAddress: destinationAddress,
+        feeRateSatVb: feeRateSatVb,
+      ),
+    );
+  }
+
+  /// Build, sign and broadcast verso N destinatari in UNA sola transazione.
+  ///
+  /// // PERCHÉ (P3): una tx = una fee (il vantaggio del batch). Il controllo
+  /// // dust vive QUI oltre che in UI: un output < 546 sat non è spendibile e il
+  /// // nodo rifiuterebbe la tx DOPO il broadcast.
+  /// FLOW: Invio Transazione Wallet (batch)
+  /// STEP: 1 — validazione destinatari (conteggio + dust)
+  /// STEP: 2 — build + firma UNIFIED nell'isolate
+  /// STEP: 3 — broadcast + registrazione (pending / RBF)
+  Future<SendResult> buildSignAndSendBatch({
+    required String mnemonic,
+    required List<SendOutput> outputs,
+    required int feeRateSatVb,
+    required List<UtxoInfo> utxos,
+    required String derivationPath,
+    bool enableRBF = true,
   }) async {
-    // Compute size estimate for reporting fee paid (use dynamic output count)
+    if (outputs.isEmpty) {
+      throw ArgumentError('Serve almeno un destinatario.');
+    }
+    for (final o in outputs) {
+      if (o.isDust) {
+        throw ArgumentError(
+          'Importo sotto il minimo dust (${SendOutput.dustLimitSats} sat) '
+          'per ${o.address}.',
+        );
+      }
+    }
+    final totalOut = outputs.fold<int>(0, (sum, o) => sum + o.amountSats);
+    final recipientCount = outputs.length;
 
     final data = BuildTxData(
       mnemonic: mnemonic,
-      toAddress: toAddress,
-      amountSats: amountSats,
+      outputs: List<SendOutput>.unmodifiable(outputs),
       feeRateSatVb: feeRateSatVb,
       utxos: utxos,
       derivationPath: derivationPath,
@@ -1426,7 +1954,8 @@ class BitcoinService {
     if (kDebugMode) {
       try {
         debugPrint(
-          'bitcoin: buildSignAndSend derivationPath=$derivationPath utxos=${utxos.length}',
+          'bitcoin: buildSignAndSendBatch derivationPath=$derivationPath '
+          'utxos=${utxos.length} destinatari=$recipientCount',
         );
         final derived = await compute(
           deriveBitcoinAddress,
@@ -1449,33 +1978,46 @@ class BitcoinService {
       );
     }
 
-    // Estimate fee paid for display using same logic as the builder
-    final selectedCount = _countUsedUtxos(utxos, amountSats, feeRateSatVb);
+    // Stima la fee mostrata con la STESSA logica del builder, ma con N
+    // destinatari: prima era hardcoded a 1 → fee sotto-stimata su un batch.
+    final selectedCount = _countUsedUtxos(
+      utxos,
+      totalOut,
+      feeRateSatVb,
+      recipientCount: recipientCount,
+    );
     // Compute approximate totalIn for the estimated selected utxos
     final totalInSelected =
         utxos.take(selectedCount).fold<int>(0, (p, e) => p + e.valueSat);
-    var displayTxSize = estimateTxVbytes(utxos.take(selectedCount), 2);
+    var displayTxSize = estimateTxVbytes(
+      utxos.take(selectedCount),
+      recipientCount + 1,
+    );
     var fee = displayTxSize * feeRateSatVb;
-    var change = totalInSelected - amountSats - fee;
-    if (change < 546) {
-      displayTxSize = estimateTxVbytes(utxos.take(selectedCount), 1);
+    var change = totalInSelected - totalOut - fee;
+    if (change < SendOutput.dustLimitSats) {
+      displayTxSize = estimateTxVbytes(
+        utxos.take(selectedCount),
+        recipientCount,
+      );
       fee = displayTxSize * feeRateSatVb;
-      change = totalInSelected - amountSats - fee;
+      change = totalInSelected - totalOut - fee;
     }
 
     final txid = await broadcastTransaction(rawHex);
     // PERCHÉ (audit P1-c): ricorda la tx inviata per rilevare eviction/
     // sostituzione — solo sessione, niente chiavi, niente persistenza.
-    PendingSendRegistry.register(txid, amountSats: amountSats);
+    // PERCHÉ (P3): per un batch si registra il TOTALE inviato (la riga
+    // sintetica in UI mostra la somma dei destinatari).
+    PendingSendRegistry.register(txid, amountSats: totalOut);
     if (enableRBF) {
       // PERCHÉ (S8 RBF, incremento B): salva i parametri per il bump fee —
-      // stessi input/destinatario con fee maggiore; MAI seed/chiavi.
+      // stessi input/destinatari con fee maggiore; MAI seed/chiavi.
       RbfParamsRegistry.register(
         txid,
         RbfTxParams(
           kind: RbfTxKind.send,
-          toAddress: toAddress,
-          amountSats: amountSats,
+          outputs: List<SendOutput>.from(outputs),
           derivationPath: derivationPath,
           originalFeeRateSatVb: feeRateSatVb,
           utxos: List<UtxoInfo>.from(utxos),
@@ -1578,10 +2120,11 @@ class BitcoinService {
         enableRBF: true,
       );
     } else {
-      result = await buildSignAndSend(
+      // PERCHÉ (P3): anche una tx batch è sostituibile — il bump ripaga TUTTI
+      // i destinatari originali (effectiveOutputs), non solo il primo.
+      result = await buildSignAndSendBatch(
         mnemonic: mnemonic,
-        toAddress: params.toAddress,
-        amountSats: params.amountSats,
+        outputs: params.effectiveOutputs,
         feeRateSatVb: newFeeRateSatVb,
         utxos: params.utxos,
         derivationPath: params.derivationPath,
@@ -1595,11 +2138,17 @@ class BitcoinService {
     return result;
   }
 
+  /// Stima quanti UTXO bastano per coprire [totalOut] + fee.
+  ///
+  /// // PERCHÉ (P3): [recipientCount] era hardcoded a 1 destinatario — su un
+  /// // batch il conteggio degli input (e quindi la fee mostrata) sarebbe stato
+  /// // sotto-stimato, perché ogni output aggiunge ~31 vB alla tx.
   int _countUsedUtxos(
     List<UtxoInfo> utxos,
-    int amountSats,
-    int feeRateSatVb,
-  ) {
+    int totalOut,
+    int feeRateSatVb, {
+    int recipientCount = 1,
+  }) {
     const int dustLimit = 546;
     int totalIn = 0;
     int count = 0;
@@ -1607,19 +2156,19 @@ class BitcoinService {
       count++;
       totalIn += u.valueSat;
 
-      var outputCount = 2;
+      var outputCount = recipientCount + 1;
       var estimatedSize = estimateTxVbytes(utxos.take(count), outputCount);
       var estimatedFee = estimatedSize * feeRateSatVb;
-      var estimatedChange = totalIn - amountSats - estimatedFee;
+      var estimatedChange = totalIn - totalOut - estimatedFee;
 
       if (estimatedChange <= dustLimit) {
-        outputCount = 1;
+        outputCount = recipientCount;
         estimatedSize = estimateTxVbytes(utxos.take(count), outputCount);
         estimatedFee = estimatedSize * feeRateSatVb;
-        estimatedChange = totalIn - amountSats - estimatedFee;
+        estimatedChange = totalIn - totalOut - estimatedFee;
       }
 
-      if (totalIn >= amountSats + estimatedFee && estimatedChange >= 0) break;
+      if (totalIn >= totalOut + estimatedFee && estimatedChange >= 0) break;
     }
     return count;
   }

@@ -29,7 +29,8 @@ class LightningDiagnosticsScreen extends StatefulWidget {
       _LightningDiagnosticsScreenState();
 }
 
-class _LightningDiagnosticsScreenState extends State<LightningDiagnosticsScreen> {
+class _LightningDiagnosticsScreenState
+    extends State<LightningDiagnosticsScreen> {
   LightningNodeStats? _stats;
   List<LightningForward> _forwards = const [];
   bool _loading = false;
@@ -185,7 +186,8 @@ class _LightningDiagnosticsScreenState extends State<LightningDiagnosticsScreen>
             Row(
               children: [
                 Expanded(
-                  child: Text(loc.lightningStatsNet, style: theme.textTheme.bodySmall),
+                  child: Text(loc.lightningStatsNet,
+                      style: theme.textTheme.bodySmall,),
                 ),
                 Text(
                   '${_fmt(net)} sat',
@@ -308,7 +310,8 @@ class _LightningDiagnosticsScreenState extends State<LightningDiagnosticsScreen>
             Text(loc.lightningForwardsTitle, style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             if (_forwards.isEmpty)
-              Text(loc.lightningForwardsEmpty, style: theme.textTheme.bodyMedium)
+              Text(loc.lightningForwardsEmpty,
+                  style: theme.textTheme.bodyMedium,)
             else ...[
               ..._forwards.map((f) => _forwardRow(loc, theme, f)),
               if (_hasMore) ...[

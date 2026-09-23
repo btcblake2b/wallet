@@ -15,14 +15,19 @@ import '../../../core/services/biometric_service.dart';
 import '../../../core/services/bitcoin_service.dart';
 import '../../../core/services/crypto_service.dart';
 import '../../../core/services/device_service.dart';
+import '../../../core/services/export/export_delivery.dart';
+import '../../../core/services/export/history_export.dart';
 import '../../../core/services/rbf_params_registry.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/services/security_service.dart';
+import '../../../core/widgets/info_dot.dart';
+import '../../../l10n/info_hints_l10n.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../l10n/app_localizations.dart';
 import 'api_error_text.dart';
 import 'send_screen.dart';
+import 'wallet_addresses_screen.dart';
 import '../../../core/models/transaction_record.dart';
 import '../../../core/models/wallet_snapshot.dart';
 import 'widgets/bump_fee_dialog.dart';
@@ -274,6 +279,90 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     if (mounted) {
       setState(() => _wallet = updated);
     }
+  }
+
+  /// Nota utente della transazione (`null` se assente).
+  String? _noteForTx(TransactionRecord tx) => _wallet.noteFor(tx.txid);
+
+  /// Persiste la nota della transazione nel record del wallet.
+  // FLOW: Etichette e note
+  // STEP: 1 — la nota vive nel WalletRecord: nessun backend, nessuno storage nuovo
+  Future<void> _setTxNote(TransactionRecord tx, String note) async {
+    final updated = await widget.walletRepository.setTransactionNote(
+      _wallet,
+      tx.txid,
+      note,
+    );
+    if (!mounted) return;
+    setState(() => _wallet = updated);
+  }
+
+  /// Esporta lo storico (CSV o JSON) — tutto locale, nessuna chiamata di rete.
+  // FLOW: Esportazione storico
+  // STEP: 1 — scelta del formato
+  Future<void> _exportHistory() async {
+    final loc = AppLocalizations.of(context);
+    final asJson = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(loc.walletDetailTxExport),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(loc.walletDetailTxExportCsv),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.walletDetailTxExportJson),
+          ),
+        ],
+      ),
+    );
+    if (asJson == null || !mounted) return;
+
+    // STEP: 2 — contenuto costruito in memoria (logica pura, nessun I/O)
+    final now = DateTime.now();
+    final walletLabel = (_wallet.name?.trim().isNotEmpty ?? false)
+        ? _wallet.name!.trim()
+        : _wallet.walletId;
+    final content = asJson
+        ? buildHistoryJson(
+            _transactions,
+            walletName: walletLabel,
+            exportedAt: now,
+            noteFor: _wallet.noteFor,
+          )
+        : buildHistoryCsv(_transactions, noteFor: _wallet.noteFor);
+    final fileName = historyFileName(walletLabel, json: asJson, now: now);
+
+    // STEP: 3 — consegna: appunti (mobile/desktop) o download (web)
+    ExportDelivery delivered;
+    try {
+      delivered = await deliverHistoryExport(
+        content: content,
+        fileName: fileName,
+        mimeType: asJson ? 'application/json' : 'text/csv',
+      );
+    } catch (e) {
+      debugPrint('[LoopEngineer] export storico fallito: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.walletDetailTxExportFailed)),
+      );
+      return;
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          // PERCHÉ: l'esito cambia il messaggio — su web l'utente ha un file,
+          // su mobile il contenuto è negli appunti (nome file suggerito).
+          delivered == ExportDelivery.downloaded
+              ? loc.walletDetailTxExportDownloaded(fileName)
+              : loc.walletDetailTxExportCopied(fileName),
+        ),
+      ),
+    );
   }
 
   Future<void> _showSeedPhrase() async {
@@ -539,133 +628,24 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     return (addresses: result.addresses, xpub: result.xpub);
   }
 
+  /// Apre la schermata Indirizzi/UTXO del wallet.
+  ///
+  /// // PERCHÉ (P7): il vecchio bottom sheet elencava i primi 100 indirizzi
+  /// SENZA stato on-chain — un indirizzo usato e poi speso appariva identico
+  /// a uno mai usato. La schermata dedicata mostra stato, saldo e UTXO.
   Future<void> _showAddressesList() async {
-    final loc = AppLocalizations.of(context);
-    setState(() => _isLoading = true);
-    try {
-      final derived = await _deriveAddresses();
-
-      if (!mounted) return;
-
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.8,
-            maxChildSize: 0.95,
-            minChildSize: 0.5,
-            builder: (context, scrollController) => Column(
-              children: [
-                const SizedBox(height: 12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withAlpha((0.3 * 255).round()),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.list_alt,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        loc.walletDetailFirst100Addresses,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView.separated(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: derived.addresses.length,
-                    separatorBuilder: (context, index) =>
-                        const Divider(indent: 72, height: 1),
-                    itemBuilder: (context, index) {
-                      final addr = derived.addresses[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          addr,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'monospace',
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.copy, size: 20),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: addr));
-                            final loc = AppLocalizations.of(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(loc.walletDetailAddressCopied),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                        ),
-                        onTap: () {
-                          Clipboard.setData(ClipboardData(text: addr));
-                          final loc = AppLocalizations.of(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(loc.walletDetailAddressCopied),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => WalletAddressesScreen(
+          wallet: _wallet,
+          walletRepository: widget.walletRepository,
+          bitcoinService: widget.bitcoinService,
+          // PERCHÉ: gli UTXO già nello snapshot viaggiano con la schermata →
+          // la tab UTXO non costa nessuna chiamata di rete.
+          initialUtxos: _snapshot?.utxos,
         ),
-      );
-    } catch (e) {
-      if (mounted) {
-        final loc = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(loc.walletDetailErrorAddresses(e.toString()))),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+      ),
+    );
   }
 
   Future<void> _showXpubDialog() async {
@@ -682,7 +662,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
         builder: (ctx) {
           final loc = AppLocalizations.of(ctx);
           return AlertDialog(
-            title: Text(loc.walletDetailXpubTitle),
+            title: Row(
+              children: [
+                Text(loc.walletDetailXpubTitle),
+                const InfoDot(id: InfoHintId.xpub),
+              ],
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -848,7 +833,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(loc.walletDetailReceiveQr),
+        title: Row(
+          children: [
+            Text(loc.walletDetailReceiveQr),
+            const InfoDot(id: InfoHintId.receiveAddress),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1294,6 +1284,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
               onRetry: () => _refresh(),
               isBumpable: _canBumpTx,
               onBumpFee: _onBumpFee,
+              noteFor: _noteForTx,
+              onSetNote: _setTxNote,
+              onExport: _transactions.isEmpty ? null : _exportHistory,
             ),
 
             // ── 5. Info Wallet (collassabile) ────────────────
@@ -1350,20 +1343,26 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
         // PERCHÉ (P1): badge di sola lettura per i wallet watch-only —
         // chiaro all'utente che non può firmare da questo wallet.
         if (_isWatchOnly) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: colorScheme.tertiaryContainer,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              loc.watchOnlyBadge,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onTertiaryContainer,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  loc.watchOnlyBadge,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onTertiaryContainer,
+                  ),
+                ),
               ),
-            ),
+              const InfoDot(id: InfoHintId.watchOnly, size: 14),
+            ],
           ),
           const SizedBox(height: 8),
         ],
@@ -1625,13 +1624,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
               loc.walletDetailShowAddresses,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            trailing: _isLoading
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.chevron_right, size: 20),
-            onTap: _isLoading ? null : _showAddressesList,
+            subtitle: Text(
+              loc.walletAddressesTitle,
+              style: const TextStyle(fontSize: 12),
+            ),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: _showAddressesList,
           ),
           const SizedBox(height: 8),
 
@@ -1745,9 +1743,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
         initiallyExpanded: false,
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        title: Text(
-          loc.walletDetailUtxos,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              loc.walletDetailUtxos,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const InfoDot(id: InfoHintId.coinControl, size: 15),
+          ],
         ),
         leading: Icon(
           Icons.account_balance_wallet_outlined,
@@ -1947,7 +1951,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
             child: OutlinedButton.icon(
               onPressed: _showSignVerifyDialog,
               icon: const Icon(Icons.security),
-              label: Text(loc.walletDetailSignVerify),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(loc.walletDetailSignVerify),
+                  const InfoDot(id: InfoHintId.signVerify),
+                ],
+              ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,

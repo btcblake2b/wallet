@@ -22,7 +22,9 @@ import '../../../core/services/vault_autolock.dart';
 import '../../../core/services/app_lock_service.dart';
 import '../../../core/services/lightning/lightning_connection_store.dart';
 import '../../../core/services/lightning/lightning_service.dart';
+import '../../../core/services/swap/swap_service.dart';
 import '../../donate/presentation/donate_screen.dart';
+import '../../lightning/presentation/lightning_swap_screen.dart';
 import '../../lightning/presentation/lightning_view.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'wallet_detail_screen.dart';
@@ -54,6 +56,7 @@ class HomeScreen extends StatefulWidget {
     this.themeProvider,
     this.lightningService,
     this.lightningConnectionStore,
+    this.swapService,
   });
 
   final WalletRepository walletRepository;
@@ -73,6 +76,10 @@ class HomeScreen extends StatefulWidget {
   /// On-chain/Lightning non viene mostrato (feature spenta / test legacy).
   final LightningService? lightningService;
   final LightningConnectionStore? lightningConnectionStore;
+
+  /// Swap con provider terzi (P9). Se null la CTA di pagamento senza nodo
+  /// resta nascosta (feature spenta / test legacy).
+  final SwapService? swapService;
 
   /// // PERCHÉ (S6): storage del disclaimer sovrascrivibile nei test.
   /// Lo State è privato ma nella stessa libreria → accesso al membro statico.
@@ -748,6 +755,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
+  /// Apre la schermata swap (pagamento LN senza nodo personale, P9).
+  Future<void> _openSwapScreen() async {
+    final swapService = widget.swapService;
+    if (swapService == null) return;
+    final wallets = await _walletsFuture;
+    if (!mounted) return;
+    // PERCHÉ: lo swap firma on-chain (funding + refund) → solo wallet hot
+    // (i watch-only non hanno il seed); QUALE usare lo sceglie l'utente
+    // nella schermata swap (con controllo fondi prima di firmare).
+    final hot = wallets
+        .where((w) => w.kind != WalletKind.watchOnly)
+        .toList();
+    if (hot.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).lightningSwapWatchOnly),
+        ),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LightningSwapScreen(
+          swapService: swapService,
+          wallets: hot,
+          walletRepository: widget.walletRepository,
+          bitcoinService: widget.bitcoinService,
+        ),
+      ),
+    );
+  }
+
   /// Elimina tutti i wallet selezionati.
   Future<void> _deleteSelectedWallets() async {
     final loc = AppLocalizations.of(context);
@@ -965,6 +1004,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ? LightningView(
                       lightningService: widget.lightningService!,
                       connectionStore: widget.lightningConnectionStore!,
+                      onOpenSwap: widget.swapService == null
+                          ? null
+                          : _openSwapScreen,
                     )
                   : Stack(
                       children: [

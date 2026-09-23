@@ -41,20 +41,20 @@
     <div class="download-box">
       <p><strong>Before downloading</strong>: get the installer only from this page (domain <code>btcblake2b.org</code>) or from the official GitHub repository.</p>
       <a class="btn btn-primary btn-lg" href="https://github.com/btcblake2b/control-plane/releases/latest" rel="noopener">Download installer (GitHub Releases)</a>
-      <p class="small">Release <strong>v0.2.0</strong> — package <code>tlw-node-installer-0.2.0.tar.gz</code>, with <code>SHA256SUMS</code> covering the package and the bridge binary.</p>
+      <p class="small">Release <strong>v0.3.0</strong> — package <code>tlw-node-installer-0.3.0.tar.gz</code>, with <code>SHA256SUMS</code> covering the package and the bridge binary.</p>
 
       <h2>Verify the checksum (SHA-256)</h2>
-      <p>The file <code>tlw-node-installer-0.2.0.tar.gz</code> must have this hash:</p>
-      <pre class="checksum" aria-label="SHA-256 checksum of the node installer package"><code>SHA256(tlw-node-installer-0.2.0.tar.gz) = <span id="checksum">bda658654b847dcaa05b8dbe94036f766f4589c38dae3b9e6c3a0320e4f8cc95</span></code></pre>
+      <p>The file <code>tlw-node-installer-0.3.0.tar.gz</code> must have this hash:</p>
+      <pre class="checksum" aria-label="SHA-256 checksum of the node installer package"><code>SHA256(tlw-node-installer-0.3.0.tar.gz) = <span id="checksum">b3ed03d9dc2fe6f6112d2db72769c0eb8ea8cd85ddce18763e357bfd70268422</span></code></pre>
       <h3>Verify on Linux</h3>
-      <pre><code>sha256sum tlw-node-installer-0.2.0.tar.gz</code></pre>
+      <pre><code>sha256sum tlw-node-installer-0.3.0.tar.gz</code></pre>
       <h3>Verify on Windows (PowerShell)</h3>
-      <pre><code>Get-FileHash .\tlw-node-installer-0.2.0.tar.gz -Algorithm SHA256</code></pre>
+      <pre><code>Get-FileHash .\tlw-node-installer-0.3.0.tar.gz -Algorithm SHA256</code></pre>
     </div>
 
     <h2>Install (3 commands)</h2>
-    <pre><code>tar -xzf tlw-node-installer-0.2.0.tar.gz
-cd tlw-node-installer-0.2.0
+    <pre><code>tar -xzf tlw-node-installer-0.3.0.tar.gz
+cd tlw-node-installer-0.3.0
 ./install.sh --bitcoind-rpc rpcuser:rpcpass@127.0.0.1:8332</code></pre>
     <p class="small">Run it as your regular user: <code>sudo</code> is never required.</p>
     <p>At the end the installer prints the <strong>connection string</strong> (NWC/NCC URI) — see “Connect the app” below for where to find it and a format example.</p>
@@ -75,6 +75,20 @@ cd tlw-node-installer-0.2.0
     <p>Paste it in the app under <em>Lightning → Connect</em>. Format example (fake values):</p>
     <pre><code>nostr+walletconnect://&lt;bridge-pubkey-64-hex&gt;?relay=wss://relay.primal.net&amp;secret=&lt;64-hex&gt;</code></pre>
     <p class="small">The string contains a personal authorization secret: treat it like a password and never share it. Authorize another device with <code>./install.sh --gen-uri</code>; revoke a lost one with <code>./install.sh --revoke-client &lt;pubkey&gt;</code>.</p>
+
+    <h2>Being reachable by other peers (optional, Tor)</h2>
+    <p>Channels and payments do <em>not</em> need an inbound address: your node connects <em>outbound</em> to the peers it can reach. An inbound address matters only if you want <strong>other nodes</strong> to be able to connect to <em>you</em> — useful when testing with the community.</p>
+    <p>Tor is enough: no open ports, no public IP, no router changes. Create a hidden service (one <code>sudo</code> step):</p>
+    <pre><code>sudo mkdir -p /var/lib/tor/cln-hs &amp;&amp; sudo chown debian-tor:debian-tor /var/lib/tor/cln-hs
+printf 'HiddenServiceDir /var/lib/tor/cln-hs\nHiddenServicePort 9735 127.0.0.1:9735\n' | sudo tee -a /etc/tor/torrc
+sudo systemctl restart tor &amp;&amp; sudo cat /var/lib/tor/cln-hs/hostname</code></pre>
+    <p>Then add these lines to <code>~/.lightning/config</code> (with the address printed by the last command) and restart lightningd:</p>
+    <pre><code>proxy=127.0.0.1:9050
+announce-addr=&lt;your-address&gt;.onion:9735
+bind-addr=0.0.0.0:9735</code></pre>
+    <p class="small">⚠️ <code>bind-addr</code> is not optional: with <code>announce-addr</code> alone, lightningd stops listening on port 9735 and binds to 19735 instead — the hidden service would then have nothing to forward to and outside connections are refused.</p>
+    <p>Test node of this project (announced on Tor):</p>
+    <pre><code>mxesrfjokenxcmukvbltm3k6ewbj2v3wsjkt3ip56ckga2equiujsfad.onion:9735</code></pre>
 
     <h2>What the installer does</h2>
     <ul>

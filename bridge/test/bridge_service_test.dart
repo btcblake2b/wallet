@@ -235,6 +235,28 @@ void main() {
     );
   });
 
+  test('ignora richieste con id non canonico (tag alterato, SEC-01)', () async {
+    final request = buildRequest(method: 'get_balance');
+    // Attacco relay: stesso id/firma ma tag `p` sostituito.
+    final tampered = NostrEvent(
+      id: request.id,
+      pubkey: request.pubkey,
+      createdAt: request.createdAt,
+      kind: request.kind,
+      tags: [
+        ['p', 'attacker_pubkey'],
+      ],
+      content: request.content,
+      sig: request.sig,
+    );
+    transport.inject(tampered);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(
+      transport.published.any((e) => e.kind == Protocol.nwcResponseKind),
+      isFalse,
+    );
+  });
+
   test('pubblica gli eventi info NWC/NCC all\'avvio', () {
     expect(
       transport.published.any((e) => e.kind == Protocol.infoKindNwc),

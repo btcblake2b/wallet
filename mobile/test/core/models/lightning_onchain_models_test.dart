@@ -85,7 +85,8 @@ void main() {
   group('LightningUtxo', () {
     test('parse output confermato', () {
       final u = LightningUtxo.fromJson(const {
-        'txid': 'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6',
+        'txid':
+            'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6',
         'vout': 1,
         'amount_msat': 19382000,
         'address': 'bc1p8ypv5',

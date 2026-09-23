@@ -27,7 +27,8 @@ void main() {
     store = LightningConnectionStore();
   });
 
-  Widget buildView() => MaterialApp(
+  Widget buildView({bool hideNodeConnect = false, VoidCallback? onOpenSwap}) =>
+      MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),
@@ -35,6 +36,8 @@ void main() {
           body: LightningView(
             lightningService: service,
             connectionStore: store,
+            hideNodeConnect: hideNodeConnect,
+            onOpenSwap: onOpenSwap,
           ),
         ),
       );
@@ -45,6 +48,29 @@ void main() {
 
     expect(find.text('No Lightning node connected'), findsOneWidget);
     expect(find.text('Connect node'), findsOneWidget);
+  });
+
+  // PERCHÉ (PWA 2026-09-18): su web la CTA di connessione al nodo è nascosta
+  // (si paga solo via swap) — il seam `hideNodeConnect` copre il ramo che
+  // `kIsWeb` non rende testabile in unit test.
+  testWidgets('web (hideNodeConnect): niente CTA nodo, solo swap + nota',
+      (tester) async {
+    await tester.pumpWidget(buildView(hideNodeConnect: true, onOpenSwap: () {}));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Connect node'), findsNothing);
+    expect(find.text('Pay an invoice without a node (swap)'), findsOneWidget);
+    expect(find.textContaining('swap provider'), findsOneWidget);
+  });
+
+  testWidgets('nativo (default): CTA nodo e swap entrambe presenti',
+      (tester) async {
+    await tester.pumpWidget(buildView(onOpenSwap: () {}));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Connect node'), findsOneWidget);
+    expect(find.text('Pay an invoice without a node (swap)'), findsOneWidget);
+    expect(find.textContaining('swap provider'), findsNothing);
   });
 
   testWidgets('connesso (mock): saldo, azioni e canali', (tester) async {

@@ -47,6 +47,38 @@ dart run bin/bridge.dart
 cd ~/bridge && nohup dart run bin/bridge.dart > bridge.log 2>&1 &
 ```
 
+### Container (Umbrel / Start9)
+
+WHY: on Umbrel/Start9 there is no SSH or CLI — the bridge package starts the
+container from environment variables and exposes a **status page with the
+connection URI and QR** in the browser.
+
+```bash
+docker build -f packaging/docker/Dockerfile.bridge -t nwc-cln-bridge:dev .
+docker run -d --name nwc-cln-bridge \
+  -e BRIDGE_CLN_URL=http://<cln-host>:3001 \
+  -e BRIDGE_RUNE_FILE=/rune/bridge-rune \
+  -e BRIDGE_UI_PORT=3000 -e BRIDGE_UI_TOKEN=<token> \
+  -v bridge-data:/data -v <rune-dir>:/rune:ro \
+  -p 3000:3000 nwc-cln-bridge:dev
+```
+
+Environment variables: `BRIDGE_CLN_URL` and `BRIDGE_RUNE_FILE` **or**
+`BRIDGE_RUNE_HEX` are required **only when the node is provided by env**. Without
+them the bridge starts with no node and the node is configured at runtime from the
+status page (URL of clnrest + rune) — that is how the StartOS package works when
+the Core Lightning service is not installed. Other variables: `BRIDGE_RELAY`,
+`BRIDGE_ALIAS`, `BRIDGE_CLN_CA` / `BRIDGE_CLN_CLIENT_CERT` / `BRIDGE_CLN_CLIENT_KEY` /
+`BRIDGE_CLN_TLS_INSECURE` (clnrest over TLS, e.g. the Umbrel Core Lightning app),
+`BRIDGE_UI_PORT` / `BRIDGE_UI_TOKEN`, `BRIDGE_LOG_LEVEL`. If `BRIDGE_UI_PORT` is set
+and no token is given, the bridge generates one and **logs it at startup** (the page
+shows a device secret, so it must not be left open on a LAN). The Nostr key is
+generated **inside the container** on first start and persisted in `/data` — no
+secret ever travels in the image or envs.
+`bridge-exe --health` (exit 0 = node reachable) is the health check used by the
+container. Missing `BRIDGE_CLN_URL` or the rune aborts with a clear
+`CONFIG NON VALIDA: …` message and exit code 78.
+
 ### Deploying an update (script)
 
 WHY: complex commands over SSH suffer PowerShell→bash quoting —

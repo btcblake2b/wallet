@@ -1,0 +1,18 @@
+# PERCHÉ: il context di build è la root del repo ma il Dockerfile del bridge
+# copia solo bridge/. Escludere il resto evita di spedire centinaia di MB al
+# daemon (mobile/, docs/, .git).
+.git
+.rtt
+.github
+.vscode
+docs
+mobile
+website
+scripts
+btc_blake2b_logo
+# // PERCHÉ: artefatti generati localmente (su Windows la package_config.json
+# dentro .dart_tool contiene path assoluti → rompono la compilazione AOT nel
+# container: "dart compile exe" fallisce con exit 254).
+bridge/.dart_tool
+bridge/build
+**/*.exe

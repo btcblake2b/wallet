@@ -97,5 +97,80 @@ void main() {
       expect(cleared.kind, WalletKind.watchOnly);
       expect(cleared.accountXpub, isNull);
     });
+
+    test('txNotes: round-trip toMap/fromMap preserva le note', () {
+      final sut = WalletRecord(
+        walletId: 'id',
+        encryptedSeed: 'enc',
+        publicAddress: 'bc1qaddr',
+        deviceId: 'dev',
+        createdAt: DateTime(2024, 1, 1),
+        txNotes: const {'tx1': 'colazione', 'tx2': 'affitto'},
+      );
+
+      final restored = WalletRecord.fromMap(sut.toMap());
+
+      expect(restored.txNotes, {'tx1': 'colazione', 'tx2': 'affitto'});
+      expect(restored.noteFor('tx1'), 'colazione');
+    });
+
+    test('fromMap senza tx_notes → mappa vuota (record pre-note)', () {
+      final sut = WalletRecord.fromMap(<String, dynamic>{
+        'wallet_id': 'legacy_id',
+        'encrypted_seed': 'enc',
+        'public_address': 'bc1qaddr',
+        'device_id': 'dev',
+        'created_at': '2024-01-01T00:00:00.000Z',
+      });
+
+      expect(sut.txNotes, isEmpty);
+      expect(sut.noteFor('qualsiasi'), isNull);
+    });
+
+    test('fromMap con tx_notes di tipo inatteso → mappa vuota, nessun crash', () {
+      final sut = WalletRecord.fromMap(<String, dynamic>{
+        'wallet_id': 'id',
+        'encrypted_seed': 'enc',
+        'public_address': 'bc1qaddr',
+        'device_id': 'dev',
+        'created_at': '2024-01-01T00:00:00.000Z',
+        'tx_notes': 'non-una-mappa',
+      });
+
+      expect(sut.txNotes, isEmpty);
+    });
+
+    test('noteFor ignora note vuote o di soli spazi', () {
+      final sut = WalletRecord(
+        walletId: 'id',
+        encryptedSeed: 'enc',
+        publicAddress: 'bc1qaddr',
+        deviceId: 'dev',
+        createdAt: DateTime(2024, 1, 1),
+        txNotes: const {'tx1': '   ', 'tx2': ' ok '},
+      );
+
+      expect(sut.noteFor('tx1'), isNull);
+      expect(sut.noteFor('tx2'), 'ok');
+      expect(sut.noteFor('assente'), isNull);
+    });
+
+    test('copyWith aggiorna txNotes senza toccare utxoLabels', () {
+      final sut = WalletRecord(
+        walletId: 'id',
+        encryptedSeed: 'enc',
+        publicAddress: 'bc1qaddr',
+        deviceId: 'dev',
+        createdAt: DateTime(2024, 1, 1),
+        utxoLabels: const {'txid:0': 'utxo'},
+      );
+
+      final updated = sut.copyWith(txNotes: const {'tx1': 'nota'});
+
+      expect(updated.txNotes, {'tx1': 'nota'});
+      expect(updated.utxoLabels, {'txid:0': 'utxo'});
+      // PERCHÉ: i record sono immutabili — l'istanza di partenza non cambia.
+      expect(sut.txNotes, isEmpty);
+    });
   });
 }

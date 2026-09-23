@@ -23,7 +23,8 @@ void main() {
         home: LightningReceiveScreen(lightningService: lightningService),
       );
 
-  testWidgets('invoice creata → QR e nessun badge di pagamento', (tester) async {
+  testWidgets('invoice creata → QR e nessun badge di pagamento',
+      (tester) async {
     service = LightningServiceMock();
     await tester.runAsync(() => service.connect(connection));
     await tester.pumpWidget(wrap(service));

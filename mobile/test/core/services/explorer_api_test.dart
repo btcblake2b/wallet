@@ -1,12 +1,35 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:btc_blake2b_wallet/core/services/explorer_api.dart';
+import 'package:btc_blake2b_wallet/core/services/explorer_mirrors.dart';
+
+class MockStorage extends Mock implements FlutterSecureStorage {}
+
+/// Imposta la politica dei mirror come la imposterebbe l'utente dalle
+/// Impostazioni (istanza di processo + storage mockato).
+Future<void> _setMirrors(bool enabled) async {
+  final storage = MockStorage();
+  when(
+    () => storage.write(
+      key: any(named: 'key'),
+      value: any(named: 'value'),
+    ),
+  ).thenAnswer((_) async {});
+  ExplorerMirrors.instance = ExplorerMirrors(storage: storage);
+  if (!enabled) await ExplorerMirrors.instance.setEnabled(false);
+}
 
 void main() {
+  // PERCHÉ: il registro dei mirror è di processo → ogni test parte dal default.
+  setUp(ExplorerMirrors.resetForTest);
+  tearDown(ExplorerMirrors.resetForTest);
+
   group('ExplorerApi', () {
     test('fetchAddressInfo parsa balance e tx_count dal payload chain_stats',
         () async {
@@ -306,6 +329,9 @@ void main() {
         client: mock,
         maxAttempts: 3,
         baseRetryDelay: Duration.zero,
+        // PERCHÉ: test unitario del retry single-host; il failover fra host ha
+        // test dedicati nel gruppo "failover multi-host".
+        baseUrls: const ['https://mempool.guide/api'],
       );
 
       await expectLater(
@@ -339,6 +365,178 @@ void main() {
       final api = ExplorerApi(client: mock);
 
       await api.addressBalance('bc1qtest');
+    });
+
+    // ── Failover fra host Esplora (2026-09-16) ──
+    group('failover multi-host', () {
+      const primary = 'https://mempool.guide/api';
+      const mirror = 'https://mempool.kilombino.com/api';
+      const mirror2 = 'https://mempool.maveth.ca/api';
+      const hosts = <String>[primary, mirror, mirror2];
+
+      http.Response balanceResponse(int funded) => http.Response(
+            jsonEncode({
+              'chain_stats': {
+                'funded_txo_sum': funded,
+                'spent_txo_sum': 0,
+                'tx_count': 1,
+              },
+              'mempool_stats': {
+                'funded_txo_sum': 0,
+                'spent_txo_sum': 0,
+                'tx_count': 0,
+              },
+            }),
+            200,
+          );
+
+      test('primario 503 → saldo dal mirror (2 richieste)', () async {
+        final hostsHit = <String>[];
+        final mock = MockClient((request) async {
+          hostsHit.add(request.url.host);
+          if (request.url.host == 'mempool.guide') {
+            return http.Response('{"error":"node_unavailable"}', 503);
+          }
+          return balanceResponse(90000);
+        });
+        final api = ExplorerApi(client: mock, baseUrls: hosts);
+
+        final balance = await api.addressBalance('bc1qtest');
+
+        expect(balance.balanceSats, equals(90000));
+        expect(hostsHit, equals(['mempool.guide', 'mempool.kilombino.com']));
+      });
+
+      test('404 dal primario → not_found senza failover (1 richiesta)',
+          () async {
+        // PERCHÉ: 404 è una risposta VALIDA (risorsa assente): ritentarla su
+        // un mirror maschererebbe l'esito.
+        var calls = 0;
+        final mock = MockClient((_) async {
+          calls++;
+          return http.Response('not found', 404);
+        });
+        final api = ExplorerApi(client: mock, baseUrls: hosts);
+
+        await expectLater(
+          api.addressBalance('bc1qtest'),
+          throwsA(
+            isA<ApiException>().having((e) => e.code, 'code', 'not_found'),
+          ),
+        );
+        expect(calls, equals(1));
+      });
+
+      test('tutti gli host indisponibili → errore del PRIMO host', () async {
+        final mock = MockClient(
+          (_) async => http.Response('{"error":"node_unavailable"}', 503),
+        );
+        final api = ExplorerApi(client: mock, baseUrls: hosts);
+
+        await expectLater(
+          api.addressBalance('bc1qtest'),
+          throwsA(
+            isA<ApiException>()
+                .having((e) => e.code, 'code', 'node_unavailable')
+                .having((e) => e.statusCode, 'statusCode', 503),
+          ),
+        );
+      });
+
+      test('sticky: dopo il failover le richieste restano sul mirror',
+          () async {
+        final hostsHit = <String>[];
+        final mock = MockClient((request) async {
+          hostsHit.add(request.url.host);
+          if (request.url.host == 'mempool.guide') {
+            return http.Response('{"error":"node_unavailable"}', 503);
+          }
+          return balanceResponse(1234);
+        });
+        final api = ExplorerApi(client: mock, baseUrls: hosts);
+
+        await api.addressBalance('bc1qtest'); // primo: failover
+        await api.addressBalance('bc1qtest'); // secondo: già sul mirror
+
+        expect(
+          hostsHit,
+          equals([
+            'mempool.guide',
+            'mempool.kilombino.com',
+            'mempool.kilombino.com',
+          ]),
+        );
+      });
+
+      test('lista con un solo host → nessun failover (comportamento storico)',
+          () async {
+        var calls = 0;
+        final mock = MockClient((_) async {
+          calls++;
+          return http.Response('{"error":"node_unavailable"}', 503);
+        });
+        final api = ExplorerApi(client: mock, baseUrls: const [primary]);
+
+        await expectLater(
+          api.addressBalance('bc1qtest'),
+          throwsA(isA<ApiException>()),
+        );
+        expect(calls, equals(1)); // maxAttempts default 1, un solo host
+      });
+
+      // ── Interruttore "usa solo mempool.guide" (Impostazioni) ──
+
+      test('interruttore OFF: primario 503 → nessun mirror contattato',
+          () async {
+        await _setMirrors(false);
+        final hostsHit = <String>[];
+        final mock = MockClient((request) async {
+          hostsHit.add(request.url.host);
+          return http.Response('{"error":"node_unavailable"}', 503);
+        });
+        // PERCHÉ: nessun baseUrls esplicito → la lista arriva dal registro.
+        final api = ExplorerApi(client: mock);
+
+        await expectLater(
+          api.addressBalance('bc1qtest'),
+          throwsA(
+            isA<ApiException>()
+                .having((e) => e.code, 'code', 'node_unavailable'),
+          ),
+        );
+        expect(hostsHit, equals(['mempool.guide']));
+      });
+
+      test('interruttore OFF dopo un failover: si torna al primario', () async {
+        await _setMirrors(true);
+        final hostsHit = <String>[];
+        var primaryCalls = 0;
+        final mock = MockClient((request) async {
+          hostsHit.add(request.url.host);
+          if (request.url.host == 'mempool.guide') {
+            primaryCalls++;
+            // PERCHÉ: il primario fallisce solo al primo giro (quello che fa
+            // scattare il failover); dopo l'OFF deve rispondere normalmente,
+            // a prova che le richieste tornano su di lui.
+            if (primaryCalls == 1) {
+              return http.Response('{"error":"node_unavailable"}', 503);
+            }
+          }
+          return balanceResponse(1234);
+        });
+        final api = ExplorerApi(client: mock);
+
+        final primo = await api.addressBalance('bc1qtest'); // sticky sul mirror
+        await _setMirrors(false); // l'utente disattiva i mirror
+        final dopo = await api.addressBalance('bc1qtest');
+
+        expect(primo.balanceSats, equals(1234));
+        expect(dopo.balanceSats, equals(1234));
+        expect(
+          hostsHit,
+          equals(['mempool.guide', 'mempool.kilombino.com', 'mempool.guide']),
+        );
+      });
     });
   });
 }

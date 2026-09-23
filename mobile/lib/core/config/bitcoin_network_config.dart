@@ -74,29 +74,74 @@ class BitcoinNetworkConfig {
   // ============================================================
   // API Esplora-compatibile (esploratore) — rete bitcoin-blake2b
   // ============================================================
-  // PERCHÉ: la rete blake2b non usa Blockstream; mempool.guide espone l'API
-  // Esplora-compatibile (formato: /address, /utxo, /tx, POST /tx).
-  // Dal 2026-09-08 è l'UNICA fonte per saldo, storico, info e tx status.
-  static String get blockstreamApiBaseUrl {
+  // FLOW: Lettura on-chain con failover Esplora
+  // PERCHÉ (2026-09-16): la rete blake2b non usa Blockstream; il primario è
+  // mempool.guide (Esplora-compatibile), affiancato da due mirror comunitari
+  // verificati live il 16/09/2026 (stesso tip 972376 e stesso saldo netto per
+  // lo stesso indirizzo). La lista è ORDINATA: gli host successivi al primo
+  // subentrano SOLO su errore di disponibilità (network/timeout/429/5xx).
+  // L'ADR 2026-09-08 prevedeva già questa evoluzione ("se servirà una seconda
+  // fonte, preferire un esploratore Esplora-compatible della community").
+  static const List<String> _kExplorerUrlsMainnet = <String>[
+    'https://mempool.guide/api',
+    'https://mempool.kilombino.com/api',
+    'https://mempool.maveth.ca/api',
+  ];
+  static const List<String> _kExplorerUrlsTestnet = <String>[
+    'https://mempool.guide/testnet4/api',
+  ];
+
+  /// Host Esplora-compatibili per le LETTURE (saldo, UTXO, storico, tip, tx
+  /// status, fee) in ordine di priorità: il primo è la fonte primaria.
+  static List<String> get explorerApiBaseUrls {
     switch (current) {
       case BtcNetwork.testnet:
-        return 'https://mempool.guide/testnet4/api';
+        return _kExplorerUrlsTestnet;
       case BtcNetwork.mainnet:
-        return 'https://mempool.guide/api';
+        return _kExplorerUrlsMainnet;
     }
   }
+
+  // PERCHÉ: mempool.maveth.ca risponde 404 su POST /tx (verificato il
+  // 2026-09-16) → non deve MAI ricevere una transazione da trasmettere.
+  static const List<String> _kBroadcastUrlsMainnet = <String>[
+    'https://mempool.guide/api',
+    'https://mempool.kilombino.com/api',
+  ];
+
+  /// Host che espongono ANCHE il broadcast (`POST /tx`).
+  static List<String> get broadcastApiBaseUrls {
+    switch (current) {
+      case BtcNetwork.testnet:
+        return _kExplorerUrlsTestnet;
+      case BtcNetwork.mainnet:
+        return _kBroadcastUrlsMainnet;
+    }
+  }
+
+  /// Host primario (mempool.guide): unica fonte quando l'utente disattiva i
+  /// mirror comunitari dalle Impostazioni.
+  static String get primaryExplorerApiBaseUrl => explorerApiBaseUrls.first;
+
+  /// URL WEB dell'explorer per una transazione (link "verifica" nella UI).
+  ///
+  /// // PERCHÉ (18/09/2026): la base API termina in `/api`, mentre la UI web
+  /// // espone `<host>/tx/<txid>` (e `<host>/testnet4/tx/<txid>` in testnet).
+  /// // Si deriva dalla base primaria così il link resta coerente con l'host
+  /// // realmente usato per le letture.
+  static String txExplorerUrl(String txid) =>
+      '${primaryExplorerApiBaseUrl.replaceFirst(RegExp(r'/api$'), '')}'
+      '/tx/$txid';
+
+  /// Fonte primaria per le letture (firma storica, ora derivata).
+  static String get blockstreamApiBaseUrl => explorerApiBaseUrls.first;
 
   // ============================================================
   // API Mempool (fee estimates) — rete bitcoin-blake2b
   // ============================================================
-  static String get mempoolApiBaseUrl {
-    switch (current) {
-      case BtcNetwork.testnet:
-        return 'https://mempool.guide/testnet4/api';
-      case BtcNetwork.mainnet:
-        return 'https://mempool.guide/api';
-    }
-  }
+  // PERCHÉ: le fee arrivano dall'host primario Esplora-compatibile
+  // (/v1/fees/recommended); il failover è gestito da BitcoinService.
+  static String get mempoolApiBaseUrl => explorerApiBaseUrls.first;
 
   // ============================================================
   // bitcoin_base library network
@@ -193,6 +238,16 @@ class BitcoinNetworkConfig {
         return (low: 1, normal: 2, high: 3);
     }
   }
+
+  /// Pavimento di fee per le tx che devono avere PRIORITÀ (swap P9, tier
+  /// "Alta" nella schermata Invia).
+  ///
+  /// // PERCHÉ (18/09/2026): su questa chain il mercato sta al minimo di relay e
+  /// // le stime collassano (economy = hour = fastest = 1 sat/vB) → senza un
+  /// // pavimento il tier "alto" vale quanto il minimo, cioè nessuna priorità
+  /// // reale (il funding dello swap aspetta la 1ª conferma per far pagare il
+  /// // provider). Il valore è il tier `high` del fallback, tarato su blake2b.
+  static int get priorityFeeFloorSatVb => fallbackFeeEstimates.high;
 
   /// Avviso legale mostrato nella schermata di invio.
   static String get networkDisclaimer {

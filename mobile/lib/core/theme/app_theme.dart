@@ -4,7 +4,6 @@ class AppTheme {
   // Brand Colors matching the website
   static const Color bgColor = Color(0xFF0B0F19);
   static const Color primary = Color(0xFFF7931A); // Bitcoin Orange
-  static const Color primaryHover = Color(0xFFE07F0F);
   static const Color accent = Color(0xFF38BDF8); // Cyan
 
   /// Lightning (L2): viola dedicato per distinguere il contesto dal brand.

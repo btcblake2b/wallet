@@ -343,5 +343,58 @@ void main() {
         );
       });
     });
+
+    group('setTransactionNote', () {
+      test('salva la nota trimmata e la persiste sul wallet', () async {
+        when(() => mockSecureSeedStorage.upsertWallet(any()))
+            .thenAnswer((_) async {});
+        final wallet = makeWallet('w1');
+
+        final updated =
+            await sut.setTransactionNote(wallet, 'tx1', '  colazione  ');
+
+        expect(updated.noteFor('tx1'), 'colazione');
+        // PERCHÉ: il record in ingresso non va mutato (immutabilità).
+        expect(wallet.txNotes, isEmpty);
+        final captured =
+            verify(() => mockSecureSeedStorage.upsertWallet(captureAny()))
+                .captured;
+        expect((captured.single as WalletRecord).noteFor('tx1'), 'colazione');
+      });
+
+      test('nota vuota o di soli spazi rimuove la chiave', () async {
+        when(() => mockSecureSeedStorage.upsertWallet(any()))
+            .thenAnswer((_) async {});
+        final wallet =
+            makeWallet('w1').copyWith(txNotes: const {'tx1': 'vecchia'});
+
+        final updated = await sut.setTransactionNote(wallet, 'tx1', '   ');
+
+        expect(updated.txNotes.containsKey('tx1'), isFalse);
+        expect(updated.txNotes, isEmpty);
+      });
+
+      test('non tocca le etichette UTXO', () async {
+        when(() => mockSecureSeedStorage.upsertWallet(any()))
+            .thenAnswer((_) async {});
+        final wallet =
+            makeWallet('w1').copyWith(utxoLabels: const {'txid:0': 'utxo'});
+
+        final updated = await sut.setTransactionNote(wallet, 'tx1', 'nota');
+
+        expect(updated.utxoLabels, {'txid:0': 'utxo'});
+        expect(updated.noteFor('tx1'), 'nota');
+      });
+
+      test('txid vuoto → ArgumentError e nessuna scrittura', () async {
+        final wallet = makeWallet('w1');
+
+        await expectLater(
+          sut.setTransactionNote(wallet, '', 'nota'),
+          throwsArgumentError,
+        );
+        verifyNever(() => mockSecureSeedStorage.upsertWallet(any()));
+      });
+    });
   });
 }

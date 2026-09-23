@@ -3,7 +3,7 @@
 This project includes the following third-party software.
 
 > **Auto-generated** by `scripts/generate_third_party_licenses.dart`
-> on 2026-09-10.
+> on 2026-09-17.
 > Run `dart run scripts/generate_third_party_licenses.dart` to regenerate.
 
 ---
@@ -45,17 +45,10 @@ This project includes the following third-party software.
 
 ---
 
-### json_annotation (4.9.0)
+### web_socket_channel (3.0.3)
 
 - **License**: UNKNOWN
-- **Repository**: https://github.com/google/json_serializable.dart/tree/master/json_annotation
-
----
-
-### freezed_annotation (3.1.0)
-
-- **License**: UNKNOWN
-- **Repository**: https://github.com/rrousselGit/freezed
+- **Repository**: https://github.com/dart-lang/http/tree/master/pkgs/web_socket_channel
 
 ---
 
@@ -70,6 +63,20 @@ This project includes the following third-party software.
 
 - **License**: UNKNOWN
 - **Repository**: https://flutter.io
+
+---
+
+### bip340 (0.3.0)
+
+- **License**: UNKNOWN
+- **Repository**: https://github.com/fiatjaf/dart-bip340
+
+---
+
+### pointycastle (3.9.1)
+
+- **License**: UNKNOWN
+- **Repository**: https://github.com/bcgit/pc-dart
 
 ---
 
@@ -94,13 +101,6 @@ This project includes the following third-party software.
 
 ---
 
-### connectivity_plus (7.1.1)
-
-- **License**: UNKNOWN
-- **Repository**: https://github.com/fluttercommunity/plus_plugins/tree/main/packages/connectivity_plus/connectivity_plus
-
----
-
 ### blockchain_utils (5.4.0)
 
 - **License**: UNKNOWN
@@ -112,13 +112,6 @@ This project includes the following third-party software.
 
 - **License**: UNKNOWN
 - **Repository**: https://github.com/mrtnetwork/bitcoin_base
-
----
-
-### permission_handler (12.0.1)
-
-- **License**: UNKNOWN
-- **Repository**: https://github.com/baseflow/flutter-permission-handler
 
 ---
 
@@ -192,13 +185,6 @@ This project includes the following third-party software.
 
 ---
 
-### pointycastle (3.9.1)
-
-- **License**: UNKNOWN
-- **Repository**: https://github.com/bcgit/pc-dart
-
----
-
 ### bip39 (1.0.6)
 
 - **License**: UNKNOWN
@@ -224,13 +210,6 @@ This project includes the following third-party software.
 
 - **License**: UNKNOWN
 - **Repository**: https://github.com/mogol/flutter_secure_storage/tree/develop/flutter_secure_storage
-
----
-
-### cupertino_icons (1.0.9)
-
-- **License**: UNKNOWN
-- **Repository**: https://github.com/flutter/packages/tree/main/third_party/packages/cupertino_icons
 
 ---
 

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/models/send_output.dart';
 import '../../../core/models/wallet_record.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/bitcoin_service.dart';
@@ -11,12 +12,29 @@ import '../../../core/services/security_service.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/info_dot.dart';
 import '../../../core/widgets/password_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/config/bitcoin_network_config.dart';
+import '../../../l10n/info_hints_l10n.dart';
 import 'scan_qr_screen.dart';
 
 const int _kDustLimitSats = 546;
+
+/// Cap destinatari di un invio multiplo (P3): limite di REVISIONE, non
+/// tecnico — oltre, la lista diventa illeggibile e l'errore umano cresce.
+const int _kMaxRecipients = 20;
+
+/// Riga destinatario in modalità batch: due controller indipendenti.
+class _RecipientRow {
+  final TextEditingController address = TextEditingController();
+  final TextEditingController amount = TextEditingController();
+
+  void dispose() {
+    address.dispose();
+    amount.dispose();
+  }
+}
 
 class SendScreen extends StatefulWidget {
   const SendScreen({
@@ -55,6 +73,12 @@ class _SendScreenState extends State<SendScreen> {
   bool _utxoSelectorExpanded = false;
   bool _loadingInit = true;
   String? _initError;
+
+  // ── P3: batch send (più destinatari in una sola transazione) ──
+  // PERCHÉ: il toggle cambia il significato dei campi — in batch il singolo
+  // campo indirizzo/importo non è montato (i suoi validator non girano).
+  bool _batchMode = false;
+  final List<_RecipientRow> _recipients = [_RecipientRow()];
 
   // Fee selection: 0=low 1=normal 2=high 3=custom
   int _feeChoice = 1;
@@ -144,6 +168,9 @@ class _SendScreenState extends State<SendScreen> {
     _addressCtrl.dispose();
     _amountCtrl.dispose();
     _customFeeCtrl.dispose();
+    for (final r in _recipients) {
+      r.dispose();
+    }
     super.dispose();
   }
 
@@ -157,7 +184,9 @@ class _SendScreenState extends State<SendScreen> {
       case 1:
         return f.normalSatVb;
       case 2:
-        return f.highSatVb;
+        // PERCHÉ (18/09/2026): "Alta" deve dare priorità REALE; quando il
+        // mercato è al minimo le stime collassano a 1 sat/vB → pavimento.
+        return f.prioritySatVb;
       case 3:
         final parsed = int.tryParse(_customFeeCtrl.text);
         return (parsed != null && parsed > 0) ? parsed : f.normalSatVb;
@@ -166,11 +195,46 @@ class _SendScreenState extends State<SendScreen> {
     }
   }
 
-  int? get _parsedAmountSats {
-    final text = _amountCtrl.text.trim().replaceAll(',', '.');
-    final btc = double.tryParse(text);
+  int? get _parsedAmountSats => _parseSats(_amountCtrl.text);
+
+  /// // PERCHÉ (P3): parsing condiviso fra il campo singolo e le righe batch.
+  int? _parseSats(String text) {
+    final normalized = text.trim().replaceAll(',', '.');
+    final btc = double.tryParse(normalized);
     if (btc == null) return null;
     return (btc * 100000000).round();
+  }
+
+  /// Destinatari validi inseriti in modalità batch.
+  ///
+  /// // PERCHÉ: le righe incomplete vengono ignorate (l'utente sta ancora
+  /// // digitando): il totale mostrato cresce man mano, senza errori finti.
+  List<SendOutput> _batchOutputs() {
+    final out = <SendOutput>[];
+    for (final r in _recipients) {
+      final address = r.address.text.trim();
+      final sats = _parseSats(r.amount.text);
+      if (address.isEmpty || sats == null || sats <= 0) continue;
+      out.add(SendOutput(address: address, amountSats: sats));
+    }
+    return out;
+  }
+
+  /// Totale da pagare ai destinatari (0 se nulla è stato inserito).
+  int get _totalOutSats => _batchMode
+      ? _batchOutputs().fold<int>(0, (sum, o) => sum + o.amountSats)
+      : (_parsedAmountSats ?? 0);
+
+  int get _recipientCount => _batchMode ? _batchOutputs().length : 1;
+
+  void _addRecipient() {
+    if (_recipients.length >= _kMaxRecipients) return;
+    setState(() => _recipients.add(_RecipientRow()));
+  }
+
+  void _removeRecipient(int index) {
+    if (_recipients.length <= 1) return;
+    setState(() => _recipients.removeAt(index).dispose());
   }
 
   int _estimateFee(int numInputs, {int outputCount = 2}) {
@@ -184,9 +248,11 @@ class _SendScreenState extends State<SendScreen> {
     return size * _selectedFeeRate;
   }
 
-  /// Stima il numero di input necessari per un dato importo,
+  /// Stima il numero di input necessari per un dato totale,
   /// considerando se serve un output di change o meno.
-  int _estimateInputCountForAmount(int amountSats) {
+  /// // PERCHÉ (P3): [recipientCount] entra nella stima perché ogni destinatario
+  /// // aggiunge ~31 vB — ignorarlo sotto-stimerebbe la fee del batch.
+  int _estimateInputCountForAmount(int totalOut, {int recipientCount = 1}) {
     final utxos = _utxos ?? const <UtxoInfo>[];
     if (utxos.isEmpty) return 1;
 
@@ -194,23 +260,30 @@ class _SendScreenState extends State<SendScreen> {
     final totalUtxo = _availableBalanceSats;
     for (var i = 0; i < utxos.length; i++) {
       total += utxos[i].valueSat;
-      // Prova con 2 output (con change)
-      var fee = _estimateFee(i + 1);
-      var change = totalUtxo - amountSats - fee;
-      // Se change sotto dust, usa 1 output (senza change)
+      // Prova con N+1 output (N destinatari + change)
+      var fee = _estimateFee(i + 1, outputCount: recipientCount + 1);
+      var change = totalUtxo - totalOut - fee;
+      // Se change sotto dust, usa N output (senza change)
       if (change < _kDustLimitSats) {
-        fee = _estimateFee(i + 1, outputCount: 1);
+        fee = _estimateFee(i + 1, outputCount: recipientCount);
       }
-      if (total >= amountSats + fee) return i + 1;
+      if (total >= totalOut + fee) return i + 1;
     }
     return utxos.length;
   }
 
-  int _estimateFeeForAmount(int amountSats) {
-    final inputs = _estimateInputCountForAmount(amountSats);
+  int _estimateFeeForAmount(int totalOut, {int recipientCount = 1}) {
+    final inputs = _estimateInputCountForAmount(
+      totalOut,
+      recipientCount: recipientCount,
+    );
     // Determina se serve output di change
-    final change = _availableBalanceSats - amountSats - _estimateFee(inputs);
-    final outputCount = change < _kDustLimitSats ? 1 : 2;
+    final change =
+        _availableBalanceSats -
+        totalOut -
+        _estimateFee(inputs, outputCount: recipientCount + 1);
+    final outputCount =
+        change < _kDustLimitSats ? recipientCount : recipientCount + 1;
     return _estimateFee(inputs, outputCount: outputCount);
   }
 
@@ -363,18 +436,30 @@ class _SendScreenState extends State<SendScreen> {
     }
   }
 
+  /// Tronca un indirizzo per la riga di riepilogo (il valore completo resta
+  /// visibile nella lista destinatari della schermata).
+  String _shortenAddress(String address) => address.length <= 18
+      ? address
+      : '${address.substring(0, 10)}…${address.substring(address.length - 6)}';
+
   /// Dialog di conferma con riepilogo prima dell'invio (irreversibile).
+  /// // PERCHÉ (P3): il riepilogo mostra TUTTI i destinatari di un batch —
+  /// // approvare una tx che paga 5 indirizzi senza vederne l'elenco sarebbe
+  /// // un "firma alla cieca".
   Future<bool> _confirmSend({
-    required String toAddress,
-    required int amountSats,
+    required List<SendOutput> outputs,
     required int feeSats,
     required int totalSats,
   }) async {
     final loc = AppLocalizations.of(context);
+    final totalOut = outputs.fold<int>(0, (sum, o) => sum + o.amountSats);
+    final isBatch = outputs.length > 1;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(loc.sendConfirmTitle),
+        title: Text(
+          isBatch ? loc.sendBatchConfirmTitle : loc.sendConfirmTitle,
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -388,12 +473,31 @@ class _SendScreenState extends State<SendScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              _confirmRow(loc.sendScreenAddressLabel, toAddress),
-              const SizedBox(height: 8),
-              _confirmRow(
-                loc.sendScreenAmountLabel,
-                _formatBtc(amountSats),
-              ),
+              if (!isBatch) ...[
+                _confirmRow(loc.sendScreenAddressLabel, outputs.single.address),
+                const SizedBox(height: 8),
+                _confirmRow(
+                  loc.sendScreenAmountLabel,
+                  _formatBtc(outputs.single.amountSats),
+                ),
+              ] else ...[
+                _confirmRow(
+                  loc.sendBatchConfirmRecipients(outputs.length),
+                  _formatBtc(totalOut),
+                ),
+                const SizedBox(height: 8),
+                for (final o in outputs)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${_shortenAddress(o.address)} · ${_formatBtc(o.amountSats)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+              ],
               const SizedBox(height: 8),
               _confirmRow(loc.sendScreenFeeLabel, '$feeSats sat'),
               const Divider(height: 16),
@@ -470,18 +574,47 @@ class _SendScreenState extends State<SendScreen> {
     }
     if (!_formKey.currentState!.validate()) return;
 
-    final amountSats = _parsedAmountSats!;
-    final toAddress = _addressCtrl.text.trim();
+    final outputs = _batchMode
+        ? _batchOutputs()
+        : [
+            SendOutput(
+              address: _addressCtrl.text.trim(),
+              amountSats: _parsedAmountSats!,
+            ),
+          ];
+
+    // PERCHÉ (P3): i validator di campo coprono le singole righe; questi sono i
+    // vincoli dell'INSIEME (numero, dust, duplicati) che nessun campo puo'
+    // esprimere da solo.
+    if (_batchMode) {
+      if (outputs.length < 2) {
+        setState(() => _sendError = loc.sendBatchMinRecipients);
+        return;
+      }
+      if (outputs.any((o) => o.isDust)) {
+        setState(() => _sendError = loc.sendBatchDustError);
+        return;
+      }
+      final addresses = outputs.map((o) => o.address).toList();
+      if (addresses.toSet().length != addresses.length) {
+        setState(() => _sendError = loc.sendBatchDuplicateError);
+        return;
+      }
+    }
+
+    final totalOut = outputs.fold<int>(0, (sum, o) => sum + o.amountSats);
     final feeRate = _selectedFeeRate;
 
     // PERCHÉ (UX-2): conferma finale prima di firmare/broadcastare — una
     // transazione BTC è irreversibile, serve un riepilogo esplicito.
-    final feeSats = _estimateFeeForAmount(amountSats);
+    final feeSats = _estimateFeeForAmount(
+      totalOut,
+      recipientCount: outputs.length,
+    );
     final confirmed = await _confirmSend(
-      toAddress: toAddress,
-      amountSats: amountSats,
+      outputs: outputs,
       feeSats: feeSats,
-      totalSats: amountSats + feeSats,
+      totalSats: totalOut + feeSats,
     );
     if (!confirmed || !mounted) return;
 
@@ -506,14 +639,24 @@ class _SendScreenState extends State<SendScreen> {
       setState(() => _sendStep = loc.sendScreenBroadcasting);
 
       // STEP: 3 — build + firma UNIFIED (replay protection) + broadcast
-      final result = await widget.bitcoinService.buildSignAndSend(
-        mnemonic: mnemonic,
-        toAddress: toAddress,
-        amountSats: amountSats,
-        feeRateSatVb: feeRate,
-        utxos: _selectedUtxos,
-        derivationPath: widget.wallet.derivationPath ?? "m/84'/1'/0'",
-      );
+      // PERCHÉ (P3): N=1 usa il percorso storico, N≥2 il batch — cosi' il caso
+      // singolo resta identico a quello gia' in produzione.
+      final result = outputs.length == 1
+          ? await widget.bitcoinService.buildSignAndSend(
+              mnemonic: mnemonic,
+              toAddress: outputs.first.address,
+              amountSats: outputs.first.amountSats,
+              feeRateSatVb: feeRate,
+              utxos: _selectedUtxos,
+              derivationPath: widget.wallet.derivationPath ?? "m/84'/1'/0'",
+            )
+          : await widget.bitcoinService.buildSignAndSendBatch(
+              mnemonic: mnemonic,
+              outputs: outputs,
+              feeRateSatVb: feeRate,
+              utxos: _selectedUtxos,
+              derivationPath: widget.wallet.derivationPath ?? "m/84'/1'/0'",
+            );
 
       if (!mounted) return;
       setState(() {
@@ -797,84 +940,131 @@ class _SendScreenState extends State<SendScreen> {
 
             const SizedBox(height: 20),
 
-            // Destination address
-            Text(loc.sendScreenAddressLabel, style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _addressCtrl,
-              decoration: InputDecoration(
-                hintText: BitcoinNetworkConfig.addressPrefixHint,
-                prefixIcon: const Icon(Icons.send),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.qr_code_scanner),
-                  tooltip: loc.scanQrTitle,
-                  onPressed: _scanAddress,
+            // ── Modalità invio: un destinatario / più destinatari (P3) ──
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  label: Text(loc.sendBatchToggleSingle),
+                  icon: const Icon(Icons.person_outline),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text(loc.sendBatchToggle),
+                  icon: const Icon(Icons.group_add_outlined),
+                ),
+              ],
+              selected: {_batchMode},
+              onSelectionChanged: (selection) => setState(() {
+                _batchMode = selection.first;
+                _sendError = null;
+              }),
+            ),
+
+            const SizedBox(height: 20),
+
+            if (!_batchMode) ...[
+              // Destination address
+              Text(
+                loc.sendScreenAddressLabel,
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _addressCtrl,
+                decoration: InputDecoration(
+                  hintText: BitcoinNetworkConfig.addressPrefixHint,
+                  prefixIcon: const Icon(Icons.send),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: loc.scanQrTitle,
+                    onPressed: _scanAddress,
+                  ),
+                ),
+                validator: _validateAddress,
+                autocorrect: false,
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.text,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Amount
+              Row(
+                children: [
+                  Text(
+                    loc.sendScreenAmountLabel,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const InfoDot(id: InfoHintId.dustLimit),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _amountCtrl,
+                decoration: InputDecoration(
+                  hintText: BitcoinNetworkConfig.amountHint,
+                  prefixIcon: const Icon(Icons.currency_bitcoin),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  suffixText: BitcoinNetworkConfig.amountSuffix,
+                  helperText: totalUtxoSats > 0
+                      ? loc.sendScreenMaxHelper(_formatBtc(totalUtxoSats))
+                      : null,
+                ),
+                validator: _validateAmount,
+                textInputAction: TextInputAction.done,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                ],
+                onChanged: (_) => setState(() {}),
+                onFieldSubmitted: (_) {
+                  if (!_sending) _send();
+                },
+              ),
+
+              const SizedBox(height: 4),
+              // Quick "max" button
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    final maxSats =
+                        totalUtxoSats - _estimateFeeForAmount(totalUtxoSats);
+                    if (maxSats > _kDustLimitSats) {
+                      _amountCtrl.text = (maxSats / 100000000).toStringAsFixed(
+                        8,
+                      );
+                      setState(() {});
+                    }
+                  },
+                  // PERCHÉ (A4): prima usava loc.sendScreenSend → il pulsante
+                  // diceva "Invia" ed era identico al vero invio.
+                  child: Text(loc.sendScreenMax),
                 ),
               ),
-              validator: _validateAddress,
-              autocorrect: false,
-              textInputAction: TextInputAction.next,
-              keyboardType: TextInputType.text,
-            ),
-
-            const SizedBox(height: 16),
-
-            // Amount
-            Text(
-              loc.sendScreenAmountLabel,
-              style: theme.textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _amountCtrl,
-              decoration: InputDecoration(
-                hintText: BitcoinNetworkConfig.amountHint,
-                prefixIcon: const Icon(Icons.currency_bitcoin),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                suffixText: BitcoinNetworkConfig.amountSuffix,
-                helperText: totalUtxoSats > 0
-                    ? loc.sendScreenMaxHelper(_formatBtc(totalUtxoSats))
-                    : null,
-              ),
-              validator: _validateAmount,
-              textInputAction: TextInputAction.done,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
-              ],
-              onChanged: (_) => setState(() {}),
-              onFieldSubmitted: (_) {
-                if (!_sending) _send();
-              },
-            ),
-
-            const SizedBox(height: 4),
-            // Quick "max" button
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  final maxSats =
-                      totalUtxoSats - _estimateFeeForAmount(totalUtxoSats);
-                  if (maxSats > _kDustLimitSats) {
-                    _amountCtrl.text = (maxSats / 100000000).toStringAsFixed(8);
-                    setState(() {});
-                  }
-                },
-                // PERCHÉ (A4): prima usava loc.sendScreenSend → il pulsante
-                // diceva "Invia" ed era identico al vero invio.
-                child: Text(loc.sendScreenMax),
-              ),
-            ),
+            ] else
+              _buildRecipientsSection(colorScheme, theme, loc),
 
             const SizedBox(height: 8),
 
             // Fee selector
-            Text(loc.sendScreenFeeLabel, style: theme.textTheme.titleSmall),
+            Row(
+              children: [
+                Text(
+                  loc.sendScreenFeeLabel,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const InfoDot(id: InfoHintId.feeRate),
+              ],
+            ),
             const SizedBox(height: 8),
             if (feeEst == null)
               const Center(child: CircularProgressIndicator(strokeWidth: 2))
@@ -1031,6 +1221,7 @@ class _SendScreenState extends State<SendScreen> {
                         loc.sendScreenUtxoSummary(totalUtxoSats, selectedCount),
                         style: theme.textTheme.bodySmall,
                       ),
+                      const InfoDot(id: InfoHintId.coinControl, size: 14),
                     ],
                   ),
                 ),
@@ -1285,15 +1476,137 @@ class _SendScreenState extends State<SendScreen> {
     );
   }
 
+  /// Sezione destinatari in modalità batch: N righe + aggiungi/rimuovi.
+  ///
+  /// // PERCHÉ (P3): ogni riga è un campo a sé (i validator girano insieme al
+  /// // Form padre); il cap di 20 è un limite di revisione umana.
+  Widget _buildRecipientsSection(
+    ColorScheme colorScheme,
+    ThemeData theme,
+    AppLocalizations loc,
+  ) {
+    final atCap = _recipients.length >= _kMaxRecipients;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                loc.sendBatchToggle,
+                style: theme.textTheme.titleSmall,
+              ),
+            ),
+            const InfoDot(id: InfoHintId.batchSend, size: 15),
+            Text(
+              '${_recipients.length}/$_kMaxRecipients',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < _recipients.length; i++) ...[
+          Text(
+            loc.sendBatchRecipientLabel(i + 1),
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _recipients[i].address,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.person_outline, size: 18),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: _validateAddress,
+                  autocorrect: false,
+                  keyboardType: TextInputType.text,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  controller: _recipients[i].amount,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: BitcoinNetworkConfig.amountHint,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: _validateBatchAmount,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                  ],
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline),
+                tooltip: loc.sendBatchRemoveRecipient,
+                onPressed: _recipients.length > 1
+                    ? () => _removeRecipient(i)
+                    : null,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: atCap ? null : _addRecipient,
+            icon: const Icon(Icons.add_circle_outline, size: 18),
+            label: Text(
+              atCap ? loc.sendBatchMaxRecipients : loc.sendBatchAddRecipient,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Validator della riga importo in batch: positive, >= dust.
+  String? _validateBatchAmount(String? value) {
+    final loc = AppLocalizations.of(context);
+    final sats = _parseSats(value ?? '');
+    if (sats == null || sats <= 0) return loc.sendScreenValidateInvalidAmount;
+    // PERCHÉ (P3): il minimo e' PER DESTINATARIO — un output polvere non e'
+    // spendibile e il nodo rifiuterebbe l'intera tx.
+    if (sats < _kDustLimitSats) return loc.sendBatchDustError;
+    return null;
+  }
+
   Widget _buildFeeSummary(ColorScheme colorScheme, ThemeData theme) {
     final loc = AppLocalizations.of(context);
-    final amtSats = _parsedAmountSats;
-    final inputs = amtSats != null ? _estimateInputCountForAmount(amtSats) : 1;
-    var fee = amtSats != null ? _estimateFee(inputs) : _estimateFee(1);
+    final amtSats = _totalOutSats > 0 ? _totalOutSats : null;
+    final recipientCount = _recipientCount;
+    final inputs = amtSats != null
+        ? _estimateInputCountForAmount(
+            amtSats,
+            recipientCount: recipientCount,
+          )
+        : 1;
+    var fee = amtSats != null
+        ? _estimateFee(inputs, outputCount: recipientCount + 1)
+        : _estimateFee(1);
     final totalUtxo = _availableBalanceSats;
     final change = amtSats != null ? totalUtxo - amtSats - fee : 0;
     if (change < _kDustLimitSats && amtSats != null) {
-      fee = _estimateFee(inputs, outputCount: 1);
+      fee = _estimateFee(inputs, outputCount: recipientCount);
     }
     final totalNeeded = amtSats != null ? amtSats + fee : null;
 
@@ -1315,7 +1628,11 @@ class _SendScreenState extends State<SendScreen> {
             '$fee sat · $_selectedFeeRate sat/vB',
           ),
           if (amtSats != null) ...[
-            _feeLine(theme, loc.sendScreenAmountLabel, _formatBtc(amtSats)),
+            _feeLine(
+              theme,
+              _batchMode ? loc.sendBatchTotalLabel : loc.sendScreenAmountLabel,
+              _formatBtc(amtSats),
+            ),
             const Divider(height: 16),
             _feeLine(
               theme,

@@ -17,7 +17,6 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 //
 // L'app firma script type 1 (WITNESS_V0: P2WPKH e P2SH-P2WPKH) e script
 // type 0 (legacy/P2PKH, BIP44), con sighash ALL (0x21) e bit 0x20 opt-in.
-const int kSighashUnified = 0x20;
 const int kSighashAllUnified = 0x21; // SIGHASH_ALL | SIGHASH_UNIFIED
 
 /// Sequence RBF opt-in (BIP125): 0xfffffffd little-endian.

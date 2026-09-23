@@ -74,9 +74,17 @@ class SecurityService {
   Future<bool> isDeviceSecure() async {
     if (!_isNative) return true; // Web/debug non ha jailbreak/root
 
-    bool jailbroken =
-        await (_isJailbrokenOverride ??
-            () => FlutterJailbreakDetection.jailbroken)();
+    bool jailbroken;
+    try {
+      jailbroken = await (_isJailbrokenOverride ??
+          () => FlutterJailbreakDetection.jailbroken)();
+    } catch (e) {
+      // PERCHÉ (audit SEC-10): fail-open DOCUMENTATO — il rilevamento è una
+      // difesa aggiuntiva non crittografica; un errore del plugin non deve
+      // brickare l'avvio dell'app (prima: eccezione non gestita in main).
+      debugPrint('SECURITY: jailbreak check error (fail-open): $e');
+      return true;
+    }
     // In a strict wallet, we might want to block developer mode too
     // bool developerMode = await FlutterJailbreakDetection.developerMode;
 
@@ -267,7 +275,8 @@ class SecurityService {
       // mai; altrimenti si disattiva solo quando si chiude l'ultima schermata
       // protetta (evita di togliere FLAG_SECURE a una route sottostante).
       if (_protectCount == 0 && !_globalProtection) {
-        await (_screenshotOffOverride ?? ScreenProtector.preventScreenshotOff)();
+        await (_screenshotOffOverride ??
+            ScreenProtector.preventScreenshotOff)();
       }
     }
   }

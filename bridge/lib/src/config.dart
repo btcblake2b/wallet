@@ -26,6 +26,12 @@ class BridgeConfig {
     List<String>? allowedClientPubkeys,
     this.logLevel = 'info',
     this.notifyPollSeconds = 20,
+    this.clnCaFile,
+    this.clnClientCertFile,
+    this.clnClientKeyFile,
+    this.clnTlsInsecure = false,
+    this.uiPort = 0,
+    this.uiToken,
   }) : allowedClientPubkeys = allowedClientPubkeys ?? [];
 
   /// Relay Nostr (wss://) su cui il bridge ascolta le richieste.
@@ -56,7 +62,65 @@ class BridgeConfig {
   /// Intervallo del poll notifiche in secondi (0 = notifiche disattivate).
   final int notifyPollSeconds;
 
+  /// PEM della CA con cui è firmato il certificato di clnrest (https).
+  /// // PERCHÉ: clnrest genera certificati self-signed (es. app Umbrel):
+  /// senza la CA il client rifiuta la connessione.
+  final String? clnCaFile;
+
+  /// Certificato e chiave client (mTLS) quando il nodo li richiede.
+  final String? clnClientCertFile;
+  final String? clnClientKeyFile;
+
+  /// Disattiva la verifica del certificato server (cert senza SAN sull'IP).
+  final bool clnTlsInsecure;
+
+  /// Porta della pagina web di stato/configurazione (0 = disattivata).
+  final int uiPort;
+
+  /// Token richiesto dalla pagina web (null = accesso libero).
+  final String? uiToken;
+
+  /// True se il nodo è raggiunto in https.
+  bool get usesTls => clnUrl.startsWith('https://');
+
+  /// Copia con i dati del nodo aggiornati.
+  ///
+  /// // PERCHÉ: i campi sono final e la pagina di stato deve poter cambiare
+  /// nodo/rune a caldo senza riavviare il processo (in un container non c'è
+  /// shell per farlo).
+  BridgeConfig withNode({
+    required String clnUrl,
+    String? runeFile,
+    String? runeHex,
+  }) =>
+      BridgeConfig(
+        relay: relay,
+        privkeyHex: privkeyHex,
+        clnUrl: clnUrl,
+        runeFile: runeFile ?? this.runeFile,
+        runeHex: runeHex ?? this.runeHex,
+        alias: alias,
+        allowedClientPubkeys: allowedClientPubkeys,
+        logLevel: logLevel,
+        notifyPollSeconds: notifyPollSeconds,
+        clnCaFile: clnCaFile,
+        clnClientCertFile: clnClientCertFile,
+        clnClientKeyFile: clnClientKeyFile,
+        clnTlsInsecure: clnTlsInsecure,
+        uiPort: uiPort,
+        uiToken: uiToken,
+      );
+
   static final RegExp _hex64 = RegExp(r'^[0-9a-fA-F]{64}$');
+
+  /// True se il relay punta a un host locale (test/dev) — vedi audit SEC-07.
+  static bool _isLocalRelay(String relay) {
+    final host = Uri.tryParse(relay)?.host ?? '';
+    return host == 'localhost' ||
+        host == '127.0.0.1' ||
+        host == '::1' ||
+        host == '[::1]';
+  }
 
   static BridgeConfig fromJsonFile(String path) {
     final file = File(path);
@@ -70,6 +134,14 @@ class BridgeConfig {
     final clnUrl = '${json['clnUrl'] ?? ''}';
     if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) {
       throw const FormatException('relay non valido (atteso wss://)');
+    }
+    // PERCHÉ (audit SEC-07): ws:// non cifrato è ammesso solo verso host
+    // locali (test/dev): su rete reale i metadati della sessione NWC
+    // viaggerebbero in chiaro. Per il resto si richiede wss://.
+    if (relay.startsWith('ws://') && !_isLocalRelay(relay)) {
+      throw const FormatException(
+        'relay non sicuro: usare wss:// (ws:// solo su localhost)',
+      );
     }
     if (!_hex64.hasMatch(privkey)) {
       throw const FormatException(
@@ -92,6 +164,12 @@ class BridgeConfig {
               .toList(),
       logLevel: '${json['logLevel'] ?? 'info'}',
       notifyPollSeconds: (json['notifyPollSeconds'] as num?)?.toInt() ?? 20,
+      clnCaFile: json['clnCaFile']?.toString(),
+      clnClientCertFile: json['clnClientCertFile']?.toString(),
+      clnClientKeyFile: json['clnClientKeyFile']?.toString(),
+      clnTlsInsecure: json['clnTlsInsecure'] == true,
+      uiPort: (json['uiPort'] as num?)?.toInt() ?? 0,
+      uiToken: json['uiToken']?.toString(),
     );
   }
 
@@ -100,18 +178,33 @@ class BridgeConfig {
     File(path).writeAsStringSync(
       const JsonEncoder.withIndent('  ').convert(toJson()),
     );
+    // PERCHÉ (audit SEC-03): la config contiene la privkey del bridge (e,
+    // se usata, la rune in chiaro): permessi 600 come per uri.txt/rune.txt.
+    if (!Platform.isWindows) {
+      try {
+        Process.runSync('chmod', ['600', path]);
+      } catch (_) {
+        // best-effort: il chmod non deve mai bloccare il salvataggio
+      }
+    }
   }
 
   Map<String, dynamic> toJson() => {
         'relay': relay,
         'privkeyHex': privkeyHex,
         'clnUrl': clnUrl,
-        if (runeFile != null) 'runeFile': runeFile,
-        if (runeHex != null) 'runeHex': runeHex,
+        if ((runeFile ?? '').isNotEmpty) 'runeFile': runeFile,
+        if ((runeHex ?? '').isNotEmpty) 'runeHex': runeHex,
         if (alias != null) 'alias': alias,
         'allowedClientPubkeys': allowedClientPubkeys,
         'logLevel': logLevel,
         'notifyPollSeconds': notifyPollSeconds,
+        if (clnCaFile != null) 'clnCaFile': clnCaFile,
+        if (clnClientCertFile != null) 'clnClientCertFile': clnClientCertFile,
+        if (clnClientKeyFile != null) 'clnClientKeyFile': clnClientKeyFile,
+        if (clnTlsInsecure) 'clnTlsInsecure': true,
+        if (uiPort > 0) 'uiPort': uiPort,
+        if (uiToken != null) 'uiToken': uiToken,
       };
 
   /// Legge la rune dal file (formato RTL `LIGHTNING_RUNE="…"` o valore raw).
@@ -123,7 +216,8 @@ class BridgeConfig {
     final path = runeFile;
     if (path == null || path.isEmpty) {
       throw const FormatException(
-          'Nessuna rune configurata (runeFile/runeHex)',);
+        'Nessuna rune configurata (runeFile/runeHex)',
+      );
     }
     final raw = File(path).readAsStringSync().trim();
     final match = RegExp('LIGHTNING_RUNE="([^"]+)"').firstMatch(raw);

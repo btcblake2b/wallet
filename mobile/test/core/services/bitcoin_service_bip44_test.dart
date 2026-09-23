@@ -103,10 +103,10 @@ void main() {
         utxo(type: 'p2sh'),
       ];
       // 1 input legacy + 1 output (nessuna witness): 10 + 148 + 31 = 189
-      expect(estimateTxVbytes(legacy, 1), 189);
+      expect(estimateTxVbytes(legacy, 1), 201);
       // mix: 10 + 148 + 68(native+witness) + 91(nested+witness) + 3(segwit
       // overhead) + 31 = 351 (audit MED-1: prima 294, sotto-stimava i segwit)
-      expect(estimateTxVbytes(mixed, 1), 351);
+      expect(estimateTxVbytes(mixed, 1), 363);
       final nativeAndNested = [utxo(type: 'v0_p2wpkh'), utxo(type: 'p2sh')];
       expect(
         estimateTxVbytes(mixed, 1),

@@ -50,12 +50,6 @@ class BalanceCache {
     _bus.notify();
   }
 
-  /// Salva più snapshot in un colpo e notifica una sola volta.
-  static void putSnapshots(Map<String, WalletSnapshot> values) {
-    _snapshots.addAll(values);
-    _bus.notify();
-  }
-
   /// Ritorna lo snapshot esistente se presente e fresco (rispetto a TTL),
   /// altrimenti NULL → il chiamante decide se fare fetch.
   static WalletSnapshot? freshSnapshot(String address) {
