@@ -54,6 +54,14 @@ website: https://btcblake2b.org
 # icon from the APK instead.
 icon: ./btc_blake2b_logo/export/icon-1024.png
 
+# Screenshot (verticali, 921x2048) mostrati nella scheda dello store.
+# ⚠️ Il campo si chiama `images` (NON `screenshots`): zsp li carica sul CDN e
+# li espone come tag `image` nell'evento kind 32267.
+images:
+  - ./screenshots/01-home.png
+  - ./screenshots/02-wallet-detail.png
+  - ./screenshots/03-lightning.png
+
 # ── Metadata enrichment ────────────────────────────────────────────────
 metadata_sources:
   - github
