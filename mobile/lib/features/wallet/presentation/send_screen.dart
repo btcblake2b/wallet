@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/models/send_output.dart';
 import '../../../core/models/wallet_record.dart';
+import '../../../core/utils/coinbase_maturity.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/bitcoin_service.dart';
 import '../../../core/services/security_service.dart';
@@ -45,6 +46,7 @@ class SendScreen extends StatefulWidget {
     required this.biometricService,
     required this.balanceSats,
     this.initialUtxos, // UTXO già caricati dalla pagina wallet detail
+    this.initialBlockedUtxos, // UTXO in periodo di attesa (A3) già noti
   });
 
   final WalletRecord wallet;
@@ -56,6 +58,10 @@ class SendScreen extends StatefulWidget {
   final BiometricService biometricService;
   final int balanceSats;
   final List<UtxoInfo>? initialUtxos;
+
+  /// UTXO in periodo di attesa (payout di mining non ancora propagabili):
+  /// mostrati segnalati e mai selezionabili (A3).
+  final List<UtxoInfo>? initialBlockedUtxos;
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -69,6 +75,9 @@ class _SendScreenState extends State<SendScreen> {
 
   FeeEstimates? _feeEstimates;
   List<UtxoInfo>? _utxos;
+
+  /// UTXO in periodo di attesa: visibili ma non selezionabili (A3).
+  List<UtxoInfo> _blockedUtxos = const [];
   final Set<String> _selectedUtxoKeys = {};
   bool _utxoSelectorExpanded = false;
   bool _loadingInit = true;
@@ -107,6 +116,14 @@ class _SendScreenState extends State<SendScreen> {
   int get _availableBalanceSats =>
       _selectedUtxos.fold<int>(0, (s, u) => s + u.valueSat);
 
+  /// Satoshi in periodo di attesa (fuori dal disponibile e dalle fee).
+  int get _blockedSats => sumUtxoSats(_blockedUtxos);
+
+  /// Blocchi mancanti al primo sblocco (null = conferme ignote).
+  int? get _blockedRemainingBlocks => minRemainingRelayBlocks(_blockedUtxos);
+
+  bool get _hasBlocked => _blockedUtxos.isNotEmpty;
+
   String _utxoKey(UtxoInfo utxo) => '${utxo.txid}:${utxo.vout}';
 
   void _selectAllUtxos() {
@@ -127,9 +144,12 @@ class _SendScreenState extends State<SendScreen> {
     // → protezione screenshot (reference-counted in SecurityService).
     SecurityService().protectScreen(true);
     _utxos = widget.initialUtxos;
+    _blockedUtxos = widget.initialBlockedUtxos ?? const <UtxoInfo>[];
     _selectAllUtxos();
-    if (_utxos != null && _utxos!.isNotEmpty) {
-      // UTXO già disponibili da wallet detail: carica solo fee estimates
+    if ((_utxos != null && _utxos!.isNotEmpty) || _hasBlocked) {
+      // UTXO già disponibili dal wallet detail — oppure SOLO fondi in periodo
+      // di attesa da segnalare (A3: il form spiega dove sono i sat mancanti):
+      // in entrambi i casi servono solo le fee estimates.
       _loadingInit = true;
       _loadFeeEstimatesOnly();
     } else {
@@ -278,8 +298,7 @@ class _SendScreenState extends State<SendScreen> {
       recipientCount: recipientCount,
     );
     // Determina se serve output di change
-    final change =
-        _availableBalanceSats -
+    final change = _availableBalanceSats -
         totalOut -
         _estimateFee(inputs, outputCount: recipientCount + 1);
     final outputCount =
@@ -380,9 +399,12 @@ class _SendScreenState extends State<SendScreen> {
   Future<void> _loadUtxosManually() async {
     // PERCHÉ (P1/C9): i watch-only non hanno seed — nessun decrypt.
     if (widget.wallet.kind == WalletKind.watchOnly) return;
-    // PERCHÉ (audit A1): decifrare il seed per scansionare gli UTXO
-    // spendibili è sensibile: richiede autenticazione.
-    if (!await _authorizeSpending()) return;
+    // PERCHÉ (26/10): con l'xpub salvato gli UTXO (dati PUBBLICI) si leggono
+    // senza decifrare la seed e senza password: le chiavi servono al momento
+    // della firma, dove `_send()` autentica comunque. Per i wallet senza xpub
+    // resta il percorso storico protetto da autenticazione.
+    final useXpub = widget.wallet.hasAccountXpub;
+    if (!useXpub && !await _authorizeSpending()) return;
     if (!mounted) return;
     setState(() {
       _loadingInit = true;
@@ -391,18 +413,40 @@ class _SendScreenState extends State<SendScreen> {
 
     try {
       final feeEstimatesFuture = widget.bitcoinService.fetchFeeEstimates();
-      final mnemonic = await widget.walletRepository.decryptSeed(widget.wallet);
       // PERCHÉ: gap-limit su entrambe le catene (external + change) — gli UTXO
       // di change diventano spendibili (fix saldo/trasferimenti vs BlueWallet).
-      final utxos = await widget.bitcoinService.fetchSpendableWalletUtxos(
-        mnemonic,
-        derivationPath: widget.wallet.derivationPath,
-      );
+      // PERCHÉ (A3): il fetch separa gli spendibili da quelli in periodo di
+      // attesa: solo i primi entrano nel selettore e nelle stime di fee.
+      final List<UtxoInfo> spendable;
+      final List<UtxoInfo> blocked;
+      if (useXpub) {
+        // Stesso scan/split del percorso col seed (`fetchWatchOnlySnapshot`
+        // usa `_scanPoolForUtxos` + `splitRelayableUtxos`), ma dal solo xpub.
+        final snapshot = await widget.bitcoinService.fetchWatchOnlySnapshot(
+          accountXpub: widget.wallet.accountXpub!,
+          scriptType: WalletScriptType.fromDerivationPath(
+            widget.wallet.derivationPath,
+          ),
+          includeHistory: false,
+        );
+        spendable = snapshot.utxos ?? const <UtxoInfo>[];
+        blocked = snapshot.blockedUtxos;
+      } else {
+        final mnemonic =
+            await widget.walletRepository.decryptSeed(widget.wallet);
+        final split = await widget.bitcoinService.fetchWalletUtxos(
+          mnemonic,
+          derivationPath: widget.wallet.derivationPath,
+        );
+        spendable = split.spendable;
+        blocked = split.blocked;
+      }
       final feeEstimates = await feeEstimatesFuture;
       if (!mounted) return;
       setState(() {
         _feeEstimates = feeEstimates;
-        _utxos = utxos;
+        _utxos = spendable;
+        _blockedUtxos = blocked;
         _selectAllUtxos();
         _loadingInit = false;
       });
@@ -412,6 +456,10 @@ class _SendScreenState extends State<SendScreen> {
         _initError = e.toString();
         _loadingInit = false;
       });
+    } finally {
+      // PERCHÉ (R1): se la seed è stata decifrata, le chiavi non devono
+      // restare in RAM: il passo successivo (firma) le richiede di nuovo.
+      await widget.walletRepository.forgetWebKeysNow();
     }
   }
 
@@ -558,14 +606,16 @@ class _SendScreenState extends State<SendScreen> {
     // difensiva (in UI il pulsante è già nascosto).
     if (widget.wallet.kind == WalletKind.watchOnly) return;
     final loc = AppLocalizations.of(context);
-    if (_utxos == null) {
+    if (_utxos == null || _utxos!.isEmpty) {
+      // PERCHÉ (A3): se il wallet ha SOLO fondi in periodo di attesa, l'errore
+      // deve dirlo — altrimenti l'utente vede "nessun UTXO" avendo ricevuto
+      // dei payout di mining.
       setState(
-        () => _sendError = loc.sendScreenUtxoError(''),
+        () => _sendError = _hasBlocked
+            ? '${loc.walletBalanceWaiting(_formatBtc(_blockedSats))} — '
+                '${loc.walletUtxoWaitingHint(BitcoinNetworkConfig.coinbaseRelayMaturityBlocks)}'
+            : loc.sendScreenUtxoError(''),
       );
-      return;
-    }
-    if (_utxos!.isEmpty) {
-      setState(() => _sendError = loc.sendScreenUtxoError(''));
       return;
     }
     if (_selectedUtxos.isEmpty) {
@@ -671,6 +721,11 @@ class _SendScreenState extends State<SendScreen> {
         _sending = false;
         _sendStep = null;
       });
+    } finally {
+      // PERCHÉ (R1): transazione firmata e (se riuscita) trasmessa — da qui in
+      // poi nessuna chiave serve più: il vault non deve restare aperto mentre
+      // l'utente legge l'esito o lascia la schermata.
+      await widget.walletRepository.forgetWebKeysNow();
     }
   }
 
@@ -694,7 +749,7 @@ class _SendScreenState extends State<SendScreen> {
                 ? _buildError()
                 : _successTxid != null
                     ? _buildSuccess()
-                    : _utxos == null
+                    : (_utxos?.isEmpty ?? true) && !_hasBlocked
                         ? _buildLoadPrompt()
                         : _buildForm(colorScheme, theme),
       ),
@@ -1185,7 +1240,7 @@ class _SendScreenState extends State<SendScreen> {
       child: Column(
         children: [
           InkWell(
-            onTap: utxos.isEmpty
+            onTap: (utxos.isEmpty && !_hasBlocked)
                 ? null
                 : () => setState(
                       () => _utxoSelectorExpanded = !_utxoSelectorExpanded,
@@ -1221,11 +1276,31 @@ class _SendScreenState extends State<SendScreen> {
                         loc.sendScreenUtxoSummary(totalUtxoSats, selectedCount),
                         style: theme.textTheme.bodySmall,
                       ),
+                      // PERCHÉ (A3 + saldo): i sat in periodo di attesa non
+                      // sono nel disponibile — vanno detti, altrimenti
+                      // sembrano spariti. Conteggio in BLOCCHI.
+                      if (_hasBlocked) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          loc.walletBalanceWaiting(_formatBtc(_blockedSats)),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.tertiary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_blockedRemainingBlocks != null)
+                          Text(
+                            loc.walletUtxoWaitingBlocks(
+                              _blockedRemainingBlocks!,
+                            ),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                      ],
                       const InfoDot(id: InfoHintId.coinControl, size: 14),
                     ],
                   ),
                 ),
-                if (utxos.isNotEmpty)
+                if (utxos.isNotEmpty || _hasBlocked)
                   Icon(
                     _utxoSelectorExpanded
                         ? Icons.keyboard_arrow_up
@@ -1235,7 +1310,7 @@ class _SendScreenState extends State<SendScreen> {
               ],
             ),
           ),
-          if (_utxoSelectorExpanded && utxos.isNotEmpty) ...[
+          if (_utxoSelectorExpanded && (utxos.isNotEmpty || _hasBlocked)) ...[
             const Divider(height: 24),
             Row(
               children: [
@@ -1245,84 +1320,168 @@ class _SendScreenState extends State<SendScreen> {
                     style: theme.textTheme.titleSmall,
                   ),
                 ),
-                Checkbox(
-                  value: allSelected
-                      ? true
-                      : selectedCount == 0
-                          ? false
-                          : null,
-                  tristate: true,
-                  onChanged: (_) => setState(() {
-                    if (allSelected) {
-                      _selectedUtxoKeys.clear();
-                    } else {
-                      _selectAllUtxos();
-                    }
-                  }),
-                  activeColor: colorScheme.primary,
-                  visualDensity: VisualDensity.compact,
-                ),
-                Text(
-                  loc.sendScreenUtxoSelectAll,
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-            Container(
-              height: 220,
-              decoration: BoxDecoration(
-                border: Border.all(color: colorScheme.outlineVariant),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                itemCount: utxos.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final utxo = utxos[index];
-                  final selected = _selectedUtxoKeys.contains(_utxoKey(utxo));
-                  final txid = utxo.txid;
-                  final shortTxid = txid.length > 16
-                      ? '${txid.substring(0, 8)}…${txid.substring(txid.length - 8)}'
-                      : txid;
-                  final label =
-                      widget.wallet.utxoLabels[_utxoKey(utxo)]?.trim();
-                  return CheckboxListTile(
-                    value: selected,
+                if (utxos.isNotEmpty) ...[
+                  Checkbox(
+                    value: allSelected
+                        ? true
+                        : selectedCount == 0
+                            ? false
+                            : null,
+                    tristate: true,
                     onChanged: (_) => setState(() {
-                      final key = _utxoKey(utxo);
-                      if (selected) {
-                        _selectedUtxoKeys.remove(key);
+                      if (allSelected) {
+                        _selectedUtxoKeys.clear();
                       } else {
-                        _selectedUtxoKeys.add(key);
+                        _selectAllUtxos();
                       }
                     }),
-                    dense: true,
-                    visualDensity: VisualDensity.compact,
                     activeColor: colorScheme.primary,
-                    title: Text(
-                      label == null || label.isEmpty
-                          ? '$shortTxid:${utxo.vout}'
-                          : label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      label == null || label.isEmpty
-                          ? _formatBtc(utxo.valueSat)
-                          : '${_formatBtc(utxo.valueSat)} · $shortTxid:${utxo.vout}',
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                  );
-                },
-              ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  Text(
+                    loc.sendScreenUtxoSelectAll,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ],
             ),
+            if (utxos.isNotEmpty)
+              Container(
+                height: 220,
+                decoration: BoxDecoration(
+                  border: Border.all(color: colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  itemCount: utxos.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final utxo = utxos[index];
+                    final selected = _selectedUtxoKeys.contains(_utxoKey(utxo));
+                    final txid = utxo.txid;
+                    final shortTxid = txid.length > 16
+                        ? '${txid.substring(0, 8)}…${txid.substring(txid.length - 8)}'
+                        : txid;
+                    final label =
+                        widget.wallet.utxoLabels[_utxoKey(utxo)]?.trim();
+                    return CheckboxListTile(
+                      value: selected,
+                      onChanged: (_) => setState(() {
+                        final key = _utxoKey(utxo);
+                        if (selected) {
+                          _selectedUtxoKeys.remove(key);
+                        } else {
+                          _selectedUtxoKeys.add(key);
+                        }
+                      }),
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      activeColor: colorScheme.primary,
+                      title: Text(
+                        label == null || label.isEmpty
+                            ? '$shortTxid:${utxo.vout}'
+                            : label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        label == null || label.isEmpty
+                            ? _formatBtc(utxo.valueSat)
+                            : '${_formatBtc(utxo.valueSat)} · $shortTxid:${utxo.vout}',
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                    );
+                  },
+                ),
+              ),
+            // PERCHÉ (A3): i payout di mining in periodo di attesa restano
+            // visibili (i sat sono dell'utente) ma NON selezionabili: la rete
+            // non propagherebbe la tx che li spende.
+            if (_hasBlocked) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  loc.walletUtxoWaitingHint(
+                    BitcoinNetworkConfig.coinbaseRelayMaturityBlocks,
+                  ),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 4),
+              for (final utxo in _blockedUtxos)
+                _buildBlockedUtxoRow(utxo, loc, theme),
+            ],
           ],
         ],
+      ),
+    );
+  }
+
+  /// Riga di un UTXO in PERIODO DI ATTESA: badge dedicato + blocchi mancanti.
+  /// Checkbox disabilitata (`onChanged: null`) → mai input di una transazione.
+  Widget _buildBlockedUtxoRow(
+    UtxoInfo utxo,
+    AppLocalizations loc,
+    ThemeData theme,
+  ) {
+    final colorScheme = theme.colorScheme;
+    final txid = utxo.txid;
+    final shortTxid = txid.length > 16
+        ? '${txid.substring(0, 8)}…${txid.substring(txid.length - 8)}'
+        : txid;
+    final label = widget.wallet.utxoLabels[_utxoKey(utxo)]?.trim();
+    final blocks = remainingRelayBlocks(utxo);
+    return CheckboxListTile(
+      value: false,
+      onChanged: null,
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      controlAffinity: ListTileControlAffinity.leading,
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label == null || label.isEmpty
+                  ? '$shortTxid:${utxo.vout}'
+                  : label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              // PERCHÉ: colore diverso dal badge "In attesa" delle tx non
+              // confermate — qui non manca una conferma, manca la maturity.
+              color: colorScheme.tertiaryContainer,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              loc.walletUtxoWaitingBadge,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onTertiaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+      subtitle: Text(
+        blocks != null && blocks > 0
+            ? '${_formatBtc(utxo.valueSat)} · '
+                '${loc.walletUtxoWaitingBlocks(blocks)}'
+            : _formatBtc(utxo.valueSat),
       ),
     );
   }
@@ -1557,9 +1716,8 @@ class _SendScreenState extends State<SendScreen> {
               IconButton(
                 icon: const Icon(Icons.remove_circle_outline),
                 tooltip: loc.sendBatchRemoveRecipient,
-                onPressed: _recipients.length > 1
-                    ? () => _removeRecipient(i)
-                    : null,
+                onPressed:
+                    _recipients.length > 1 ? () => _removeRecipient(i) : null,
               ),
             ],
           ),

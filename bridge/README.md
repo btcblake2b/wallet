@@ -100,14 +100,15 @@ searches common locations (`~/dart-sdk`, `~/dart`) or pass it explicitly:
 
 ## Supported methods
 
-Capabilities: **15 NWC / 12 NCC** methods.
+Capabilities: **18 NWC / 14 NCC** methods.
 
 | Method | Type | CLN command | Notes |
 |---|---|---|---|
 | `get_info` | NWC | `getinfo` + `listpeers` | `network: "blake2b"`; additive `num_peers_connected` (CONNECTED peers, not registered; I4a) |
 | `get_balance` | NWC | `listfunds` + `listpeerchannels` | active-channel balance + on-chain |
 | `make_invoice` | NWC | `invoice` | amount in **msat** |
-| `pay_invoice` | NWC | `pay` | returns preimage + fee |
+| `pay_invoice` | NWC | `pay` | returns preimage + fee; **BOLT12**: an `lno1…` offer is paid with `bolt12` (+ optional `amount_msat` for amountless offers) |
+| `make_offer` | NWC | `offer` | reusable **BOLT12** code (`bolt12`), optional `amount_msat`, `single_use` |
 | `make_new_address` | NWC | `newaddr` | on-chain address (P2WPKH `bech32`) |
 | `pay_onchain` | NWC | `withdraw` | `amount_sat` (or `all`), optional `feerate` |
 | `estimate_onchain_fees` | NWC | `feerates` | `{min, economical, priority}` in sat/vB |
@@ -122,6 +123,8 @@ Capabilities: **15 NWC / 12 NCC** methods.
 | `list_channels` | NCC | `listpeerchannels` | mapped to the app model (**msat**) |
 | `open_channel` | NCC | `connect` + `fundchannel` | optional `host` |
 | `close_channel` | NCC | `close` | `force` → unilateral close |
+| `splice_channel` | NCC | `fundpsbt` + `splice_init` + `splice_update` + `signpsbt` + `splice_signed` | resizes the channel **without closing it**; `amount_sats` > 0 = splice-in, < 0 = splice-out; `utxos` (splice-in only) = coin control; `feerate` = `urgent`/`normal`/`slow`/`<n>perkw` |
+| `estimate_splice` | NCC | `fundpsbt` | on-chain fee estimate of a splice-in (`fee_sats` from feerate × weight) |
 | `connect_peer` | NCC | `connect` | accepts `pubkey@host:port` |
 | `disconnect_peer` | NCC | `disconnect` | |
 | `list_peers` | NCC | `listpeers` | shows registered vs connected (see `get_info` note) |
@@ -131,6 +134,9 @@ Capabilities: **15 NWC / 12 NCC** methods.
 | `list_forwards` | NCC | `listforwards` | paginated |
 | `get_node_info` | NCC | `listnodes` | alias/color/features/addresses |
 | `get_route` | NCC | `getroute` | `fee_msat` = first-hop amount − requested (0 toward a direct peer) |
+
+| `cross_chain_check` | NWC | HTTP `POST /api/check` | quanto costa pagare una fattura della chain SHA-256 (bridge esterno, sola lettura) |
+| `cross_chain_pay` | NWC | `POST /api/quote` → `pay` → `GET /api/swap` | paga una fattura SHA-256: il bridge emette una **hold invoice** sulla nostra chain con lo stesso payment hash; optional `max_sats` come tetto |
 
 ## Security
 
@@ -146,17 +152,28 @@ Capabilities: **15 NWC / 12 NCC** methods.
 ## MVP limitations
 
 - A single relay (the first in the config).
-- No push notifications (kind 23196/23200): the app refreshes periodically.
+- No external push service: the bridge polls the node every `notifyPollSeconds`
+  (`0` = off) and publishes `payment_received`, `payment_sent`,
+  `channel_opened`, `channel_closed` and `channel_resized` (kind 23196/23200).
 - `pay_invoice`/`open_channel` are synchronous: if the node takes longer than
   the client timeout (30 s) the response arrives late and the client times out.
 - Balances in **msat** (NWC/LDK convention).
 
-## CLN fork compatibility — `.4` release (2026-09-15)
+## CLN fork compatibility — `.5` release (2026-09-28)
 
-- Since the fork's **`.4`** release the node announces `option_blake2b` (**bit 68 mandatory** in
-  `init`): it does NOT peer with older nodes → via the bridge, `connect_peer`/`open_channel`
-  toward `.2/.3`-line peers fail until they upgrade (a **node** gate; the bridge is unchanged).
-- The bridge **rune** derives from `hsm_secret` and **survives** node upgrades → no
-  regeneration; the probe (`bin/probe.dart`) remains the end-to-end check. With a node without
-  usable channels the probe **skips `get_route`** (the route cannot exist) instead of reporting a
-  false failure.
+- Since the fork's **`.5`** release the feature bits are the ones proposed for BOLT 9:
+  `option_blake2b` **512** and `option_unified_sigs` **514**. The `.4` line announced bit 68, so a `.5`
+  node and a `.4` node **do not peer** (“the feature bits moved”): via the bridge, `connect_peer` /
+  `open_channel` toward an older node fail until it upgrades (a **node** gate; the bridge is unchanged).
+- Channels already open **survive** the upgrade — their stored channel type is updated when the database
+  is upgraded — but the upgrade is **one-way**: `v26.06.7-blake2b.4` cannot open a `.5` database
+  (rollback = restore the pre-upgrade backup).
+- BOLT 11 invoices and BOLT 12 offers carry the bit, and an artifact **without it is not paid**.
+- A channel whose funding transaction is a **coinbase** is refused, and the node wallet does not spend a
+  coinbase output before the network will relay it (`relay_coinbase_maturity` = 6,480 blocks on mainnet).
+- The bridge **rune** derives from `hsm_secret` and **survives** node upgrades → no regeneration; the
+  probe (`bin/probe.dart`) remains the end-to-end check. With a node without usable channels the probe
+  **skips `get_route`** (the route cannot exist) instead of reporting a false failure.
+
+> Historical note: the `.4` gate (bit 68 required in `init`) applied from `v26.06.7-blake2b.4` to
+> `v26.06.7-blake2b.4` only; it was superseded by `.5`.

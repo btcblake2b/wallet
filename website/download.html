@@ -25,6 +25,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="/download.html" aria-current="page">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
         <li><a href="/node.html">Node</a></li>
         <li><a href="/privacy.html">Privacy</a></li>
         <li><a href="/legal.html">Legal</a></li>
@@ -36,24 +37,27 @@
 
   <main id="contenuto" class="container page">
     <h1>Download Btc Blake2b Wallet</h1>
-    <p class="lead">Android · version <strong>0.2.0</strong> (build 3)</p>
+    <p class="lead">Android · version <strong>0.4.0</strong> (build 5)</p>
 
     <div class="download-box">
       <p><strong>Before downloading</strong>: make sure the APK comes from this page (domain <code>btcblake2b.org</code>), from the official GitHub repository, or from the Zapstore listing.</p>
       <a class="btn btn-primary btn-lg" href="https://github.com/btcblake2b/wallet/releases" rel="noopener">Download APK (GitHub Releases)</a>
       <a class="btn btn-ghost btn-lg" href="https://zapstore.dev/apps/com.btcblake2b.wallet" rel="noopener">Get it on Zapstore</a>
-      <p class="small">Release <strong>v0.2.0</strong>, including the verified APK and checksum, is also available on GitHub Releases and on <a href="https://zapstore.dev/apps/com.btcblake2b.wallet" rel="noopener">Zapstore</a> — the open app store built on Nostr.</p>
+      <p class="small">Release <strong>v0.4.0</strong>, including the verified APK and checksum, is also available on GitHub Releases and on <a href="https://zapstore.dev/apps/com.btcblake2b.wallet" rel="noopener">Zapstore</a> — the open app store built on Nostr.</p>
 
       <h2>Verify the checksum (SHA-256)</h2>
-      <p>The app is available <strong>for Android only</strong>. The file <code>btc-blake2b-wallet-v0.2.0.apk</code> must have this hash:</p>
-      <pre class="checksum" aria-label="Checksum SHA-256 dell'APK"><code>SHA256(btc-blake2b-wallet-v0.2.0.apk) = <span id="checksum">E89859EFAC7A23983480CAF4DFB4029679B49FEE670587D68F825AF050FA260C</span></code></pre>
+      <p>The app is available <strong>for Android only</strong>. The file <code>btc-blake2b-wallet-v0.4.0.apk</code> must have this hash:</p>
+      <pre class="checksum" aria-label="SHA-256 checksum of the APK"><code>SHA256(btc-blake2b-wallet-v0.4.0.apk) = <span id="checksum">B0C2849690A6F01DB793AAC42E06F4478E14103E52155C8F2D336986C73C83A7</span></code></pre>
       <p class="small">The commands below verify the APK on your computer (Windows, Linux or macOS) before you transfer it to an Android device. They are not app versions for those systems.</p>
 
       <h3>Verify on Windows (PowerShell)</h3>
-      <pre><code>Get-FileHash .\btc-blake2b-wallet-v0.2.0.apk -Algorithm SHA256</code></pre>
+      <pre><code>Get-FileHash .\btc-blake2b-wallet-v0.4.0.apk -Algorithm SHA256</code></pre>
       <h3>Verify on Linux / macOS</h3>
-      <pre><code>sha256sum btc-blake2b-wallet-v0.2.0.apk</code></pre>
+      <pre><code>sha256sum btc-blake2b-wallet-v0.4.0.apk</code></pre>
     </div>
+
+    <h2>Use it in the browser (no install)</h2>
+    <p>The same wallet also runs as a web app at <a href="https://app.btcblake2b.org" rel="noopener">app.btcblake2b.org</a>: nothing to install, hardened Content-Security-Policy, fonts and engine served from the bundle (no CDN requests). The web build is the same code as the APK; features that need your own Lightning node stay Android-only.</p>
 
     <h2>Installation</h2>
     <ol>

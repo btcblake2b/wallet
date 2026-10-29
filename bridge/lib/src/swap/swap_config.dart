@@ -12,7 +12,11 @@ import 'dart:io';
 ///   "providerKeyFile": "/home/filippo/swap/provider.key",
 ///   "storeFile": "/home/filippo/swap/swap-store.json",
 ///   "chain": {"esploraUrl": "https://mempool.guide/api"},
-///   "limits": {"minSats": 5000, "maxSats": 250000},
+///   "limits": {"minSats": 5000, "maxSats": 250000, "liquidityReservePpm": 200000},
+///   "allowedClientPubkeys": ["<hex 64 del client autorizzato>"],
+///   "allowAnyClient": false,
+///   "clients": {"autoAdmit": true, "autoAdmitMaxPerDay": 20, "autoAdmitMaxTotal": 500},
+///   "deniedClientPubkeys": ["<hex 64 da espellere>"],
 ///   "logLevel": "info"
 /// }
 /// ```
@@ -35,6 +39,12 @@ class SwapConfig {
     this.fees = const SwapFeesConfig(),
     this.timeouts = const SwapTimeoutsConfig(),
     this.allowedClientPubkeys = const [],
+    this.allowAnyClient = false,
+    this.autoAdmit = false,
+    this.autoAdmitMaxPerDay = 20,
+    this.autoAdmitMaxTotal = 500,
+    this.clientsFile,
+    this.deniedClientPubkeys = const [],
     this.alias = 'blake2b-swap',
     this.logLevel = 'info',
   });
@@ -67,8 +77,44 @@ class SwapConfig {
   final SwapFeesConfig fees;
   final SwapTimeoutsConfig timeouts;
 
-  /// Pubkey dei client autorizzati (vuoto = tutti, come la bridge).
+  /// Pubkey dei client autorizzati (hex 64). Vuoto = NESSUNO (fail-closed).
+  ///
+  /// // PERCHÉ (B1, 05/10/2026): fino al 05/10 la lista vuota significava
+  /// // "tutti" (fail-open), in divergenza col bridge che è fail-safe: chiunque
+  /// // conoscesse la URI poteva far nascere sessioni sul nodo del provider.
   final List<String> allowedClientPubkeys;
+
+  /// Accetta QUALSIASI client anche senza allowlist — modo aperto DICHIARATO.
+  ///
+  /// // PERCHÉ: serve una via per la beta pubblica, ma esplicita: senza questo
+  /// // flag il fail-open non può tornare per sbaglio (dimenticanza = nessuno).
+  final bool allowAnyClient;
+
+  /// Auto-ammissione: il PRIMO contatto di un client sconosciuto lo registra
+  /// (con tetti), così la lista si popola da sola senza attrito per l'utente.
+  ///
+  /// // PERCHÉ (07/10/2026): mantenere a mano la allowlist non è praticabile
+  /// // in produzione (la chiave è casuale per installazione e l'utente non la
+  /// // vede). Con `autoAdmit` il provider resta fail-closed per CHI È GIÀ
+  /// // stato ammesso e può espellere una chiave via [deniedClientPubkeys].
+  /// // Non è un controllo forte (l'identità è aggirabile con una nuova
+  /// // installazione): i limiti veri restano quelli di liquidità (B2).
+  final bool autoAdmit;
+
+  /// Tetto di ammissioni automatiche nelle ultime 24h (0 = disabilitato).
+  final int autoAdmitMaxPerDay;
+
+  /// Tetto TOTALE di client ammessi automaticamente (oltre → rifiuto).
+  final int autoAdmitMaxTotal;
+
+  /// File persistente delle ammissioni automatiche (JSON, scrittura atomica).
+  /// Se assente, viene derivato accanto a [storeFile] quando [autoAdmit] è on.
+  final String? clientsFile;
+
+  /// Denylist esplicita (hex 64): vince su allowlist e auto-admit.
+  /// Serve a espellere una chiave abusiva senza spegnere il servizio.
+  final List<String> deniedClientPubkeys;
+
   final String alias;
   final String logLevel;
 
@@ -136,6 +182,8 @@ class SwapConfig {
       maxFeeRatio: (limitsJson['maxFeeRatio'] as num?)?.toDouble() ?? 0.10,
       maxConcurrent: (limitsJson['maxConcurrent'] as num?)?.toInt() ?? 20,
       maxPerPubkey: (limitsJson['maxPerPubkey'] as num?)?.toInt() ?? 2,
+      liquidityReservePpm:
+          (limitsJson['liquidityReservePpm'] as num?)?.toInt() ?? 200000,
     );
     if (limits.minSats < 546) {
       throw const FormatException('limits.minSats < 546 (dust)');
@@ -148,6 +196,12 @@ class SwapConfig {
     }
     if (limits.maxConcurrent < 1 || limits.maxPerPubkey < 1) {
       throw const FormatException('limits.max* deve essere ≥ 1');
+    }
+    if (limits.liquidityReservePpm < 0 ||
+        limits.liquidityReservePpm >= 1000000) {
+      throw const FormatException(
+        'limits.liquidityReservePpm fuori da [0, 1000000)',
+      );
     }
 
     final htlcJson =
@@ -202,6 +256,61 @@ class SwapConfig {
       throw const FormatException('storeFile mancante');
     }
 
+    final allowedClientPubkeys =
+        ((json['allowedClientPubkeys'] as List?) ?? const [])
+            .map((e) => '$e'.toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toList();
+    final allowAnyClient = json['allowAnyClient'] == true;
+
+    final clientsJson =
+        (json['clients'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final autoAdmit = clientsJson['autoAdmit'] == true;
+    final autoAdmitMaxPerDay =
+        (clientsJson['autoAdmitMaxPerDay'] as num?)?.toInt() ?? 20;
+    final autoAdmitMaxTotal =
+        (clientsJson['autoAdmitMaxTotal'] as num?)?.toInt() ?? 500;
+    if (autoAdmit && (autoAdmitMaxPerDay < 1 || autoAdmitMaxTotal < 1)) {
+      throw const FormatException(
+        'clients.autoAdmitMax* deve essere ≥ 1',
+      );
+    }
+    // PERCHÉ: default accanto allo store (stessa cartella, stessi permessi):
+    // chi abilita l'auto-admit ha subito un file persistente senza config.
+    final clientsFileRaw = '${clientsJson['file'] ?? ''}'.trim();
+    final clientsFile = clientsFileRaw.isNotEmpty
+        ? clientsFileRaw
+        : (autoAdmit
+            ? '${File(storeFile).parent.path}${Platform.pathSeparator}'
+                'allowed-clients.json'
+            : null);
+
+    final deniedClientPubkeys =
+        ((json['deniedClientPubkeys'] as List?) ?? const [])
+            .map((e) => '$e'.toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toList();
+    for (final denied in deniedClientPubkeys) {
+      if (allowedClientPubkeys.contains(denied)) {
+        // PERCHÉ: fail-fast su configurazione contraddittoria — un admin che
+        // espelle una chiave deve rendersi conto che era in allowlist.
+        throw FormatException(
+          'deniedClientPubkeys contiene una chiave della allowlist: $denied',
+        );
+      }
+    }
+
+    // PERCHÉ (B1): fail-closed anche nello swap. Con lista vuota e senza flag
+    // esplicito il provider non servirebbe nessuno: meglio un errore all'avvio
+    // (visibile in `swapd.log`) che un daemon muto o aperto a tutti.
+    if (allowedClientPubkeys.isEmpty && !allowAnyClient && !autoAdmit) {
+      throw const FormatException(
+        'nessun client autorizzato: popola allowedClientPubkeys, '
+        'imposta allowAnyClient=true (modo aperto dichiarato) '
+        'oppure clients.autoAdmit=true (lista auto-popolata con tetti)',
+      );
+    }
+
     return SwapConfig(
       relays: relays,
       clnUrl: clnUrl,
@@ -220,10 +329,13 @@ class SwapConfig {
       htlc: htlc,
       fees: fees,
       timeouts: timeouts,
-      allowedClientPubkeys:
-          ((json['allowedClientPubkeys'] as List?) ?? const [])
-              .map((e) => '$e'.toLowerCase())
-              .toList(),
+      allowedClientPubkeys: allowedClientPubkeys,
+      allowAnyClient: allowAnyClient,
+      autoAdmit: autoAdmit,
+      autoAdmitMaxPerDay: autoAdmitMaxPerDay,
+      autoAdmitMaxTotal: autoAdmitMaxTotal,
+      clientsFile: clientsFile,
+      deniedClientPubkeys: deniedClientPubkeys,
       alias: '${json['alias'] ?? 'blake2b-swap'}',
       logLevel: '${json['logLevel'] ?? 'info'}',
     );
@@ -274,6 +386,7 @@ class SwapLimitsConfig {
     this.maxFeeRatio = 0.10,
     this.maxConcurrent = 20,
     this.maxPerPubkey = 2,
+    this.liquidityReservePpm = 200000,
   });
 
   final int minSats;
@@ -283,6 +396,13 @@ class SwapLimitsConfig {
   final double maxFeeRatio;
   final int maxConcurrent;
   final int maxPerPubkey;
+
+  /// Riserva di liquidità del provider, in ppm della capacità spendibile.
+  ///
+  /// // PERCHÉ (B2, 05/10/2026): il tetto all'esposizione concorrente non può
+  /// // essere `maxSats` × `maxConcurrent` (prometteva 5 M sat su 850 k reali):
+  /// // la guardia misura la capacità del nodo e ne tiene fuori questa quota.
+  final int liquidityReservePpm;
 }
 
 class SwapHtlcConfig {

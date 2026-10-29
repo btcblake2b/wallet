@@ -9,12 +9,14 @@ import 'package:btc_blake2b_wallet/core/models/transaction_record.dart';
 import 'package:btc_blake2b_wallet/core/models/wallet_record.dart';
 import 'package:btc_blake2b_wallet/core/models/wallet_snapshot.dart';
 import 'package:btc_blake2b_wallet/core/services/balance_cache.dart';
+import 'package:btc_blake2b_wallet/core/services/balance_display.dart';
 import 'package:btc_blake2b_wallet/core/services/biometric_service.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/crypto_service.dart';
 import 'package:btc_blake2b_wallet/core/utils/crypto_utils.dart';
 import 'package:btc_blake2b_wallet/l10n/app_localizations.dart';
 import 'package:btc_blake2b_wallet/core/services/device_service.dart';
+import 'package:btc_blake2b_wallet/core/services/fiat_price.dart';
 import 'package:btc_blake2b_wallet/core/services/rbf_params_registry.dart';
 import 'package:btc_blake2b_wallet/core/services/wallet_repository.dart';
 import 'package:btc_blake2b_wallet/features/wallet/presentation/wallet_detail_screen.dart';
@@ -37,12 +39,14 @@ WalletSnapshot _snap({
   int balance = 100000,
   int txCount = 5,
   List<UtxoInfo>? utxos,
+  List<UtxoInfo>? blockedUtxos,
   List<TransactionRecord>? transactions,
 }) {
   return WalletSnapshot(
     balanceSats: balance,
     txCount: txCount,
     utxos: utxos ?? const [],
+    blockedUtxos: blockedUtxos ?? const [],
     transactions: transactions ?? const [],
     fetchedAt: DateTime.now(),
   );
@@ -68,7 +72,14 @@ void main() {
     // PERCHÉ: la cache condivisa è statica → reset per isolare ogni test
     // (un test che popola la cache non deve inibire il fetch di quello dopo).
     BalanceCache.resetForTest();
+    // PERCHÉ (leva 5): il controvalore vive in un registro di processo: senza
+    // reset un test che lo accende cambierebbe l'output degli altri.
+    FiatPrice.resetForTest();
+    // PERCHÉ (29/10): anche l'unità del saldo è di processo e per wallet.
+    BalanceDisplay.instance = BalanceDisplay.inMemory();
   });
+
+  tearDown(BalanceDisplay.resetForTest);
 
   group('WalletDetailScreen', () {
     testWidgets('should render', (tester) async {
@@ -1429,7 +1440,14 @@ void main() {
       // Espande lo storico e apre il dettaglio della tx outgoing pending.
       // // PERCHÉ: lo storico è in fondo alla pagina scrollabile → il widget
       // va portato in vista prima del tap, altrimenti è off-screen.
-      await tester.ensureVisible(find.text('Transactions'));
+      // PERCHÉ (27/10) scrollUntilVisible: con le azioni «Incassa»/«Converti»
+      // la testata esce dalla cache del ListView e `ensureVisible` non trova
+      // l'element (non costruito).
+      await tester.scrollUntilVisible(
+        find.text('Transactions'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Transactions'));
       await tester.pumpAndSettle();
@@ -1458,7 +1476,10 @@ void main() {
           newFeeRateSatVb: any(named: 'newFeeRateSatVb'),
         ),
       ).called(1);
-      expect(find.text('Fee increased — new transaction newtx'), findsOneWidget);
+      expect(
+        find.text('Fee increased — new transaction newtx'),
+        findsOneWidget,
+      );
       expect(fetches, greaterThanOrEqualTo(2));
     });
 
@@ -1554,8 +1575,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // // PERCHÉ: storico in fondo alla pagina scrollabile → ensureVisible.
-      await tester.ensureVisible(find.text('Transactions'));
+      // PERCHÉ (27/10): con le azioni «Incassa»/«Converti» la testata dello
+      // storico finisce oltre la cache del ListView (non costruita): serve
+      // scorrere, non `ensureVisible` (che richiede un element già vivo).
+      await tester.scrollUntilVisible(
+        find.text('Transactions'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Transactions'));
       await tester.pumpAndSettle();
@@ -1573,6 +1600,429 @@ void main() {
         find.text('The new fee must be higher than the current one'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('UTXO in periodo di attesa: badge, blocchi e non selezionabile',
+        (tester) async {
+      // Ignora gli avvisi noti di ListTile/DecoratedBox (non bloccanti).
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('ListTile background color') ||
+            details
+                .exceptionAsString()
+                .contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() {
+        FlutterError.onError = originalOnError;
+      });
+
+      final wallet = WalletRecord(
+        walletId: 'test_id',
+        encryptedSeed: 'test_seed',
+        publicAddress: 'test_address',
+        deviceId: 'test_device',
+        createdAt: DateTime(2024, 1, 1),
+      );
+      final walletRepository = MockWalletRepository();
+      final biometricService = MockBiometricService();
+      final bitcoinService = MockBitcoinService();
+      final cryptoService = MockCryptoService();
+      final deviceService = MockDeviceService();
+
+      final spendable = UtxoInfo(
+        txid: 'f' * 64,
+        vout: 0,
+        valueSat: 100000,
+        confirmations: 10,
+      );
+      // PERCHÉ: payout di mining a 600 conferme (maturity 6.480) → in attesa.
+      final waiting = UtxoInfo(
+        txid: 'd' * 64,
+        vout: 1,
+        valueSat: 50000,
+        confirmations: 600,
+        isCoinbase: true,
+      );
+
+      when(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+        ),
+      ).thenAnswer(
+        (_) async => _snap(
+          balance: 100000,
+          utxos: [spendable],
+          blockedUtxos: [waiting],
+        ),
+      );
+      when(() => walletRepository.decryptSeed(any()))
+          .thenAnswer((_) async => 'test mnemonic seed phrase');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WalletDetailScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            biometricService: biometricService,
+            bitcoinService: bitcoinService,
+            cryptoService: cryptoService,
+            deviceService: deviceService,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // La riga informativa accompagna il saldo: i sat in attesa NON sono nel
+      // totale, ma non devono sparire dalla vista.
+      expect(find.text('Waiting period: 0.00050000 BTC'), findsOneWidget);
+
+      // Apri la sezione UTXO (coin control): è in fondo alla lista scorrevole.
+      await tester.scrollUntilVisible(
+        find.text('UTXO'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('UTXO'));
+      await tester.pumpAndSettle();
+
+      // Badge dedicato + countdown in BLOCCHI (6.480 − 600 = 5.880).
+      expect(find.text('Waiting period'), findsOneWidget);
+      expect(find.text('5880 blocks to unlock'), findsOneWidget);
+
+      // Riga NON selezionabile: checkbox disabilitata e non spuntata.
+      final waitingTile = tester.widget<CheckboxListTile>(
+        find.ancestor(
+          of: find.text('Waiting period'),
+          matching: find.byType(CheckboxListTile),
+        ),
+      );
+      expect(waitingTile.onChanged, isNull);
+      expect(waitingTile.value, isFalse);
+
+      // Il riepilogo di selezione resta a zero: i bloccati non si contano.
+      expect(find.text('0 selected · 0 sat'), findsOneWidget);
+    });
+  });
+
+  group('leva 5 — controvalore con prezzo impostato', () {
+    Future<void> pumpDetail(
+      WidgetTester tester, {
+      required MockBitcoinService bitcoinService,
+    }) async {
+      // PERCHÉ: avvisi noti di ListTile/DecoratedBox (non bloccanti), stessa
+      // soppressione usata dal resto del file.
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        final text = details.exceptionAsString();
+        if (text.contains('ListTile background color') ||
+            text.contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      final wallet = WalletRecord(
+        walletId: 'fiat',
+        encryptedSeed: 'enc',
+        publicAddress: 'bc1qfiat00000000000000000000000000000',
+        deviceId: 'dev',
+        createdAt: DateTime(2024, 1, 1),
+        seedBackupConfirmed: true,
+      );
+      final walletRepository = MockWalletRepository();
+      when(() => walletRepository.decryptSeed(any()))
+          .thenAnswer((_) async => 'seed words');
+      when(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+        ),
+      ).thenAnswer((_) async => _snap(balance: 100000));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: WalletDetailScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoinService,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('acceso + prezzo → riga con controvalore e nota',
+        (tester) async {
+      // PERCHÉ inMemory: nei test widget il canale di flutter_secure_storage
+      // non ha handler e i setter lascerebbero un Future appeso.
+      FiatPrice.instance = FiatPrice.inMemory(
+        enabled: true,
+        usdCentsPerXbt: 30000,
+      );
+      final bitcoinService = MockBitcoinService();
+
+      await pumpDetail(tester, bitcoinService: bitcoinService);
+
+      // 100.000 sat a 300 $/XBT = 0,30 $.
+      expect(
+        find.textContaining('≈ 0.30 \$ · your price, not a market quote'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('spento → nessun controvalore a schermo', (tester) async {
+      FiatPrice.instance = FiatPrice.inMemory(usdCentsPerXbt: 30000);
+      final bitcoinService = MockBitcoinService();
+
+      await pumpDetail(tester, bitcoinService: bitcoinService);
+
+      expect(find.textContaining('≈ '), findsNothing);
+    });
+
+    testWidgets('acceso → il saldo si tocca e cicla XBT → sats → dollari',
+        (tester) async {
+      FiatPrice.instance = FiatPrice.inMemory(
+        enabled: true,
+        usdCentsPerXbt: 30000,
+      );
+      final bitcoinService = MockBitcoinService();
+
+      await pumpDetail(tester, bitcoinService: bitcoinService);
+
+      // Saldo: 100.000 sat = 0,001 BTC.
+      expect(find.text('0.00100000 BTC'), findsOneWidget);
+
+      await tester.tap(find.text('0.00100000 BTC'));
+      await tester.pumpAndSettle();
+      expect(find.text('100 000 sats'), findsOneWidget);
+
+      await tester.tap(find.text('100 000 sats'));
+      await tester.pumpAndSettle();
+      expect(find.text('0.30 \$'), findsOneWidget);
+      // PERCHÉ: con il saldo già in dollari la riga "≈ … $" sarebbe lo stesso
+      // numero ripetuto due volte → nascosta.
+      expect(find.textContaining('≈ '), findsNothing);
+
+      await tester.tap(find.text('0.30 \$'));
+      await tester.pumpAndSettle();
+      expect(find.text('0.00100000 BTC'), findsOneWidget);
+      expect(
+        find.textContaining('≈ 0.30 \$ · your price, not a market quote'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('xpub (26/10) — letture senza chiavi private', () {
+    testWidgets('wallet hot con xpub: saldo letto dall\'xpub, mai decryptSeed',
+        (tester) async {
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('ListTile background color') ||
+            details
+                .exceptionAsString()
+                .contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      final wallet = WalletRecord(
+        walletId: 'hot-xpub',
+        encryptedSeed: 'enc',
+        publicAddress: 'bc1qxpubread',
+        deviceId: 'dev',
+        createdAt: DateTime(2024, 1, 1),
+        seedBackupConfirmed: true,
+        derivationPath: "m/84'/0'/0'",
+        accountXpub: 'xpub_salvato',
+      );
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+      when(
+        () => bitcoinService.fetchWatchOnlySnapshot(
+          accountXpub: any(named: 'accountXpub'),
+          scriptType: any(named: 'scriptType'),
+          includeHistory: any(named: 'includeHistory'),
+        ),
+      ).thenAnswer((_) async => _snap(balance: 777));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WalletDetailScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoinService,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => bitcoinService.fetchWatchOnlySnapshot(
+          accountXpub: 'xpub_salvato',
+          scriptType: WalletScriptType.p2wpkh,
+          includeHistory: true,
+        ),
+      ).called(1);
+      // Il punto del cambiamento: nessuna chiave privata per LEGGERE.
+      verifyNever(() => walletRepository.decryptSeed(any()));
+      verifyNever(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+        ),
+      );
+    });
+  });
+
+  group('R2 — Ricevi bloccato senza backup (web)', () {
+    testWidgets('senza backup confermato non mostra l\'indirizzo',
+        (tester) async {
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('ListTile background color') ||
+            details
+                .exceptionAsString()
+                .contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      final wallet = WalletRecord(
+        walletId: 'unbacked',
+        encryptedSeed: 'test_seed',
+        publicAddress: 'first_address',
+        deviceId: 'test_device',
+        createdAt: DateTime(2024, 1, 1),
+      );
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+      when(() => walletRepository.decryptSeed(any()))
+          .thenAnswer((_) async => 'test mnemonic seed phrase');
+      when(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+        ),
+      ).thenAnswer((_) async => _snap());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('it'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WalletDetailScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoinService,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+            // Su mobile il gate non esiste: qui si simula il web.
+            requireSeedBackupBeforeReceive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Ricevi'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Ricevi'));
+      await tester.pumpAndSettle();
+
+      // Il flusso si ferma sul dialog di backup: nessun QR, nessun indirizzo.
+      expect(find.text('Prima metti al sicuro la seed'), findsOneWidget);
+      expect(find.text('Fai il backup'), findsOneWidget);
+      expect(find.byType(QrImageView), findsNothing);
+    });
+
+    testWidgets('con backup confermato il dialog Ricevi si apre normalmente',
+        (tester) async {
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('ListTile background color') ||
+            details
+                .exceptionAsString()
+                .contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      final wallet = WalletRecord(
+        walletId: 'backed',
+        encryptedSeed: 'test_seed',
+        publicAddress: 'first_address',
+        deviceId: 'test_device',
+        createdAt: DateTime(2024, 1, 1),
+        seedBackupConfirmed: true,
+      );
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+      when(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+        ),
+      ).thenAnswer((_) async => _snap());
+      when(() => bitcoinService.fetchAddressInfo(any()))
+          .thenAnswer((_) async => {'balance': 0, 'tx_count': 0});
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('it'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WalletDetailScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoinService,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+            requireSeedBackupBeforeReceive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Ricevi'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Ricevi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prima metti al sicuro la seed'), findsNothing);
+      expect(find.text('first_address'), findsWidgets);
     });
   });
 }

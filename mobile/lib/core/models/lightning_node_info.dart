@@ -40,6 +40,19 @@ class LightningNodeInfo {
   final int? numActiveChannels;
   final int? numPendingChannels;
 
+  /// True se il nodo dichiara entrambe le operazioni cross-chain (P9).
+  ///
+  /// // PERCHÉ: `cross_chain_*` dipende da un bridge esterno opzionale lato
+  /// // server — se non è configurato la voce in UI sarebbe un vicolo cieco.
+  /// // `methods` null/vuoto = nodo o bridge vecchio che non elenca le
+  /// // capability: si assume supporto (retrocompatibile).
+  bool get supportsCrossChain {
+    final list = methods;
+    if (list == null || list.isEmpty) return true;
+    return list.contains('cross_chain_check') &&
+        list.contains('cross_chain_pay');
+  }
+
   factory LightningNodeInfo.fromJson(Map<String, dynamic> json) =>
       LightningNodeInfo(
         alias: json['alias']?.toString(),

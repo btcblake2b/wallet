@@ -7,6 +7,7 @@ import '../../models/lightning_balance.dart';
 import '../../models/lightning_channel.dart';
 import '../../models/lightning_channel_fees.dart';
 import '../../models/lightning_connection.dart';
+import '../../models/lightning_cross_chain.dart';
 import '../../models/lightning_forward.dart';
 import '../../models/lightning_htlc.dart';
 import '../../models/lightning_invoice.dart';
@@ -17,12 +18,14 @@ import '../../models/lightning_network_node.dart';
 import '../../models/lightning_node_address.dart';
 import '../../models/lightning_node_info.dart';
 import '../../models/lightning_node_stats.dart';
+import '../../models/lightning_offer.dart';
 import '../../models/lightning_onchain_fees.dart';
 import '../../models/lightning_onchain_result.dart';
 import '../../models/lightning_peer.dart';
 import '../../models/lightning_payment_record.dart';
 import '../../models/lightning_payment_result.dart';
 import '../../models/lightning_route.dart';
+import '../../models/lightning_splice.dart';
 import '../../models/lightning_utxo.dart';
 import '../nostr/nostr_crypto.dart';
 import '../nostr/nostr_event.dart';
@@ -236,13 +239,67 @@ class NwcLightningService implements LightningService {
   }
 
   @override
-  Future<LightningPaymentResult> payInvoice(String bolt11) async {
+  Future<LightningPaymentResult> payInvoice(
+    String bolt11, {
+    int? amountMsat,
+  }) async {
     final result = await _request(
       kind: nwcRequestKind,
       method: 'pay_invoice',
-      params: {'invoice': bolt11},
+      params: {
+        'invoice': bolt11,
+        // PERCHÉ (BOLT12): un'offerta senza importo non è pagabile senza che
+        // il client lo dichiari — il nodo non può indovinarlo.
+        if (amountMsat != null && amountMsat > 0) 'amount_msat': amountMsat,
+      },
     );
     return LightningPaymentResult.fromJson(result);
+  }
+
+  @override
+  Future<LightningOffer> makeOffer({
+    required String description,
+    int? amountMsat,
+    bool singleUse = false,
+  }) async {
+    final result = await _request(
+      kind: nwcRequestKind,
+      method: 'make_offer',
+      params: {
+        'description': description,
+        if (amountMsat != null && amountMsat > 0) 'amount_msat': amountMsat,
+        if (singleUse) 'single_use': true,
+      },
+    );
+    return LightningOffer.fromJson(result, description: description);
+  }
+
+  @override
+  Future<LightningCrossChainEstimate> crossChainCheck(String invoice) async {
+    final result = await _request(
+      kind: nwcRequestKind,
+      method: 'cross_chain_check',
+      params: {'invoice': invoice},
+    );
+    return LightningCrossChainEstimate.fromJson(result);
+  }
+
+  @override
+  Future<LightningCrossChainResult> crossChainPay(
+    String invoice, {
+    int? maxSats,
+  }) async {
+    // // PERCHÉ: non è in `_isReadOnly` — muove fondi, quindi nessun retry
+    // // automatico: un doppio pagamento sarebbe irreversibile.
+    final result = await _request(
+      kind: nwcRequestKind,
+      method: 'cross_chain_pay',
+      params: {
+        'invoice': invoice,
+        if (maxSats != null && maxSats > 0) 'max_sats': maxSats,
+      },
+    );
+    return LightningCrossChainResult.fromJson(result);
   }
 
   @override
@@ -591,6 +648,7 @@ class NwcLightningService implements LightningService {
     required int amountSats,
     String? host,
     bool isPrivate = false,
+    List<String>? utxos,
   }) async {
     await _request(
       kind: nccRequestKind,
@@ -601,6 +659,9 @@ class NwcLightningService implements LightningService {
         'amount_sats': amountSats,
         if (host != null && host.isNotEmpty) 'host': host,
         if (isPrivate) 'private': true,
+        // PERCHÉ (A8): coin control opzionale — `txid:vout` degli output che
+        // devono finanziare il canale. Assente = scelta automatica del nodo.
+        if (utxos != null && utxos.isNotEmpty) 'utxos': utxos,
       },
     );
   }
@@ -618,6 +679,49 @@ class NwcLightningService implements LightningService {
         'force': force,
       },
     );
+  }
+
+  /// Ridimensiona un canale senza chiuderlo (NCC `splice_channel`).
+  ///
+  /// // PERCHÉ (SPLICE): chiudere e riaprire costa due on-chain e interrompe il
+  /// // canale; lo splice lo ridimensiona restando online. `utxos` è il coin
+  /// // control del solo splice-in.
+  @override
+  Future<LightningSpliceResult> spliceChannel({
+    required String channelId,
+    required int amountSats,
+    List<String>? utxos,
+    String? feerate,
+  }) async {
+    final result = await _request(
+      kind: nccRequestKind,
+      method: 'splice_channel',
+      params: {
+        'id': channelId,
+        'amount_sats': amountSats,
+        if (utxos != null && utxos.isNotEmpty) 'utxos': utxos,
+        if (feerate != null && feerate.isNotEmpty) 'feerate': feerate,
+      },
+    );
+    return LightningSpliceResult.fromJson(result);
+  }
+
+  @override
+  Future<LightningSpliceEstimate> estimateSplice({
+    required int amountSats,
+    List<String>? utxos,
+    String? feerate,
+  }) async {
+    final result = await _request(
+      kind: nccRequestKind,
+      method: 'estimate_splice',
+      params: {
+        'amount_sats': amountSats,
+        if (utxos != null && utxos.isNotEmpty) 'utxos': utxos,
+        if (feerate != null && feerate.isNotEmpty) 'feerate': feerate,
+      },
+    );
+    return LightningSpliceEstimate.fromJson(result);
   }
 
   // ── Internals ───────────────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import '../utils/coinbase_maturity.dart';
 import 'transaction_record.dart';
 import 'utxo_info.dart';
 
@@ -12,11 +13,13 @@ class WalletSnapshot {
     required this.txCount,
     required this.fetchedAt,
     this.utxos,
+    this.blockedUtxos = const [],
     this.transactions,
   });
 
-  /// Saldo spendibile in satoshi (Σ UTXO su entrambe le catene — fonte
-  /// autorevole: esclude le coinbase orfane che non sono mai UTXO).
+  /// Saldo SPENDIBILE in satoshi: Σ degli UTXO propagabili dalla rete
+  /// (fonte autorevole: esclude le coinbase orfane e i payout di mining in
+  /// periodo di attesa, accantonati in [blockedUtxos]).
   final int balanceSats;
 
   /// Numero di transazioni nello storico (semantica della label "N transazioni").
@@ -25,14 +28,31 @@ class WalletSnapshot {
   /// caricato) vale il numero di UTXO come valore provvisorio.
   final int txCount;
 
-  /// UTXO per il coin control (null = mai caricati).
+  /// UTXO per il coin control (null = mai caricati) — solo SPENDIBILI.
   final List<UtxoInfo>? utxos;
+
+  /// UTXO non spendibili perché payout di mining (coinbase) in periodo di
+  /// attesa: la rete non ne propaga la spesa prima di
+  /// [BitcoinNetworkConfig.coinbaseRelayMaturityBlocks] blocchi.
+  ///
+  /// PERCHÉ: NON concorrono a [balanceSats] — la UI li mostra a parte
+  /// (badge + blocchi mancanti) e non devono essere selezionabili.
+  final List<UtxoInfo> blockedUtxos;
 
   /// Storico transazioni (null = mai caricato).
   final List<TransactionRecord>? transactions;
 
   /// Momento del fetch: guida la strategia TTL (fresh vs stale).
   final DateTime fetchedAt;
+
+  /// Satoshi in periodo di attesa (fuori dal saldo spendibile).
+  int get blockedCoinbaseSats => sumUtxoSats(blockedUtxos);
+
+  /// True se lo snapshot contiene fondi non ancora spendibili.
+  bool get hasBlockedCoinbase => blockedUtxos.isNotEmpty;
+
+  /// Blocchi mancanti al primo sblocco (null = conferme ignote).
+  int? get blockedRemainingBlocks => minRemainingRelayBlocks(blockedUtxos);
 
   /// True se contiene sia UTXO che storico (riusabile dal Detail senza rete).
   bool get isComplete => utxos != null && transactions != null;

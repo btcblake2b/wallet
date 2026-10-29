@@ -17,28 +17,42 @@ import '../config/bitcoin_network_config.dart';
 /// mirror comunitari. OFF → una sola fonte per letture E broadcast: nessun dato
 /// (IP, indirizzo, tx) viene inviato ai mirror.
 class ExplorerMirrors extends ChangeNotifier {
-  ExplorerMirrors({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+  ExplorerMirrors({FlutterSecureStorage? storage, bool? webMirrorsRequired})
+      : _storage = storage ?? const FlutterSecureStorage(),
+        // PERCHÉ (web): `mempool.guide` non manda header CORS (verificato il
+        // 17/09 su GET e OPTIONS) → dal browser i mirror comunitari non sono
+        // un ripiego ma **l'unica via di rete disponibile**. Parametro
+        // iniettabile (default `kIsWeb`) per coprire anche il ramo opposto nei
+        // test, dove `kIsWeb` è sempre false.
+        _webMirrorsRequired = webMirrorsRequired ?? kIsWeb;
 
   /// Istanza di processo. I test la sostituiscono con uno storage mockato.
   static ExplorerMirrors instance = ExplorerMirrors();
 
   final FlutterSecureStorage _storage;
 
+  /// True = su web i mirror sono obbligatori e la preferenza non si applica.
+  final bool _webMirrorsRequired;
+
   static const String _key = 'explorer_mirrors_enabled';
 
   bool _enabled = true;
 
   /// True = fallback sui mirror comunitari consentito.
-  bool get enabled => _enabled;
+  /// PERCHÉ: su web è sempre true — un OFF lascerebbe l'app senza rete e,
+  /// con l'interruttore nascosto, senza modo di riattivarla.
+  bool get enabled => _enabled || _webMirrorsRequired;
+
+  /// True se l'utente può esprimere la preferenza (false su web).
+  bool get toggleAvailable => !_webMirrorsRequired;
 
   /// Host per le LETTURE (saldo, UTXO, storico, tip, tx status, fee).
-  List<String> get readHosts => _enabled
+  List<String> get readHosts => enabled
       ? BitcoinNetworkConfig.explorerApiBaseUrls
       : <String>[BitcoinNetworkConfig.primaryExplorerApiBaseUrl];
 
   /// Host per il BROADCAST (`POST /tx`).
-  List<String> get broadcastHosts => _enabled
+  List<String> get broadcastHosts => enabled
       ? BitcoinNetworkConfig.broadcastApiBaseUrls
       : <String>[BitcoinNetworkConfig.primaryExplorerApiBaseUrl];
 
@@ -57,6 +71,9 @@ class ExplorerMirrors extends ChangeNotifier {
 
   /// Abilita/disabilita i mirror e persiste la scelta (best-effort).
   Future<void> setEnabled(bool value) async {
+    // PERCHÉ: su web la preferenza non esiste (l'UI non la espone): accettare
+    // un OFF qui renderebbe l'app irraggiungibile senza rimedio dalla UI.
+    if (_webMirrorsRequired) return;
     if (value == _enabled) return;
     _enabled = value;
     try {

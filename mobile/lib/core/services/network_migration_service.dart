@@ -19,7 +19,18 @@ class NetworkMigrationService {
   static const String _kNetworkKey = 'network_id';
 
   /// Rete con cui sono stati creati i dati locali (null = prima installazione).
-  Future<String?> getStoredNetwork() => _storage.read(key: _kNetworkKey);
+  ///
+  /// PERCHÉ: se il valore non è leggibile (cifratura non decifrabile) si
+  /// assume "prima installazione" — MAI un reset dei dati su un errore di
+  /// lettura.
+  Future<String?> getStoredNetwork() async {
+    try {
+      return await _storage.read(key: _kNetworkKey);
+    } catch (error) {
+      debugPrint('[NetworkMigrationService] rete non leggibile: $error');
+      return null;
+    }
+  }
 
   /// Registra la rete corrente come quella dei dati locali.
   Future<void> setStoredNetwork(String network) =>

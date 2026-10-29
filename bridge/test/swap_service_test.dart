@@ -333,6 +333,91 @@ void main() {
     });
   });
 
+  group('info (swap_info)', () {
+    test('limiti ancorati alla liquidità misurata', () async {
+      final info = await service.info();
+      expect(info['min_sats'], 5000);
+      expect(info['max_sats'], 250000);
+      // 30 000 sat spendibili − riserva 20% = 24 000; il lock include le fee
+      // (claim 250) → il massimo PAGABILE è 23 750 sat.
+      expect(info['available_sats'], 24000);
+      expect(info['max_sendable_sats'], 23750);
+      expect(info['min_sendable_sats'], 4750);
+      expect(info['active_sessions'], 0);
+      expect(info.containsKey('check'), isFalse);
+    });
+
+    test('senza liquidità in uscita → disponibile 0 (nessun errore)', () async {
+      cln.responses['listpeerchannels'] = {
+        'channels': [
+          {'state': 'ONCHAIN', 'spendable_msat': 0},
+        ],
+      };
+      final info = await service.info();
+      expect(info['spendable_sats'], 0);
+      expect(info['available_sats'], 0);
+      expect(info['max_sendable_sats'], 0);
+    });
+
+    test('esposizione delle sessioni attive riduce il disponibile', () async {
+      final quote = await doQuote();
+      await service.create(
+        quoteId: quote['quote_id'] as String,
+        clientPubkey: client,
+      );
+      final info = await service.info();
+      expect(info['active_sessions'], 1);
+      expect(info['outstanding_sats'], 5250);
+      expect(info['available_sats'], 24000 - 5250);
+    });
+
+    test('invoice raggiungibile → check valido e peer OK', () async {
+      final info = await service.info(bolt11: SwapFixtures.bolt11);
+      final check = info['check']! as Map<String, dynamic>;
+      expect(check['valid'], true);
+      expect(check['reachable'], true);
+      expect(check['amount_sats'], 5000);
+      expect(check['payee'], SwapFixtures.payeeId);
+    });
+
+    test('nessuna rotta verso il peer → PEER_UNREACHABLE', () async {
+      cln.responses['getroutes'] = {'routes': <Object>[]};
+      final info = await service.info(bolt11: SwapFixtures.bolt11);
+      final check = info['check']! as Map<String, dynamic>;
+      expect(check['valid'], true);
+      expect(check['reachable'], false);
+      expect(check['reason'], 'PEER_UNREACHABLE');
+    });
+
+    test('nodo senza canali → PROVIDER_UNAVAILABLE nel verdetto', () async {
+      cln.responses['listpeerchannels'] = {
+        'channels': [{'state': 'CHANNELD_NORMAL', 'spendable_msat': 0}],
+      };
+      final info = await service.info(bolt11: SwapFixtures.bolt11);
+      final check = info['check']! as Map<String, dynamic>;
+      expect(check['reachable'], false);
+      expect(check['reason'], 'PROVIDER_UNAVAILABLE');
+    });
+
+    test('invoice illeggibile o amountless → INVOICE_INVALID', () async {
+      cln.responses['decode'] =
+          SwapFixtures.decodeResponse(amountMsat: '0msat');
+      final info = await service.info(bolt11: SwapFixtures.bolt11);
+      final check = info['check']! as Map<String, dynamic>;
+      expect(check['valid'], false);
+      expect(check['reason'], 'INVOICE_INVALID');
+    });
+
+    test('importo oltre il massimo → AMOUNT_TOO_LARGE', () async {
+      cln.responses['decode'] =
+          SwapFixtures.decodeResponse(amountMsat: 400000000);
+      final info = await service.info(bolt11: SwapFixtures.bolt11);
+      final check = info['check']! as Map<String, dynamic>;
+      expect(check['reachable'], false);
+      expect(check['reason'], 'AMOUNT_TOO_LARGE');
+    });
+  });
+
   group('pre-flight pagabilità (incidente 18/09/2026)', () {
     test('quote rifiutata senza canali con liquidità in uscita', () async {
       cln.responses['listpeerchannels'] = {
@@ -405,6 +490,89 @@ void main() {
       expect(q['htlc_address'], isNotEmpty);
       expect(cln.calls, contains('listpeerchannels'));
       expect(cln.calls, contains('getroutes'));
+    });
+  });
+
+  group('guardia di liquidità aggregata (B2, 05/10/2026)', () {
+    /// Servizio con i limiti indicati; la liquidità del nodo arriva da
+    /// `listpeerchannels` (fixture di default: 30.000 sat spendibili).
+    SwapService serviceWith(SwapLimitsConfig limits) => SwapService(
+          cln: cln,
+          chain: chain,
+          store: store,
+          config: SwapConfig(
+            relays: const ['wss://relay.test'],
+            clnUrl: 'http://127.0.0.1:3001',
+            providerKeyFile: '${tmp.path}/provider.key',
+            storeFile: store.path,
+            chain: const SwapChainConfig(
+              esploraUrl: 'https://example.test/api',
+            ),
+            limits: limits,
+          ),
+          signer: SwapSigner('11' * 32),
+          clock: () => now,
+        );
+
+    Future<Map<String, dynamic>> quoteWith(SwapService svc) => svc.quote(
+          bolt11: SwapFixtures.bolt11,
+          clientPubkey: client,
+          refundPubkeyHex: SwapFixtures.refundPubkeyHex,
+        );
+
+    test('liquidità sotto il lock richiesto → RATE_LIMITED, nessuna sessione',
+        () async {
+      // 3.000 sat spendibili − 20% di riserva = 2.400 < 5.250 del lock.
+      cln.responses['listpeerchannels'] =
+          SwapFixtures.listPeerChannelsResponse(spendableMsat: 3000000);
+      await expectLater(
+        quoteWith(serviceWith(const SwapLimitsConfig())),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'RATE_LIMITED'),
+        ),
+      );
+      expect(store.all(), isEmpty);
+    });
+
+    test('esposizione aggregata oltre il tetto → la quota in eccesso è rifiutata',
+        () async {
+      // Tetto = 30.000 sat − 20% = 24.000. Quattro sessioni da 5.250 = 21.000
+      // (dentro), la quinta arriverebbe a 26.250 (fuori). `decode` cambia il
+      // payment_hash a ogni giro: senza, DUPLICATE_SWAP bloccherebbe la seconda
+      // create e il test non isolerebbe il tetto di liquidità.
+      final svc = serviceWith(
+        const SwapLimitsConfig(maxPerPubkey: 10, maxConcurrent: 10),
+      );
+      for (var i = 0; i < 4; i++) {
+        cln.responses['decode'] = {
+          ...SwapFixtures.decodeResponse(),
+          'payment_hash': '$i$i' * 32,
+        };
+        final quote = await quoteWith(svc);
+        await svc.create(
+          quoteId: quote['quote_id'] as String,
+          clientPubkey: client,
+        );
+      }
+      expect(store.active(), hasLength(4));
+
+      cln.responses['decode'] = {
+        ...SwapFixtures.decodeResponse(),
+        'payment_hash': 'ab' * 32,
+      };
+      await expectLater(
+        quoteWith(svc),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'RATE_LIMITED'),
+        ),
+      );
+      expect(store.active(), hasLength(4));
+    });
+
+    test('quote accettata quando la liquidità copre il lock', () async {
+      final q = await quoteWith(serviceWith(const SwapLimitsConfig()));
+      expect(q['funding_amount_sats'], 5250);
+      expect(cln.calls, contains('listpeerchannels'));
     });
   });
 }

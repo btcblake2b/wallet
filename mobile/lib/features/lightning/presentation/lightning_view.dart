@@ -11,7 +11,9 @@ import '../../../core/services/lightning/lightning_connection_store.dart';
 import '../../../core/services/lightning/lightning_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/info_dot.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/info_hints_l10n.dart';
 import 'lightning_channel_detail_screen.dart';
 import 'lightning_channels_screen.dart';
 import 'lightning_connect_screen.dart';
@@ -362,6 +364,10 @@ class _LightningViewState extends State<LightningView> {
                       loc.lightningBalance,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
+                    // PERCHÉ (26/10): "saldo Lightning" accanto al saldo
+                    // on-chain confonde chi non sa che sono due portafogli
+                    // distinti collegati da un canale.
+                    const InfoDot(id: InfoHintId.lightningVsOnchain, size: 14),
                     const Spacer(),
                     if (_loading)
                       const SizedBox.square(

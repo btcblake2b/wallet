@@ -2,7 +2,7 @@ name: btc_blake2b_wallet
 description: Wallet Bitcoin self-custodial per la rete bitcoin-blake2b (mainnet).
 publish_to: "none"
 
-version: 0.3.0+4
+version: 0.4.0+5
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -65,3 +65,16 @@ flutter:
     - family: Outfit
       fonts:
         - asset: assets/fonts/Outfit-Variable.ttf
+    # PERCHÉ (27/10): su web il motore Flutter chiedeva Roboto a
+    # fonts.gstatic.com (il font di default del Material). La CSP lo bloccava —
+    # quindi nessun IP usciva — ma la console si riempiva di errori e la
+    # privacy dipendeva dalla CSP. Con Roboto negli asset il font arriva dal
+    # bundle: nessuna richiesta a terzi, nessun errore, nessuna dipendenza.
+    # Licenza Apache-2.0 (assets/legal/THIRD_PARTY_LICENSES.md).
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700

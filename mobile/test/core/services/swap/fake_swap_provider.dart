@@ -162,6 +162,28 @@ Map<String, dynamic> quoteResult({
       'network': 'blake2b',
     };
 
+/// Risposta standard di `swap_info` (limiti + liquidità misurata).
+Map<String, dynamic> infoResult({
+  int minSendableSats = 4750,
+  int maxSendableSats = 23750,
+  int availableSats = 24000,
+  Map<String, dynamic>? check,
+}) =>
+    {
+      'network': 'blake2b',
+      'min_sats': 5000,
+      'max_sats': 250000,
+      'min_sendable_sats': minSendableSats,
+      'max_sendable_sats': maxSendableSats,
+      'available_sats': availableSats,
+      'spendable_sats': 30000,
+      'outstanding_sats': 0,
+      'service_fee_sats': 0,
+      'claim_fee_sats': 250,
+      'active_sessions': 0,
+      if (check != null) 'check': check,
+    };
+
 /// Risposta standard di create/funding/status.
 Map<String, dynamic> statusResult({
   String state = 'awaitingFunding',

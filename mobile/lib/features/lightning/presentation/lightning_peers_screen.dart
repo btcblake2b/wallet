@@ -9,6 +9,7 @@ import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/info_dot.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/info_hints_l10n.dart';
+import 'widgets/peer_discovery_card.dart';
 import 'widgets/peering_gate_banner.dart';
 
 /// Gestione dei peer del nodo remoto (NCC): lista, connessione, disconnessione.
@@ -285,6 +286,9 @@ class _LightningPeersScreenState extends State<LightningPeersScreen> {
                     ),
                   );
                 }),
+              // PERCHÉ (26/10): su questa rete non ci sono Amboss/1ML — la card
+              // dice dove trovare peer e liquidità senza uscire dall'app a caso.
+              const PeerDiscoveryCard(),
             ],
           ),
         ),

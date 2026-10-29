@@ -33,6 +33,17 @@ void main() {
       );
       expect(args.last, 'payment_hash=');
     });
+
+    test('liste e mappe → JSON (coin control di open/splice_channel)', () {
+      final args = buildLightningCliArgs(
+        method: 'fundpsbt',
+        params: const {
+          'satoshi': '100000sat',
+          'utxos': ['aa:0', 'bb:1'],
+        },
+      );
+      expect(args, contains('utxos=["aa:0","bb:1"]'));
+    });
   });
 
   test('exit 0 + JSON oggetto → mappa', () {
@@ -82,7 +93,8 @@ void main() {
         method: 'newaddr',
         exitCode: 1,
         stdout: '',
-        stderr: 'lightning-cli: Connecting to \'…/lightning-rpc\': No such file',
+        stderr:
+            'lightning-cli: Connecting to \'…/lightning-rpc\': No such file',
       ),
       throwsA(
         isA<RpcError>().having(
@@ -131,8 +143,11 @@ void main() {
         stderr: '',
       ),
       throwsA(
-        isA<RpcError>()
-            .having((e) => e.message, 'message', contains('Unknown source node')),
+        isA<RpcError>().having(
+          (e) => e.message,
+          'message',
+          contains('Unknown source node'),
+        ),
       ),
     );
   });

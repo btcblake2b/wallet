@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module 1 — What bitcoin is and why it matters | Learn</title>
+  <meta name="description" content="Money is a ledger. Bitcoin is a ledger without a boss: what that means, why it is useful, what it costs, and what changes on the bitcoin-blake2b network.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/learn-bitcoin.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/download.html">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/node.html">Node</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
+        <li><a href="/it/learn.html" lang="it" aria-label="Switch to Italian">IT</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <p class="crumbs"><a href="/learn.html">Learn</a> › Module 1 of 6</p>
+    <h1>What bitcoin is — and why it matters</h1>
+    <p class="lead">Before keys, fees and channels, one idea: money is a record of who owns what. Bitcoin is the first version of that record that nobody owns.</p>
+
+    <nav class="toc" aria-label="In this module">
+      <strong>In this module</strong>
+      <ol>
+        <li><a href="#money">Money is a ledger</a></li>
+        <li><a href="#why">Why a ledger without a boss is useful</a></li>
+        <li><a href="#cost">What it costs you</a></li>
+        <li><a href="#network">The network you are using: bitcoin-blake2b</a></li>
+        <li><a href="#wallet">Why a wallet and not an account</a></li>
+        <li><a href="#check">Check yourself</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="money">1. Money is a ledger</h2>
+    <p>Open your banking app and look at the number. There is no coin anywhere with your name on it: there is a <strong>line in a database</strong> that says how much the bank owes you. When you pay someone, the bank subtracts a number from your line and adds it to theirs.</p>
+    <p>That database is called a <em>ledger</em>: the list of who owns what. Money has worked like this for centuries — from clay tablets to printed notes backed by an institution — and it works because everyone accepts the same ledger and trusts the same keeper.</p>
+    <p>Bitcoin is a different arrangement:</p>
+    <ul>
+      <li>the ledger is <strong>public</strong>: anyone can download it and check every line;</li>
+      <li>it is <strong>append-only</strong>: you can add a page, you cannot rewrite the past;</li>
+      <li>it is <strong>kept by thousands of independent computers</strong> (nodes) that all enforce the same rules;</li>
+      <li>nobody can add a line in your name without a signature that only you can produce.</li>
+    </ul>
+    <p>That is the whole invention. Not "digital money" — digital money already existed — but a ledger that no single company, bank or government can edit alone.</p>
+
+    <h2 id="why">2. Why a ledger without a boss is useful</h2>
+    <p>Most of the time your bank works fine. The interesting part is what becomes possible when <em>nobody needs permission</em>:</p>
+    <ul>
+      <li><strong>You can be paid by anyone, anywhere</strong>, without an account approval, a contract or a business relationship. The recipient just needs an address.</li>
+      <li><strong>Nobody can freeze or reverse your payment.</strong> Great if you are a dissident, an expat sending money home, or a merchant with a competitor who likes to complain to payment processors. Also sobering: the same applies to mistakes.</li>
+      <li><strong>The supply is rule-based, not political.</strong> Bitcoin's issuance is fixed by code and cannot be expanded by a central bank decision. (On this app's network, see <a href="#network">§4</a>.)</li>
+      <li><strong>Anyone can verify.</strong> You do not have to trust an audit: you can check the ledger and the software yourself, and the source is open.</li>
+      <li><strong>It works 24/7, across borders</strong>, with no closing time and no "the transfer will arrive in 3 business days".</li>
+    </ul>
+    <p>This is usually summarised as: <em>no permission, no counterparty, no censorship</em>. In practice it means the ledger keeps working even if the people who built it disappear — a property no company-controlled database has.</p>
+
+    <h2 id="cost">3. What it costs you</h2>
+    <p>A course that only lists advantages is advertising. Here is the bill:</p>
+    <ul>
+      <li><strong>Responsibility.</strong> There is no support desk and no chargeback. If you sign a payment to the wrong address, it is gone.</li>
+      <li><strong>Backups are your job.</strong> Lose the recovery phrase and the money is unrecoverable — by anyone.</li>
+      <li><strong>It is not anonymous.</strong> The ledger is public; privacy has to be earned deliberately (module 4).</li>
+      <li><strong>Fees and waiting times exist.</strong> Cheap and instant is not guaranteed; it depends on how busy the network is (module 2).</li>
+      <li><strong>Learning curve.</strong> You are reading a course for a reason: a wallet is closer to a safe than to a bank app.</li>
+      <li><strong>Volatility and youth.</strong> Value moves, tooling changes, and young networks break. Never put in money you cannot afford to lose.</li>
+    </ul>
+
+    <h2 id="network">4. The network you are using: bitcoin-blake2b</h2>
+    <p>This wallet does not talk to Bitcoin. It talks to <strong>bitcoin-blake2b</strong>: a separate network that started from Bitcoin's design and then took its own path.</p>
+    <p>What that means concretely:</p>
+    <ul>
+      <li><strong>Separate chain, separate coins.</strong> Balances, addresses and transactions here have nothing to do with Bitcoin's. Nothing moves between the two.</li>
+      <li><strong>Different hashing (BLAKE2b).</strong> The network uses a different function to stamp blocks. Keys and address formats remain the familiar family you may have seen on Bitcoin (<code>bc1…</code>).</li>
+      <li><strong>No consensus-level replay protection.</strong> The app signs with <code>SIGHASH_UNIFIED</code> to reduce the risk of a transaction being replayed on another chain, but that is a mitigation, not a guarantee: always verify network and addresses.</li>
+      <li><strong>Experimental.</strong> Liquidity, exchanges and tooling are young. Treat it as a network to learn and test on, not as the place for your life savings.</li>
+      <li><strong>No market price.</strong> That is why the app never shows a fiat equivalent: it would be inventing a number.</li>
+    </ul>
+    <div class="notice"><strong>Read this twice</strong> — every rule in this course applies to bitcoin-blake2b, and none of it implies that the coins are bitcoin. If a tutorial, video or "support agent" mixes the two, stop reading it.</div>
+
+    <h2 id="wallet">5. Why a wallet and not an account</h2>
+    <p>With an exchange you get a <em>login</em>: the company holds the keys and shows you a number. You own a promise.</p>
+    <p>With a wallet you get a <em>key</em>: the number on the screen is derived from the chain, and only your key can move it. You own the thing itself.</p>
+    <p>That is why a wallet never asks you to sign up, never knows your name, and cannot reset your password. It is also why the first thing a wallet asks you to do is write down a backup (module 3) — it is the only thing standing between you and a lost balance.</p>
+    <div class="takeaway">
+      <strong>Takeaway</strong> — Bitcoin is a public ledger that no one owns, where ownership is proven by a key instead of an institution. Freedom from permission is the product; responsibility, irreversibility and learning are the price. The network this app uses is a separate, experimental chain: same ideas, different coins.
+    </div>
+
+    <h2 id="check">6. Check yourself</h2>
+    <ol>
+      <li>Where is your balance actually stored — in the app, or in the ledger?</li>
+      <li>Name one advantage and one risk of having no support desk.</li>
+      <li>If you send 0.001 here, can you spend it from a Bitcoin wallet? Why not?</li>
+    </ol>
+    <p class="small">If one of the answers is not obvious, reread the section it came from: module 2 builds directly on it.</p>
+
+    <nav class="chapter-nav" aria-label="Course navigation">
+      <a class="btn btn-ghost" href="/learn.html">← Course index</a>
+      <a class="btn btn-primary" href="/learn-how-it-works.html">Module 2: How it works →</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/privacy.html">Privacy policy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

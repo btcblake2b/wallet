@@ -68,6 +68,48 @@ class SwapService {
 
   // ---------- API di protocollo ----------
 
+  /// Limiti e capacità corrente del provider (metodo `swap_info`).
+  ///
+  /// // PERCHÉ (27/10/2026): l'app deve dire PRIMA quanto si può inviare — la
+  /// // liquidità del nodo cambia di minuto in minuto e i limiti di config non
+  /// // la raccontano — e se il DESTINATARIO di una invoice è raggiungibile.
+  /// Senza questo metodo l'unica verifica possibile era la quote, che però
+  /// impegna una sessione: qui nessun effetto collaterale, nessun fondo mosso.
+  ///
+  /// Con [bolt11] valorizzata il payload contiene anche `check`
+  /// (`valid`/`reachable`/`reason`): è il pre-flight mostrato in UI.
+  Future<Map<String, dynamic>> info({String? bolt11}) async {
+    final spendableSats = await _spendableSats();
+    final ppm = _config.limits.liquidityReservePpm;
+    final capSats = spendableSats - (spendableSats * ppm ~/ 1000000);
+    final outstandingSats =
+        _store.active().fold<int>(0, (sum, s) => sum + s.fundingAmountSats);
+    final freeSats = capSats - outstandingSats;
+    final availableSats = freeSats < 0 ? 0 : freeSats;
+    final feesSats = _config.fees.serviceFeeSats + _config.fees.claimFeeSats;
+    // Il lock comprende le fee: il massimo PAGABILE è il tetto meno le fee.
+    final maxFundableSats = min(_config.limits.maxSats, availableSats);
+    final out = <String, dynamic>{
+      'network': 'blake2b',
+      'min_sats': _config.limits.minSats,
+      'max_sats': _config.limits.maxSats,
+      'min_sendable_sats':
+          _config.limits.minSats > feesSats ? _config.limits.minSats - feesSats : 0,
+      'max_sendable_sats':
+          maxFundableSats > feesSats ? maxFundableSats - feesSats : 0,
+      'available_sats': availableSats,
+      'spendable_sats': spendableSats,
+      'outstanding_sats': outstandingSats,
+      'service_fee_sats': _config.fees.serviceFeeSats,
+      'claim_fee_sats': _config.fees.claimFeeSats,
+      'active_sessions': _store.active().length,
+    };
+    if (bolt11 != null && bolt11.isNotEmpty) {
+      out['check'] = await _checkInvoice(bolt11);
+    }
+    return out;
+  }
+
   Future<Map<String, dynamic>> quote({
     required String bolt11,
     required String clientPubkey,
@@ -75,34 +117,10 @@ class SwapService {
   }) async {
     // STEP: 1 — decode della invoice sul nodo (nessun effetto collaterale:
     // `pay` avviene SOLO dopo il funding confermato).
-    Map<String, dynamic> decoded;
-    try {
-      decoded = await _cln.call('decode', {'string': bolt11});
-    } on RpcError catch (e) {
-      throw RpcError('INVOICE_INVALID', 'decode fallito: ${e.message}');
-    }
-    final paymentHash = '${decoded['payment_hash'] ?? ''}'.toLowerCase();
-    final amountMsat = _parseMsat(decoded['amount_msat']);
-    if (paymentHash.length != 64 || amountMsat == null || amountMsat <= 0) {
-      throw const RpcError(
-        'INVOICE_INVALID',
-        'invoice senza importo o payment_hash non valido (amountless non supportate).',
-      );
-    }
-    // PERCHÉ: la guardia di pagabilità (STEP 3) e il ri-check di `create`
-    // devono conoscere il destinatario — senza payee valido niente quote.
-    final payeeId = '${decoded['payee'] ?? ''}'.toLowerCase();
-    if (!_nodeIdHex.hasMatch(payeeId)) {
-      throw const RpcError(
-        'INVOICE_INVALID',
-        'invoice senza payee valido (atteso node id da 66 cifre esadecimali).',
-      );
-    }
-    final expirySec = (decoded['expiry'] as num?)?.toInt() ?? 3600;
-    final createdAt = (decoded['created_at'] as num?)?.toInt() ?? _nowSec();
-    if (createdAt + expirySec < _nowSec()) {
-      throw const RpcError('INVOICE_EXPIRED', 'invoice scaduta.');
-    }
+    final inv = await _decodeInvoice(bolt11);
+    final paymentHash = inv.paymentHashHex;
+    final amountMsat = inv.amountMsat;
+    final payeeId = inv.payeeId;
 
     // STEP: 2 — guardie: duplicati, limiti, soglia fee.
     final blocking = _store.blockingByPaymentHash(paymentHash);
@@ -129,7 +147,7 @@ class SwapService {
       }
     }
     // Arrotonda per eccesso: l'HTLC non deve mai valere meno della invoice.
-    final invoiceSats = (amountMsat + 999) ~/ 1000;
+    final invoiceSats = inv.amountSats;
     final fundingSats =
         invoiceSats + _config.fees.serviceFeeSats + _config.fees.claimFeeSats;
     if (fundingSats < _config.limits.minSats) {
@@ -155,14 +173,19 @@ class SwapService {
       );
     }
 
-    // STEP: 3 — guardia di pagabilità (pre-flight): mai far lockare fondi se il
+    // STEP: 3 — guardia di liquidità aggregata (B2, 05/10/2026): il tetto di
+    // config (`maxSats` × `maxConcurrent`) prometteva più della capacità reale
+    // del nodo; qui il limite è ancorato alla liquidità MISURATA.
+    await _ensureLiquidity(fundingSats);
+
+    // STEP: 4 — guardia di pagabilità (pre-flight): mai far lockare fondi se il
     // provider non può pagare. // PERCHÉ (incidente 18/09/2026): il nodo era
     // senza canali, la quote fu accettata, l'utente finanziò l'HTLC e il `pay`
     // fallì subito dopo ("Unknown source node") → fondi recuperabili solo dopo
     // il CLTV. Il rifiuto ora arriva PRIMA del finanziamento.
     await _ensurePayable(payeeId: payeeId, amountMsat: amountMsat);
 
-    // STEP: 4 — parametri HTLC + quote (TTL in memoria).
+    // STEP: 5 — parametri HTLC + quote (TTL in memoria).
     if (BytesUtils.fromHexString(refundPubkeyHex).length != 33) {
       throw const RpcError(
         'BAD_REQUEST',
@@ -239,6 +262,9 @@ class SwapService {
     }
     // PERCHÉ (ri-check pre-lock): tra quote e funding il nodo può perdere
     // canali/liquidità — la sessione NON deve nascere se non si può pagare.
+    // PERCHÉ (B2): anche l'esposizione si ri-verifica qui — tra quote e create
+    // altre sessioni possono aver consumato la capacità del provider.
+    await _ensureLiquidity(q.fundingAmountSats);
     await _ensurePayable(payeeId: q.payeeId, amountMsat: q.amountMsat);
     final now = _nowSec();
     final session = SwapSession(
@@ -717,6 +743,48 @@ class SwapService {
         'updated_at': s.updatedAt,
       };
 
+  /// Guardia di liquidità aggregata (B2, 05/10/2026).
+  ///
+  /// // PERCHÉ: `maxSats` × `maxConcurrent` è un tetto "di config", non di
+  /// // nodo — con 850 k sat di capacità reale si potevano accettare sessioni
+  /// // per 5 M sat, che il provider NON avrebbe poi potuto pagare (fondi
+  /// // dell'utente lockati in HTLC fino al refund). Qui il tetto è ancorato
+  /// // alla liquidità MISURATA (`spendable_msat`), meno una riserva prudenziale.
+  ///
+  /// L'esposizione conta le sessioni vive ([SwapStore.active]): ogni sessione
+  /// nata riserva capacità finché non si chiude.
+  Future<void> _ensureLiquidity(int fundingSats) async {
+    final spendableSats = await _spendableSats();
+    final ppm = _config.limits.liquidityReservePpm;
+    final capSats = spendableSats - (spendableSats * ppm ~/ 1000000);
+    final outstandingSats =
+        _store.active().fold<int>(0, (sum, s) => sum + s.fundingAmountSats);
+    // // PERCHÉ (semantica): liquidità ZERO non è "troppa richiesta", è un
+    // // provider che NON può pagare affatto — il client deve distinguere i due
+    // // casi (riprovare più tardi vs aspettare che il nodo abbia canali).
+    if (spendableSats <= 0) {
+      throw const RpcError(
+        'PROVIDER_UNAVAILABLE',
+        'nessun canale con liquidità in uscita: il provider non può pagare.',
+      );
+    }
+    if (outstandingSats + fundingSats > capSats) {
+      _logger.warn(
+        'liquidità insufficiente: ${fundingSats}sat richiesti + '
+        '${outstandingSats}sat in corso su ${capSats}sat disponibili '
+        '(${spendableSats}sat spendibili)',
+      );
+      throw const RpcError(
+        'RATE_LIMITED',
+        'liquidità del provider temporaneamente insufficiente: riprova più tardi.',
+      );
+    }
+    _logger.debug(
+      'liquidità: ${outstandingSats + fundingSats}sat impegnati su '
+      '${capSats}sat disponibili',
+    );
+  }
+
   /// Guardia di pagabilità (pre-flight, PRIMA di far lockare fondi).
   ///
   /// // PERCHÉ (incidente 18/09/2026): il provider accettava le quote anche con
@@ -727,11 +795,28 @@ class SwapService {
     required String payeeId,
     required int amountMsat,
   }) async {
+    final issue = await _payabilityIssue(payeeId: payeeId, amountMsat: amountMsat);
+    if (issue == null) return;
+    // PERCHÉ codice unico per il pagamento: `PROVIDER_UNAVAILABLE` è già
+    // mappato in UI dai client esistenti — il dettaglio (destinatario vs nodo)
+    // resta nel messaggio e in `swap_info`, dove serve a distinguere i casi.
+    throw RpcError('PROVIDER_UNAVAILABLE', issue.message);
+  }
+
+  /// Esito della guardia di pagabilità SENZA eccezioni (serve a `swap_info`).
+  ///
+  /// Ritorna `null` se il provider può pagare, altrimenti il codice del
+  /// problema (`PEER_UNREACHABLE` = nessuna rotta verso il destinatario,
+  /// `PROVIDER_UNAVAILABLE` = nodo/canali non utilizzabili).
+  Future<_PayabilityIssue?> _payabilityIssue({
+    required String payeeId,
+    required int amountMsat,
+  }) async {
     // (a) il nodo deve avere almeno un canale normale con liquidità in uscita.
-    final Map<String, dynamic> info;
+    final Map<String, dynamic> nodeInfo;
     final Map<String, dynamic> channels;
     try {
-      info = await _cln.call('getinfo');
+      nodeInfo = await _cln.call('getinfo');
       channels = await _cln.call('listpeerchannels');
     } on RpcError catch (e) {
       throw RpcError(
@@ -739,25 +824,16 @@ class SwapService {
         'nodo del provider non interrogabile: ${e.message}',
       );
     }
-    final selfId = '${info['id'] ?? ''}'.toLowerCase();
+    final selfId = '${nodeInfo['id'] ?? ''}'.toLowerCase();
     if (!_nodeIdHex.hasMatch(selfId)) {
-      throw const RpcError(
+      return const _PayabilityIssue(
         'PROVIDER_UNAVAILABLE',
         'getinfo del nodo senza node id valido.',
       );
     }
-    var spendableMsat = 0;
-    final list = channels['channels'];
-    if (list is List) {
-      for (final raw in list) {
-        if (raw is! Map) continue;
-        final c = raw.cast<String, dynamic>();
-        if ('${c['state'] ?? ''}' != 'CHANNELD_NORMAL') continue;
-        spendableMsat += _parseMsat(c['spendable_msat']) ?? 0;
-      }
-    }
+    final spendableMsat = _spendableMsatOf(channels);
     if (spendableMsat <= 0) {
-      throw const RpcError(
+      return const _PayabilityIssue(
         'PROVIDER_UNAVAILABLE',
         'nessun canale con liquidità in uscita: il provider non può pagare.',
       );
@@ -778,21 +854,148 @@ class SwapService {
         'final_cltv': _routeFinalCltv,
       });
     } on RpcError catch (e) {
-      throw RpcError(
-        'PROVIDER_UNAVAILABLE',
+      return _PayabilityIssue(
+        'PEER_UNREACHABLE',
         'nessuna rotta verso il destinatario: ${e.message}',
       );
     }
     final routes = res['routes'];
     if (routes is! List || routes.isEmpty) {
-      throw const RpcError(
-        'PROVIDER_UNAVAILABLE',
+      return const _PayabilityIssue(
+        'PEER_UNREACHABLE',
         'nessuna rotta trovata verso il destinatario.',
       );
     }
     _logger.debug(
       'pre-flight: rotta OK verso ${payeeId.substring(0, 12)}…',
     );
+    return null;
+  }
+
+  /// Somma di `spendable_msat` sui soli canali `CHANNELD_NORMAL`.
+  int _spendableMsatOf(Map<String, dynamic> channels) {
+    var spendableMsat = 0;
+    final list = channels['channels'];
+    if (list is List) {
+      for (final raw in list) {
+        if (raw is! Map) continue;
+        final c = raw.cast<String, dynamic>();
+        if ('${c['state'] ?? ''}' != 'CHANNELD_NORMAL') continue;
+        spendableMsat += _parseMsat(c['spendable_msat']) ?? 0;
+      }
+    }
+    return spendableMsat;
+  }
+
+  /// Liquidità in uscita spendibile ORA (sat). Fail-closed se il nodo muto.
+  Future<int> _spendableSats() async {
+    final Map<String, dynamic> channels;
+    try {
+      channels = await _cln.call('listpeerchannels');
+    } on RpcError catch (e) {
+      throw RpcError(
+        'PROVIDER_UNAVAILABLE',
+        'nodo del provider non interrogabile: ${e.message}',
+      );
+    }
+    return _spendableMsatOf(channels) ~/ 1000;
+  }
+
+  /// Decodifica e valida la invoice sul nodo (payee, importo, scadenza).
+  ///
+  /// Lancia [RpcError] con i codici storici (`INVOICE_INVALID`/`INVOICE_EXPIRED`):
+  /// la usano sia `swap_quote` sia `swap_info`.
+  Future<_DecodedInvoice> _decodeInvoice(String bolt11) async {
+    Map<String, dynamic> decoded;
+    try {
+      decoded = await _cln.call('decode', {'string': bolt11});
+    } on RpcError catch (e) {
+      throw RpcError('INVOICE_INVALID', 'decode fallito: ${e.message}');
+    }
+    final paymentHash = '${decoded['payment_hash'] ?? ''}'.toLowerCase();
+    final amountMsat = _parseMsat(decoded['amount_msat']);
+    if (paymentHash.length != 64 || amountMsat == null || amountMsat <= 0) {
+      throw const RpcError(
+        'INVOICE_INVALID',
+        'invoice senza importo o payment_hash non valido (amountless non supportate).',
+      );
+    }
+    // PERCHÉ: la guardia di pagabilità (STEP 3) e il ri-check di `create`
+    // devono conoscere il destinatario — senza payee valido niente quote.
+    final payeeId = '${decoded['payee'] ?? ''}'.toLowerCase();
+    if (!_nodeIdHex.hasMatch(payeeId)) {
+      throw const RpcError(
+        'INVOICE_INVALID',
+        'invoice senza payee valido (atteso node id da 66 cifre esadecimali).',
+      );
+    }
+    final expirySec = (decoded['expiry'] as num?)?.toInt() ?? 3600;
+    final createdAt = (decoded['created_at'] as num?)?.toInt() ?? _nowSec();
+    if (createdAt + expirySec < _nowSec()) {
+      throw const RpcError('INVOICE_EXPIRED', 'invoice scaduta.');
+    }
+    return _DecodedInvoice(
+      paymentHashHex: paymentHash,
+      amountMsat: amountMsat,
+      payeeId: payeeId,
+    );
+  }
+
+  /// Verdetto su una invoice per `swap_info` (nessun effetto collaterale).
+  ///
+  /// Ritorna sempre un payload: `valid` (fattura leggibile), `reachable`
+  /// (destinatario raggiungibile E importo nei limiti) e `reason` col codice
+  /// che la UI sa tradurre. // PERCHÉ non lancia: la UI deve MOSTRARE il
+  /// motivo ("peer non raggiungibile") invece di gestire un'eccezione.
+  Future<Map<String, dynamic>> _checkInvoice(String bolt11) async {
+    final _DecodedInvoice inv;
+    try {
+      inv = await _decodeInvoice(bolt11);
+    } on RpcError catch (e) {
+      return {
+        'valid': false,
+        'reachable': false,
+        'reason': e.code,
+        'message': e.message,
+      };
+    }
+    final feesSats = _config.fees.serviceFeeSats + _config.fees.claimFeeSats;
+    final fundingSats = inv.amountSats + feesSats;
+    final base = <String, dynamic>{
+      'valid': true,
+      'payee': inv.payeeId,
+      'amount_sats': inv.amountSats,
+      'funding_amount_sats': fundingSats,
+    };
+    if (fundingSats < _config.limits.minSats) {
+      return {
+        ...base,
+        'reachable': false,
+        'reason': 'AMOUNT_TOO_SMALL',
+        'message': 'importo sotto il minimo (${_config.limits.minSats} sat).',
+      };
+    }
+    if (fundingSats > _config.limits.maxSats) {
+      return {
+        ...base,
+        'reachable': false,
+        'reason': 'AMOUNT_TOO_LARGE',
+        'message': 'importo oltre il massimo (${_config.limits.maxSats} sat).',
+      };
+    }
+    final issue = await _payabilityIssue(
+      payeeId: inv.payeeId,
+      amountMsat: inv.amountMsat,
+    );
+    if (issue != null) {
+      return {
+        ...base,
+        'reachable': false,
+        'reason': issue.code,
+        'message': issue.message,
+      };
+    }
+    return {...base, 'reachable': true};
   }
 
   /// Converte `amount_msat` di CLN (int o stringa `"5000000msat"`).
@@ -846,4 +1049,30 @@ class _Quote {
   final String htlcAddress;
   final String witnessScriptHex;
   final int expiresAt;
+}
+
+/// Invoice decodificata dal nodo e validata (condivisa da quote e info).
+class _DecodedInvoice {
+  const _DecodedInvoice({
+    required this.paymentHashHex,
+    required this.amountMsat,
+    required this.payeeId,
+  });
+
+  final String paymentHashHex;
+  final int amountMsat;
+
+  /// Node id del destinatario (66 hex) — il "peer" del pagamento.
+  final String payeeId;
+
+  /// Arrotonda per eccesso: l'HTLC non deve mai valere meno della invoice.
+  int get amountSats => (amountMsat + 999) ~/ 1000;
+}
+
+/// Problema che impedisce il pagamento (codice + messaggio per il client).
+class _PayabilityIssue {
+  const _PayabilityIssue(this.code, this.message);
+
+  final String code;
+  final String message;
 }

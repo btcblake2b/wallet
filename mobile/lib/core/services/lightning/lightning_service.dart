@@ -2,6 +2,7 @@ import '../../models/lightning_balance.dart';
 import '../../models/lightning_channel.dart';
 import '../../models/lightning_channel_fees.dart';
 import '../../models/lightning_connection.dart';
+import '../../models/lightning_cross_chain.dart';
 import '../../models/lightning_forward.dart';
 import '../../models/lightning_htlc.dart';
 import '../../models/lightning_invoice.dart';
@@ -12,12 +13,14 @@ import '../../models/lightning_network_node.dart';
 import '../../models/lightning_node_address.dart';
 import '../../models/lightning_node_info.dart';
 import '../../models/lightning_node_stats.dart';
+import '../../models/lightning_offer.dart';
 import '../../models/lightning_onchain_fees.dart';
 import '../../models/lightning_onchain_result.dart';
 import '../../models/lightning_peer.dart';
 import '../../models/lightning_payment_record.dart';
 import '../../models/lightning_payment_result.dart';
 import '../../models/lightning_route.dart';
+import '../../models/lightning_splice.dart';
 import '../../models/lightning_utxo.dart';
 
 /// Stato della connessione verso il nodo Lightning remoto.
@@ -200,16 +203,60 @@ abstract class LightningService {
     required int amountMsat,
     String? description,
   });
-  Future<LightningPaymentResult> payInvoice(String bolt11);
+  Future<LightningPaymentResult> payInvoice(String bolt11, {int? amountMsat});
+
+  /// Crea un'offerta riutilizzabile BOLT12 (NCC `make_offer`).
+  ///
+  /// // PERCHÉ (BOLT12): ricevere senza rigenerare fatture monouso. Senza
+  /// // [amountMsat] l'offerta è a importo libero.
+  Future<LightningOffer> makeOffer({
+    required String description,
+    int? amountMsat,
+    bool singleUse = false,
+  });
+
+  /// Quanto costa pagare una fattura della chain SHA-256 tramite il bridge
+  /// cross-chain (sola lettura, nessuna prenotazione).
+  Future<LightningCrossChainEstimate> crossChainCheck(String invoice);
+
+  /// Paga una fattura della chain SHA-256 con i fondi della nostra chain.
+  ///
+  /// // PERCHÉ (P9): non-custodial — il bridge incassa la nostra hold invoice
+  /// // solo dopo aver pagato la fattura di destinazione. [maxSats] è un tetto
+  /// // di sicurezza contro il movimento del cambio tra check e pagamento.
+  Future<LightningCrossChainResult> crossChainPay(
+    String invoice, {
+    int? maxSats,
+  });
   Future<List<LightningChannel>> listChannels();
   Future<void> openChannel({
     required String nodeId,
     required int amountSats,
     String? host,
     bool isPrivate,
+    List<String>? utxos,
   });
   Future<void> closeChannel({
     required String channelId,
     bool force,
+  });
+
+  /// Ridimensiona un canale senza chiuderlo (NCC `splice_channel`).
+  ///
+  /// [amountSats] positivo aggiunge fondi (splice-in), negativo li riporta
+  /// sull'on-chain del nodo (splice-out). [utxos] è il coin control del
+  /// splice-in (`txid:vout`): se assente il nodo sceglie da sé.
+  Future<LightningSpliceResult> spliceChannel({
+    required String channelId,
+    required int amountSats,
+    List<String>? utxos,
+    String? feerate,
+  });
+
+  /// Stima la fee on-chain di uno splice-in prima di confermare.
+  Future<LightningSpliceEstimate> estimateSplice({
+    required int amountSats,
+    List<String>? utxos,
+    String? feerate,
   });
 }

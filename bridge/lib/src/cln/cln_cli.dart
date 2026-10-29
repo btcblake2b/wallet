@@ -94,9 +94,17 @@ List<String> buildLightningCliArgs({
         '${entry.key}=${_cliValue(entry.value)}',
     ];
 
+/// Valore di un parametro per `-k`.
+///
+/// // PERCHÉ (SPLICE): `lightning-cli -k` interpreta il valore come JSON
+/// // quando ha la forma giusta. Una lista resa con `'$value'` diventerebbe
+/// // `[a, b]` (identificatori senza virgolette) e il nodo la rifiuterebbe:
+/// // `jsonEncode` produce `["a","b"]`, che è ciò che CLN si aspetta — serve
+/// // per `utxos` (coin control di `open_channel` e `splice_channel`).
 String _cliValue(Object? value) {
   if (value == null) return '';
   if (value is bool) return value ? 'true' : 'false';
+  if (value is List || value is Map) return jsonEncode(value);
   return '$value';
 }
 
@@ -140,14 +148,14 @@ Map<String, dynamic> parseLightningCliResult({
     throw RpcError(
       'OTHER',
       'lightning-cli $method fallito (exit $exitCode): '
-      '${raw.isEmpty ? '' : raw.substring(0, raw.length > 160 ? 160 : raw.length)}',
+          '${raw.isEmpty ? '' : raw.substring(0, raw.length > 160 ? 160 : raw.length)}',
     );
   }
   if (decoded == null) {
     throw RpcError(
       'OTHER',
       'output di lightning-cli $method non JSON: '
-      '${raw.isEmpty ? '' : raw.substring(0, raw.length > 160 ? 160 : raw.length)}',
+          '${raw.isEmpty ? '' : raw.substring(0, raw.length > 160 ? 160 : raw.length)}',
     );
   }
   return decoded;

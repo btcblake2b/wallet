@@ -102,6 +102,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeVaultLocked => '保险库已锁定';
 
   @override
+  String get homeVaultLockedBody =>
+      '闲置后密钥已从内存中移除。输入密码即可查看余额并重新签名。你的钱包安然无恙：没有删除任何内容。';
+
+  @override
   String get settingsTitle => '设置';
 
   @override
@@ -154,6 +158,123 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsInfoDotsDesc => '显示解释每个功能的小信息按钮';
 
   @override
+  String get guideTitle => '工作原理';
+
+  @override
+  String get guideEntryDesc => '通俗解释：钱包、助记词、手续费、Lightning。';
+
+  @override
+  String get guideIntro =>
+      '本指南用简单的话说明 App 做什么、为什么这样做。不必全读：只看你需要的章节。每条解释也能通过对应字段旁的 ⓘ 打开。';
+
+  @override
+  String get guideOpenFailed => '无法打开浏览器。';
+
+  @override
+  String get guideHintsNote => '可在 设置 → 界面 中隐藏 ⓘ 提示。';
+
+  @override
+  String get guideSectionBasics => '基础';
+
+  @override
+  String get guideSectionSecurity => '安全与备份';
+
+  @override
+  String get guideSectionTransactions => '收发';
+
+  @override
+  String get guideSectionLightning => 'Lightning';
+
+  @override
+  String get guideSectionAdvanced => '深入';
+
+  @override
+  String get guideFullGuideTitle => '在线完整指南';
+
+  @override
+  String get guideFullGuideDesc => '网站上有更长的版本，含示例和常见问题。';
+
+  @override
+  String get guideFullGuideOpen => '打开指南';
+
+  @override
+  String get infoWhatIsWalletTitle => '钱包是什么（以及不是什么）';
+
+  @override
+  String get infoWhatIsWalletBody =>
+      '钱包并不“装”币：它保存的是私钥，让你能动用记录在区块链上的币。余额由节点读取链上数据算出，App 用你的地址重建。所以：丢了私钥就丢了钱；丢了手机还能用 12 个单词恢复。';
+
+  @override
+  String get infoSelfCustodyTitle => '自托管：没人能冻结你的资产';
+
+  @override
+  String get infoSelfCustodyBody =>
+      '在这里你就是银行：没有账户、没有登录、没有公司替你保管钱。好处：没人能冻结你的余额。风险：没人能帮你找回密码或助记词。这就是自主的代价，请清楚接受。';
+
+  @override
+  String get infoSeedPhraseTitle => '助记词（12 个单词）';
+
+  @override
+  String get infoSeedPhraseBody =>
+      '它是私钥的可读形式：这些单词能重建你所有的地址，也就是你的资产。写在纸上，绝不要拍照、发聊天、存云端或密码管理器。看到它的人可以清空钱包；丢了它就丢了一切。';
+
+  @override
+  String get infoAppEncryptionTitle => '本地加密与密码';
+
+  @override
+  String get infoAppEncryptionBody =>
+      '助记词只留在你的设备上，用 AES-GCM 加密：密钥由你的密码派生（或用指纹解锁系统密钥库）。没有任何服务器收到密码。忘记密码无法“重置”：只有助记词是后路。';
+
+  @override
+  String get infoNetworkBlake2bTitle => '所用网络：bitcoin-blake2b';
+
+  @override
+  String get infoNetworkBlake2bBody =>
+      '你使用的是 bitcoin-blake2b，一个实验性网络，规则不同（BLAKE2b 哈希、共识层没有重放保护）：它不是比特币，两条链也不共享币。请把它当作测试环境，而不是最终的储蓄账户。';
+
+  @override
+  String get infoBalanceUtxoTitle => '余额是怎么来的';
+
+  @override
+  String get infoBalanceUtxoBody =>
+      '没有带数字的“账户”：余额是 UTXO 之和，也就是你收到且还没花掉的币，像口袋里的现金。一笔交易消耗若干 UTXO 并生成新的（付款 + 找零）。转给自己时余额不变。';
+
+  @override
+  String get infoConfirmationsTitle => '确认数';
+
+  @override
+  String get infoConfirmationsBody =>
+      '刚发出的付款处于“待确认”（mempool）：它已存在，但还没有区块记录。之后每个区块增加一次确认；3 次确认后可以认为比较稳定。待确认期间金额可能显示为不可用：钱没消失，只是在等。';
+
+  @override
+  String get infoFeeConceptTitle => '为什么要付手续费';
+
+  @override
+  String get infoFeeConceptBody =>
+      '手续费是给把交易打包进区块的人的报酬。按大小付费（sat/vB），与金额无关：转 1 000 或 1 000 000 sat 费用相同。mempool 拥堵时价格上涨；手续费不是 App 收的，而是给矿工。';
+
+  @override
+  String get infoChangeAddressTitle => '找零';
+
+  @override
+  String get infoChangeAddressBody =>
+      '像在商店：如果你花的 UTXO 比应付金额多，差额会以“找零”回到同一钱包的一个新地址。一笔交易有两个输出很正常：付给对方的和找回给你的。';
+
+  @override
+  String get infoLightningVsOnchainTitle => '链上与 Lightning';
+
+  @override
+  String get infoLightningVsOnchainBody =>
+      '链上：每笔流动都是链上的公开交易，安全可验证，但较慢且每笔都要手续费。Lightning：在“通道”里即时、几乎免费的支付，通道用一笔链上交易打开。开通道＝把链上资金放进通道；关通道＝退回链上。';
+
+  @override
+  String get infoPrivacyBasicsTitle => '隐私：谁能看到什么';
+
+  @override
+  String get infoPrivacyBasicsBody =>
+      '每次“接收”都会生成新地址：重复使用会把你的付款连起来。App 没有账户也没有遥测，链上数据来自公共 API（mempool.guide），它会看到你的 IP。要最大隐私：用 VPN 或自己的节点，永远不要公开 xpub。';
+
+  @override
   String get infoCoinControlTitle => '硬币控制（UTXO 选择）';
 
   @override
@@ -178,7 +299,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get infoBatchSendBody =>
-      '在单笔交易中，你可以支付给最多 5 个地址，分摊费用而不是每次转账支付一次。所有收件人在签名前都会在确认中显示。';
+      '在单笔交易中，你可以支付给最多 20 个地址，分摊费用而不是每次转账支付一次。所有收件人在签名前都会在确认中显示。';
 
   @override
   String get infoBumpFeeTitle => '增加费用（RBF）';
@@ -227,7 +348,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get infoChannelReserveBody =>
-      '你的一部分资金必须作为安全保证金保持锁定（\'储备金\'）。它确保双方都有损失——如果另一方恶意离线，储备金可用于在链上惩罚他们。';
+      '你的一部分资金必须作为安全保证金保持锁定（“储备金”）。它确保双方都有损失——如果另一方恶意离线，储备金可用于在链上惩罚他们。';
 
   @override
   String get infoToSelfDelayTitle => '自延迟时间';
@@ -557,6 +678,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get walletDetailUtxoClearSelection => '清除选择';
 
   @override
+  String get walletUtxoWaitingBadge => '等待期';
+
+  @override
+  String walletUtxoWaitingBlocks(int count) {
+    return '还需 $count 个区块解锁';
+  }
+
+  @override
+  String walletUtxoWaitingHint(int blocks) {
+    return '矿池付款（coinbase）在网络转发前需要 $blocks 个区块：暂时无法花费。';
+  }
+
+  @override
+  String walletBalanceWaiting(String amount) {
+    return '等待中：$amount';
+  }
+
+  @override
   String get walletDetailPasswordSeedReason => '确认密码以查看助记词';
 
   @override
@@ -697,7 +836,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String legalPrivacyContent(String holder, String email) {
-    return '本隐私政策为临时版本，官网正式版本发布后将被其取代。\n\n1) 设备上的数据。本应用不要求注册账户，也不会将个人数据保存在作者的服务器上。加密的助记词（AES-256-GCM）、偏好设置和同意记录仅保存在您的设备上。\n\n2) 为正常运行而发送给第三方的数据。为显示余额和手续费，本应用会查询第三方公共 API：\n• mempool.guide（区块链浏览器）。\n• 如果 mempool.guide 不可用，本应用可能会查询两个社区维护的 Esplora 兼容镜像（mempool.kilombino.com、mempool.maveth.ca）。此选项可在设置中关闭。\n每次请求都会传输您的 IP 地址以及所查询钱包的公开地址。私钥和助记词绝不会被传输。\n\n3) 无追踪器。应用内不含任何分析、广告或 Cookie。\n\n4) 权利（GDPR 第 13-14 条）。您有权通过写信给数据控制者行使访问、更正、删除和反对的权利：$holder — $email。由于我们不存储个人数据，这些权利在很大程度上已经通过数据仅保存在您设备上这一事实得到保障。';
+    return '本隐私政策为临时版本，官网正式版本发布后将被其取代。\n\n1) 设备上的数据。本应用不要求注册账户，也不会将个人数据保存在作者的服务器上。加密的助记词（AES-256-GCM）、偏好设置和同意记录仅保存在您的设备上。\n\n2) 为正常运行而发送给第三方的数据。为显示余额和手续费，本应用会查询第三方公共 API：\n• mempool.guide（区块链浏览器）。\n• 如果 mempool.guide 不可用，本应用可能会查询两个社区维护的 Esplora 兼容镜像（mempool.kilombino.com、mempool.maveth.ca）。此选项可在设置中关闭。\n• 如果您在设置中启用自动价格，本应用将按需从 neoxa.exchange（NeoXEX）读取最新的 XBT/USDC 交易。如果计价货币不是 USD，本应用还会从 api.coinbase.com 读取 USDT 汇率。两项均可在设置中关闭。\n每次请求都会传输您的 IP 地址以及所查询钱包的公开地址。私钥和助记词绝不会被传输。\n\n3) 无追踪器。应用内不含任何分析、广告或 Cookie。\n\n4) 权利（GDPR 第 13-14 条）。您有权通过写信给数据控制者行使访问、更正、删除和反对的权利：$holder — $email。由于我们不存储个人数据，这些权利在很大程度上已经通过数据仅保存在您设备上这一事实得到保障。';
   }
 
   @override
@@ -764,6 +903,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scanQrInvalidInvoice => '扫描的代码不是有效的闪电网络发票。';
 
   @override
+  String get scanQrInvalidMnemonic => '扫描的代码不是有效的 BIP39 助记词。';
+
+  @override
   String get scanQrTorch => '切换手电筒';
 
   @override
@@ -807,6 +949,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get importScreenHint => 'word1 word2 word3 ...';
+
+  @override
+  String get importScreenScanSeed => '扫描助记词二维码';
 
   @override
   String get importScreenValidateEmpty => '请输入助记词。';
@@ -1295,6 +1440,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lightningOpenChannelNodeId => 'Node ID（公钥）';
 
   @override
+  String get lightningCoinControlTitle => '硬币控制（可选）';
+
+  @override
+  String get lightningCoinControlHint => '选择用节点的哪些链上输出为通道出资。未选择时由节点自动决定。';
+
+  @override
+  String get lightningCoinControlNoneSelected => '未选择：节点自动选择。';
+
+  @override
+  String get lightningCoinControlSelectedTotal => '已选合计';
+
+  @override
+  String get lightningCoinControlUnconfirmed => '未确认';
+
+  @override
+  String get lightningCoinControlUnavailable => '输出列表不可用：节点将自动选择。';
+
+  @override
   String get lightningOpenChannelHost => '主机（可选，ip:端口）';
 
   @override
@@ -1487,6 +1650,155 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lightningChannelFundingTxid => '资金交易 ID';
+
+  @override
+  String get lightningSplice => '调整通道容量';
+
+  @override
+  String get lightningSpliceTitle => '无需关闭即可调整通道容量';
+
+  @override
+  String get lightningSpliceIn => '增加资金';
+
+  @override
+  String get lightningSpliceOut => '提取资金';
+
+  @override
+  String get lightningSpliceAmountLabel => '金额（聪）';
+
+  @override
+  String get lightningSpliceEstimate => '估算链上手续费';
+
+  @override
+  String lightningSpliceFee(int fee) {
+    final intl.NumberFormat feeNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String feeString = feeNumberFormat.format(fee);
+
+    return '链上手续费：约 $feeString 聪';
+  }
+
+  @override
+  String get lightningSpliceFeeUnavailable => '节点未返回手续费估算';
+
+  @override
+  String get lightningSpliceConfirm => '现在调整通道容量？通道将保持在线，并广播一笔链上交易。';
+
+  @override
+  String get lightningSpliceDone => '通道容量已调整';
+
+  @override
+  String get lightningSpliceInvalidAmount => '请输入大于零的金额';
+
+  @override
+  String get lightningSpliceUnavailable => '仅当通道可用且对等节点在线时才能调整大小。';
+
+  @override
+  String get lightningSpliceChannelFailed =>
+      '节点拒绝了拼接：对等节点可能不支持（需要带统一签名的 CLN）。通道保持不变。';
+
+  @override
+  String get lightningSpliceBridgeOutdated =>
+      '该节点的桥接程序尚未提供通道调整功能：请更新服务器上的桥接程序。';
+
+  @override
+  String lightningSpliceOnchainAvailable(String sats) {
+    return '节点链上资金：$sats 聪';
+  }
+
+  @override
+  String get lightningSpliceInsufficientOnchain =>
+      '节点的链上资金不足以完成此金额：请先向节点钱包充值（充值），然后重试。';
+
+  @override
+  String get lightningReceiveModeInvoice => '一次性发票';
+
+  @override
+  String get lightningReceiveModeOffer => '可重复使用的代码';
+
+  @override
+  String get lightningOfferTitle => '可重复使用的付款代码';
+
+  @override
+  String get lightningOfferReusableHint =>
+      '分享此代码：任何人都可以付款，若未设金额则可自行选择。它不会像发票那样过期。';
+
+  @override
+  String get lightningOfferAmountOptional => '金额（聪）——可选';
+
+  @override
+  String get lightningOfferAmountLabel => '金额（聪）';
+
+  @override
+  String get lightningOfferAmountRequired => '请输入支付该报价的金额';
+
+  @override
+  String lightningOfferFixedAmount(String sats) {
+    return '报价金额：$sats 聪';
+  }
+
+  @override
+  String get lightningOfferDefaultDescription => '付款';
+
+  @override
+  String get lightningPayOffer => '支付报价';
+
+  @override
+  String get lightningCrossChainEntry => '支付 BTC（SHA-256）发票';
+
+  @override
+  String get lightningCrossChainTitle => '跨链支付';
+
+  @override
+  String get lightningCrossChainHint =>
+      '通过外部非托管桥接，用你的 BLAKE2b 资金支付 SHA-256 链的 Lightning 发票。桥接只有在支付发票后才会收取款项；否则付款会退回给你。';
+
+  @override
+  String get lightningCrossChainCheck => '检查费用';
+
+  @override
+  String lightningCrossChainCost(String sats) {
+    return '你将支付：$sats 聪';
+  }
+
+  @override
+  String lightningCrossChainInvoiceAmount(String sats) {
+    return '发票金额：$sats 聪';
+  }
+
+  @override
+  String lightningCrossChainRate(String rate) {
+    return '汇率：1 XBT = $rate BTC';
+  }
+
+  @override
+  String lightningCrossChainSpread(String percent) {
+    return '桥接点差：$percent%';
+  }
+
+  @override
+  String lightningCrossChainWait(int seconds) {
+    return '预计等待：约 $seconds 秒';
+  }
+
+  @override
+  String get lightningCrossChainPay => '通过桥接支付';
+
+  @override
+  String get lightningCrossChainConfirmTitle => '通过桥接支付？';
+
+  @override
+  String lightningCrossChainConfirmBody(String sats) {
+    return '你将在此链上支付 $sats 聪。资金会被锁定，直到桥接支付目标发票；若无法支付，款项将退回给你。';
+  }
+
+  @override
+  String get lightningCrossChainDone => '支付完成';
+
+  @override
+  String lightningCrossChainState(String state) {
+    return '桥接状态：$state';
+  }
 
   @override
   String get lightningNodeManagement => '节点管理';
@@ -1881,6 +2193,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lightningPeeringGateLink => '兼容性矩阵';
 
   @override
+  String get lightningPeeringGateNewTitle => '仅允许新协议版本的节点互联';
+
+  @override
+  String get lightningPeeringGateNewBody =>
+      '此节点使用最终的 feature bit（option_blake2b 512，option_unified_sigs 514）：未更新的节点——版本 .4 及更早——无法连接。这是网络的选择，不是应用或桥接的问题。对等节点需更新到 .5 或更新的版本。';
+
+  @override
   String lightningPeersRegisteredOnly(int count) {
     return '$count 个已注册节点，均未连接';
   }
@@ -1912,6 +2231,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lightningSwapProviderDisconnect => '断开连接';
+
+  @override
+  String get lightningSwapProviderDefaultLabel => 'btcblake2b 节点（推荐）';
+
+  @override
+  String get lightningSwapProviderChecking => '正在检查默认节点...';
+
+  @override
+  String get lightningSwapProviderReachable => '默认节点可达';
+
+  @override
+  String get lightningSwapProviderDown => '默认节点目前无响应。';
+
+  @override
+  String lightningSwapProviderSendLimit(String min, String max) {
+    return '现在可发送 $min 至 $max sat';
+  }
+
+  @override
+  String lightningSwapProviderLiquidity(String amount) {
+    return '当前可用流动性：$amount sat';
+  }
+
+  @override
+  String get lightningSwapPeerCheck => '检查收款方';
+
+  @override
+  String lightningSwapPeerReachable(String amount) {
+    return '收款方可达：需支付 $amount sat';
+  }
+
+  @override
+  String get lightningSwapErrorPeerUnreachable =>
+      '无法通过服务提供方到达收款方：找不到通往其节点的路由。请检查账单或稍后重试。';
 
   @override
   String get lightningSwapInvoiceHint => 'Lightning 发票（lnbc...）';
@@ -1996,6 +2349,47 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lightningSwapBlobCopied => '恢复 blob 已复制';
 
   @override
+  String get lightningSwapHistoryTitle => 'Swap 历史';
+
+  @override
+  String get lightningSwapHistoryEmpty => '还没有 swap：通过服务商完成的支付会显示在这里。';
+
+  @override
+  String get lightningSwapDetailTitle => 'Swap 详情';
+
+  @override
+  String get lightningSwapDetailCreated => '创建时间';
+
+  @override
+  String get lightningSwapDetailSummary => '摘要';
+
+  @override
+  String get lightningSwapDetailProtocol => '协议数据';
+
+  @override
+  String get lightningSwapDetailSwapId => 'Swap ID';
+
+  @override
+  String get lightningSwapDetailInvoice => '发票';
+
+  @override
+  String get lightningSwapDetailPaymentHash => 'Payment hash';
+
+  @override
+  String get lightningSwapDetailProvider => '服务商';
+
+  @override
+  String get lightningSwapDetailFundingTx => '资金交易';
+
+  @override
+  String get lightningSwapOpenInExplorer => '在区块浏览器中打开';
+
+  @override
+  String lightningSwapRefundSent(String txid) {
+    return '退款已发送：$txid';
+  }
+
+  @override
   String get lightningSwapClaimTxid => 'Claim 交易 ID';
 
   @override
@@ -2033,6 +2427,12 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String lightningSwapInsufficientFundsWaiting(
+      String needed, String available, String waiting) {
+    return '资金不足：需要 $needed sat，可用 $available sat（$waiting sat 处于等待期）';
+  }
+
+  @override
   String get lightningSwapCancel => '取消 swap';
 
   @override
@@ -2047,6 +2447,41 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get lightningSwapErrorRelayNotAllowed =>
       '该服务商使用的中继在网页版无法访问。请在手机上使用移动版完成支付。';
+
+  @override
+  String get lightningSwapErrorPaymentFailed =>
+      '服务商未能支付该发票。你的资金仍在 HTLC 中：可通过退款取回（见下方区块）。';
+
+  @override
+  String get lightningSwapErrorProviderUnavailable =>
+      '服务商目前无法支付（没有路由或流动性不足）。请稍后重试。';
+
+  @override
+  String get lightningSwapErrorRateLimited => '服务商暂时已达容量上限。请稍后重试。';
+
+  @override
+  String get lightningSwapErrorDuplicateSwap => '该发票已在另一笔 swap 中使用。';
+
+  @override
+  String get lightningSwapErrorQuoteExpired => '报价已过期。请重新开始 swap。';
+
+  @override
+  String get lightningSwapErrorInvoiceInvalid => '服务商拒绝了该发票：无效。';
+
+  @override
+  String get lightningSwapErrorInvoiceExpired => '该发票已过期。请索取新的发票。';
+
+  @override
+  String get lightningSwapErrorAmountOutOfRange => '服务商不接受该金额（超出允许范围）。';
+
+  @override
+  String get lightningSwapErrorFundingTimeout => '资金未及时确认：该 swap 已过期，未进行任何支付。';
+
+  @override
+  String get lightningSwapErrorTooLate => '由于过于接近时间锁，支付已取消。你的资金可以取回。';
+
+  @override
+  String get lightningSwapRefundHint => '这些资金仍然属于你：即使服务商消失，退款也会在时间锁后自动解锁。';
 
   @override
   String get lightningSwapCancelTitle => '取消此 swap？';
@@ -2083,4 +2518,344 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get lightningChannelPeerAddress => '对等节点地址';
+
+  @override
+  String get lightningSpliceNodeTooOld =>
+      '调整通道容量需要 .6 或更新版本的节点（建议 .9）。当前节点版本较旧，因此隐藏了该操作。更新节点后即可启用。';
+
+  @override
+  String get lightningSpliceNodeOutdated =>
+      '该节点的版本早于 .9：从 .8 起的更新修复了一个 splice 漏洞，该漏洞可能导致节点丢失通道资金。调整仍然可用，但请尽快升级到 .9。';
+
+  @override
+  String get lightningDiscoveryTitle => '寻找对等节点与流动性';
+
+  @override
+  String get lightningDiscoveryBody => '该网络没有中央目录。以下是社区用来列出节点、通道和入站流动性的活跃入口。';
+
+  @override
+  String get lightningDiscoveryNetworkTitle => '网络浏览器（Paperclip）';
+
+  @override
+  String get lightningDiscoveryNetworkBody => '公开节点、通道和公布容量。';
+
+  @override
+  String get lightningDiscoveryLspTitle => '入站流动性（Paperclip LSP）';
+
+  @override
+  String get lightningDiscoveryLspBody => '为你的节点开通通道，用 XBT 链上支付。';
+
+  @override
+  String get lightningDiscoveryNodexTitle => 'Nodex - 通道与费用';
+
+  @override
+  String get lightningDiscoveryNodexBody => '通道浏览器，含双向费用与在线时间。';
+
+  @override
+  String get lightningDiscoverySwapTitle => 'Lightning Fork Swap';
+
+  @override
+  String get lightningDiscoverySwapBody => 'Lightning 与链上之间的非托管兑换，用于调整流动性。';
+
+  @override
+  String get lightningDiscoveryWatchtowerTitle => '瞭望塔（仅 lnd 节点）';
+
+  @override
+  String get lightningDiscoveryWatchtowerBody =>
+      '瞭望塔会在你的节点离线时监视链，并惩罚公布旧状态的对手方。请使用多个：lnd 需要 wtclient.active=true 和 Tor。CLN 节点使用 BOLT 13（TEOS），本应用尚未配置。使用 lncli wtclient add <uri> 添加。';
+
+  @override
+  String get lightningDiscoveryOpenFailed => '浏览器未能打开该链接。';
+
+  @override
+  String get lightningInboundMissingTitle => '你还不能接收';
+
+  @override
+  String get lightningInboundMissingBody =>
+      '此节点没有入账流动性：需要另一个节点向它开通道，别人才能付给你。在此之前，你分享的发票无法付款。';
+
+  @override
+  String get lightningInboundMissingCta => '获取入账流动性';
+
+  @override
+  String get lightningInboundMissingRefresh => '重新检查';
+
+  @override
+  String get webVaultNoticeTitle => '你正在使用浏览器版本';
+
+  @override
+  String get webVaultNoticeBody =>
+      '这里加密的种子保存在浏览器中（localStorage，并在 IndexedDB 中备份），密钥由你的密码包裹。保险库在闲置 10 分钟后以及页面被隐藏时会锁定，但在保险库未锁定时页面上运行的代码可以读取密钥：浏览器无法防范这种情况。真实金额请使用 Android 应用，密钥保存在系统密钥库中。';
+
+  @override
+  String get webVaultNoticeDownload => '获取 Android 应用';
+
+  @override
+  String get splashStartupError => '无法启动应用';
+
+  @override
+  String get splashRetry => '重试';
+
+  @override
+  String webVaultOriginOfficial(Object origin) {
+    return '已验证域名：$origin';
+  }
+
+  @override
+  String webVaultOriginDev(Object origin) {
+    return '本地测试环境：$origin';
+  }
+
+  @override
+  String webVaultOriginUnofficial(Object origin) {
+    return '警告：这不是官方域名。你正在使用 $origin — 真正的域名是 app.btcblake2b.org。请勿在此输入种子或密码。';
+  }
+
+  @override
+  String get receiveNeedsBackupTitle => '请先备份种子';
+
+  @override
+  String get receiveNeedsBackupBody =>
+      '在浏览器中，加密的种子保存在本站的存储里：PWA 更新或「清除网站数据」会删除它，现在分享的地址收到的资金你将永远无法花费。请在接收前确认种子备份（或把钱包迁移到 App）。';
+
+  @override
+  String get receiveNeedsBackupAction => '立即备份';
+
+  @override
+  String get merchantChargeTitle => '收款';
+
+  @override
+  String get merchantChargeAmount => '金额';
+
+  @override
+  String get merchantChargeAmountInvalid => '请输入大于零的金额。';
+
+  @override
+  String get merchantChargeLabel => '描述（可选）';
+
+  @override
+  String get merchantChargeModeLightning => 'Lightning';
+
+  @override
+  String get merchantChargeModeOnchain => '链上';
+
+  @override
+  String get merchantChargeLightningHint => '客户支付 Lightning 发票：节点收到后立即入账。';
+
+  @override
+  String get merchantChargeOnchainHint => '客户扫描二维码：金额已在其中，只需确认。';
+
+  @override
+  String get merchantChargeLightningUnavailable =>
+      '未连接 Lightning 节点：目前只能链上收款。请在 Lightning 标签页连接节点以同时接受 Lightning 支付。';
+
+  @override
+  String get merchantChargeCreate => '创建付款请求';
+
+  @override
+  String get merchantChargeInvoiceTitle => 'Lightning 发票';
+
+  @override
+  String get merchantChargeUriTitle => 'Bitcoin URI (BIP21)';
+
+  @override
+  String get merchantChargeWaiting => '等待付款…';
+
+  @override
+  String get merchantChargePaid => '已收到付款';
+
+  @override
+  String get merchantChargeNew => '新的请求';
+
+  @override
+  String get merchantConvertTitle => '转换为 BTC';
+
+  @override
+  String get merchantConvertIntro =>
+      'XBT 生活在 bitcoin-blake2b 网络上，与 Bitcoin 是两条独立的链：把 XBT 换成 BTC（或相反）是跨链兑换。本应用不提供也无法提供：没有兑换、没有托管。兑换在你选择的第三方非托管服务上进行。';
+
+  @override
+  String get merchantConvertAddressTitle => '你的 XBT 地址';
+
+  @override
+  String get merchantConvertAddressBody =>
+      '复制你想在那里使用的钱包地址，或先在这里收取 XBT 以后再兑换。切勿向索要种子的服务发送资金。';
+
+  @override
+  String get merchantConvertUnnamedWallet => '钱包';
+
+  @override
+  String get merchantConvertPaperclipTitle => 'Paperclip Bridge（测试版）';
+
+  @override
+  String get merchantConvertPaperclipBody =>
+      '社区的非托管桥：只有发票真正付清才会收取。测试版，未经过第三方审计。';
+
+  @override
+  String get merchantConvertForkTitle => 'Lightning Fork Swap';
+
+  @override
+  String get merchantConvertForkBody => '社区的兑换服务，链上捐赠仅用于其自身流动性。发送前请核对费用和限额。';
+
+  @override
+  String get merchantConvertWarningTitle => '兑换之前';
+
+  @override
+  String get merchantConvertWarningBody =>
+      '1) 比较你收到与发出的金额：小额时手续费可能吃掉差额。2) 兑换不可撤销：核对地址和网络。3) 我们不收取、不保管也不担保任何东西：如果服务被冻结，只有该服务能回答。4) 真实金额请先小额测试。';
+
+  @override
+  String get merchantConvertOpen => '转换';
+
+  @override
+  String get fiatPriceShow => '以美元显示价值';
+
+  @override
+  String get fiatPriceNotSet => '未设置价格：添加后可查看价值';
+
+  @override
+  String fiatPriceCurrent(Object cents) {
+    return '1 XBT = $cents';
+  }
+
+  @override
+  String get fiatPriceSet => '设置 XBT 价格';
+
+  @override
+  String get fiatPriceSetDesc => '用于折算的价格：可自行输入，或让应用从 NeoXEX 读取。';
+
+  @override
+  String get fiatPriceDialogBody =>
+      '请输入 1 XBT 的美元价格。如果你愿意，可在设置中开启自动价格：应用将按需从 NeoXEX 读取最新的 XBT/USDC 交易（以及所选货币的 USDT 汇率）。显示的数值仅供参考，不是报价。';
+
+  @override
+  String get fiatPriceFieldLabel => '1 XBT 的价格';
+
+  @override
+  String get fiatPriceSave => '保存';
+
+  @override
+  String get fiatPriceInvalid => '价格无效：请输入大于零的数字，最多 2 位小数。';
+
+  @override
+  String get fiatPriceManualNote => '你的价格，不是市场报价';
+
+  @override
+  String get fiatPriceMarketNote => '市场价格，NeoXEX 最新成交';
+
+  @override
+  String get fiatPriceCurrency => '计价货币';
+
+  @override
+  String get fiatPriceCurrencyDesc => '按 USDT 汇率换算';
+
+  @override
+  String get fiatPriceFxFailed => '汇率不可用：请连接互联网后重试。';
+
+  @override
+  String get fiatPriceAuto => '从 NeoXEX 获取价格';
+
+  @override
+  String get fiatPriceAutoDesc => '按需读取最新的 XBT/USDC 交易。无轮询，无后台请求。';
+
+  @override
+  String get fiatPriceAutoUpdated => '价格已从 NeoXEX 更新';
+
+  @override
+  String get fiatPriceAutoFailed => '无法连接 NeoXEX：保留之前的价格。';
+
+  @override
+  String get balanceChangeUnitHint => '轻触可在 XBT、sats 和美元之间切换余额显示';
+
+  @override
+  String get psbtSpendTitle => '使用 PSBT 花费';
+
+  @override
+  String get psbtSpendIntro => '只读钱包无法签名。在此创建 PSBT，在持有种子的设备上签名，然后从那里广播。';
+
+  @override
+  String get psbtCreate => '创建 PSBT';
+
+  @override
+  String get psbtCreating => '正在创建 PSBT…';
+
+  @override
+  String psbtDraftReady(Object change, Object fee) {
+    return 'PSBT 已就绪 · 手续费 $fee sat · 找零 $change sat';
+  }
+
+  @override
+  String get psbtQrTitle => '扫描此 PSBT';
+
+  @override
+  String psbtQrFrames(Object count) {
+    return '$count 个分帧 — QR 轮换时请保持对准';
+  }
+
+  @override
+  String get psbtCopyBase64 => '复制 PSBT（base64）';
+
+  @override
+  String get psbtSignTitle => '签名 PSBT';
+
+  @override
+  String get psbtSignIntro => '粘贴或扫描在另一台设备上创建的 PSBT。签名前请核对接收方和手续费。';
+
+  @override
+  String get psbtPasteLabel => 'PSBT（base64）';
+
+  @override
+  String get psbtScan => '扫描 QR';
+
+  @override
+  String get psbtReviewTitle => '概览';
+
+  @override
+  String psbtReviewFee(Object fee) {
+    return '手续费：$fee sat';
+  }
+
+  @override
+  String psbtReviewInputs(Object count) {
+    return '输入：$count';
+  }
+
+  @override
+  String psbtReviewOutputs(Object count) {
+    return '接收方：$count';
+  }
+
+  @override
+  String get psbtSign => '签名';
+
+  @override
+  String get psbtSignedTitle => '已签名的 PSBT';
+
+  @override
+  String get psbtBroadcast => '广播';
+
+  @override
+  String get psbtBroadcasting => '正在广播…';
+
+  @override
+  String psbtBroadcastDone(Object txid) {
+    return '已发送：$txid';
+  }
+
+  @override
+  String get psbtInvalid => 'PSBT 无效';
+
+  @override
+  String get psbtNoFrames => '未识别到 PSBT 分帧';
+
+  @override
+  String psbtScanProgress(Object received, Object total) {
+    return '已读取分帧：$received/$total';
+  }
+
+  @override
+  String get psbtSigning => '正在签名…';
+
+  @override
+  String get psbtNeedsSeed => '该钱包没有种子：请在持有种子的设备上签名。';
 }

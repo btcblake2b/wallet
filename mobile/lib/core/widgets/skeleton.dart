@@ -114,6 +114,9 @@ class EmptyStateWidget extends StatelessWidget {
     this.onAction,
     this.secondaryLabel,
     this.onSecondaryAction,
+    this.tertiaryLabel,
+    this.tertiaryIcon = Icons.school_outlined,
+    this.onTertiaryAction,
   });
 
   final IconData icon;
@@ -123,6 +126,13 @@ class EmptyStateWidget extends StatelessWidget {
   final VoidCallback? onAction;
   final String? secondaryLabel;
   final VoidCallback? onSecondaryAction;
+
+  /// Terza azione, più discreta delle altre: serve al "impara" (guida), non a
+  /// creare/importare. PERCHÉ (26/10): chi apre l'app per la prima volta non sa
+  /// quali domande farsi — lo stato vuoto è il punto in cui offrirgli la guida.
+  final String? tertiaryLabel;
+  final IconData tertiaryIcon;
+  final VoidCallback? onTertiaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +191,14 @@ class EmptyStateWidget extends StatelessWidget {
                 onPressed: onSecondaryAction,
                 icon: const Icon(Icons.file_download, size: 18),
                 label: Text(secondaryLabel!),
+              ),
+            ],
+            if (tertiaryLabel != null && onTertiaryAction != null) ...[
+              const SizedBox(height: 4),
+              TextButton.icon(
+                onPressed: onTertiaryAction,
+                icon: Icon(tertiaryIcon, size: 18),
+                label: Text(tertiaryLabel!),
               ),
             ],
           ],

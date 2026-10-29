@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:btc_blake2b_wallet/core/config/bitcoin_network_config.dart';
 import 'package:btc_blake2b_wallet/core/models/transaction_record.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/explorer_api.dart';
@@ -636,6 +637,149 @@ void main() {
       );
 
       expect(utxos, isEmpty);
+    });
+
+    /// Mock Esplora per un wallet con UN solo UTXO: [vin] decide se la tx è un
+    /// payout di mining (vin senza prevout) o una tx normale.
+    MockClient walletWithOneUtxo({
+      required String address,
+      required String txid,
+      required int value,
+      required List<Map<String, dynamic>> vin,
+    }) {
+      return MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/blocks/tip/height')) {
+          return http.Response('100', 200);
+        }
+        if (path.endsWith('/utxo')) {
+          if (path.contains(address)) {
+            return http.Response(
+              jsonEncode([
+                {
+                  'txid': txid,
+                  'vout': 0,
+                  'value': value,
+                  'status': {'confirmed': true, 'block_height': 90},
+                },
+              ]),
+              200,
+            );
+          }
+          return http.Response('[]', 200);
+        }
+        if (path.endsWith('/tx/$txid')) {
+          return http.Response(
+            jsonEncode({
+              'txid': txid,
+              'vin': vin,
+              'vout': [
+                {
+                  'scriptpubkey': '0014${'00' * 20}',
+                  'scriptpubkey_type': 'v0_p2wpkh',
+                  'scriptpubkey_address': address,
+                  'value': value,
+                },
+              ],
+              'status': {'confirmed': true, 'block_height': 90},
+            }),
+            200,
+          );
+        }
+        return http.Response('not found', 404);
+      });
+    }
+
+    test('coinbase non matura: escluso dal saldo e dagli UTXO spendibili (A3)',
+        () async {
+      const mnemonic =
+          'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+      final derived = await bitcoinService
+          .deriveWalletDataFromMnemonic(mnemonic, addressCount: 1);
+      final firstAddress = derived.addresses.first;
+      final coinbaseTxid = 'd' * 64;
+
+      final service = BitcoinService(
+        client: walletWithOneUtxo(
+          address: firstAddress,
+          txid: coinbaseTxid,
+          value: 50000,
+          // PERCHÉ: il vin di una coinbase non ha prevout → payout di mining.
+          vin: [
+            {'is_coinbase': true, 'prevout': null},
+          ],
+        ),
+      );
+
+      final split = await service.fetchWalletUtxos(
+        mnemonic,
+        gapLimit: 1,
+        maxAddresses: 1,
+      );
+      expect(split.spendable, isEmpty);
+      expect(split.blocked, hasLength(1));
+      expect(split.blocked.single.valueSat, 50000);
+      // 100 − 90 + 1 = 11 conferme: molto sotto la maturity di relay.
+      expect(split.blocked.single.confirmations, 11);
+
+      // Il metodo "spendibili" non deve restituire l UTXO in attesa.
+      final spendable = await service.fetchSpendableWalletUtxos(
+        mnemonic,
+        gapLimit: 1,
+        maxAddresses: 1,
+      );
+      expect(spendable, isEmpty);
+
+      // Lo snapshot: saldo SENZA i sat in attesa, ma i bloccati visibili.
+      final snapshot = await service.fetchWalletSnapshot(
+        mnemonic,
+        gapLimit: 1,
+        maxAddresses: 1,
+        includeHistory: false,
+      );
+      expect(snapshot.balanceSats, 0);
+      expect(snapshot.utxos, isEmpty);
+      expect(snapshot.blockedCoinbaseSats, 50000);
+      expect(snapshot.blockedUtxos, hasLength(1));
+      expect(
+        snapshot.blockedRemainingBlocks,
+        BitcoinNetworkConfig.coinbaseRelayMaturityBlocks - 11,
+      );
+    });
+
+    test('tx normale: resta nel saldo spendibile (nessun falso positivo)',
+        () async {
+      const mnemonic =
+          'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+      final derived = await bitcoinService
+          .deriveWalletDataFromMnemonic(mnemonic, addressCount: 1);
+      final firstAddress = derived.addresses.first;
+      final normalTxid = 'e' * 64;
+
+      final service = BitcoinService(
+        client: walletWithOneUtxo(
+          address: firstAddress,
+          txid: normalTxid,
+          value: 70000,
+          vin: [
+            {
+              'txid': 'a' * 64,
+              'vout': 0,
+              'prevout': {'scriptpubkey_address': firstAddress, 'value': 1},
+            },
+          ],
+        ),
+      );
+
+      final snapshot = await service.fetchWalletSnapshot(
+        mnemonic,
+        gapLimit: 1,
+        maxAddresses: 1,
+        includeHistory: false,
+      );
+      expect(snapshot.balanceSats, 70000);
+      expect(snapshot.blockedUtxos, isEmpty);
+      expect(snapshot.blockedCoinbaseSats, 0);
     });
 
     test('scanDerivedAddressesForUtxos trova UTXO sulla catena change (/1/0)',

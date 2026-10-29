@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/config/bitcoin_network_config.dart';
 import '../../../core/config/swap_defaults.dart';
@@ -12,11 +13,14 @@ import '../../../core/services/swap/swap_models.dart';
 import '../../../core/services/swap/swap_service.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/coinbase_maturity.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../l10n/app_localizations.dart';
+import 'lightning_swap_detail_screen.dart';
 import 'swap_error_text.dart';
 import 'widgets/swap_claim_row.dart';
+import 'widgets/swap_history_tile.dart';
 
 /// Pagamento Lightning SENZA nodo personale: swap atomico via provider (P9).
 ///
@@ -70,6 +74,20 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
   /// URI provider salvate (menu a tendina per il collegamento rapido).
   List<String> _knownUris = const [];
 
+  /// Limiti/liquidità del provider collegato (`swap_info`): null se non noti.
+  SwapProviderInfo? _info;
+
+  /// Verdetto sull'ultima invoice verificata (destinatario raggiungibile).
+  SwapPeerCheck? _peerCheck;
+  bool _checkingPeer = false;
+
+  /// Stato della sonda sul nodo predefinito, mostrato accanto al menu.
+  _DefaultProbe _defaultProbe = _DefaultProbe.unknown;
+
+  static final NumberFormat _satsFmt = NumberFormat.decimalPattern();
+
+  String _fmt(int sats) => _satsFmt.format(sats);
+
   @override
   void initState() {
     super.initState();
@@ -98,34 +116,61 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
     await _loadKnownUris();
     await _reloadSessions();
     _ensurePolling();
-    // PERCHÉ: se l'utente non ha (ancora) un provider, gli si propone il nodo
-    // terzo predefinito — ma SOLO se risponde (altrimenti resta nascosto).
-    unawaited(_offerDefaultProvider());
+    // PERCHÉ (27/10/2026): chi non ha un nodo proprio non sa procurarsi una
+    // URI — il nodo del progetto è già nel menu e preselezionato, così basta
+    // un tocco su "Collega provider". La sonda dice solo se RISULTA vivo.
+    if (_provider == null) {
+      if (_uriCtrl.text.trim().isEmpty) {
+        _uriCtrl.text = SwapDefaults.providerUri;
+      }
+      unawaited(_probeDefaultProvider());
+    } else {
+      unawaited(_loadProviderInfo());
+    }
   }
 
-  /// Propone il provider predefinito se (e solo se) risponde sul relay.
+  /// Sonda il nodo predefinito e ne mostra lo stato accanto al menu.
   ///
-  /// // PERCHÉ: il default serve a chi non sa procurarsi una URI, ma un
-  /// // suggerimento morto è peggio di nessun suggerimento → se la sonda
-  /// // fallisce non si mostra nulla. Non sovrascrive mai una scelta dell'utente.
-  Future<void> _offerDefaultProvider() async {
-    if (_provider != null) return;
+  /// // PERCHÉ: il nodo nostro resta SEMPRE selezionabile (serve a chi non ha
+  /// // un provider), ma un suggerimento morto non deve sembrare funzionante:
+  /// // la sonda decide se l'etichetta è "raggiungibile" o "non risponde".
+  Future<void> _probeDefaultProvider() async {
+    if (!mounted || _provider != null) return;
+    setState(() => _defaultProbe = _DefaultProbe.checking);
     final available = await widget.swapService.probeProvider(
       SwapDefaults.providerUri,
     );
-    if (!mounted || !available || _provider != null) return;
-    // L'utente potrebbe aver scritto nel frattempo: non si sovrascrive.
-    if (_uriCtrl.text.trim().isNotEmpty) return;
+    if (!mounted || _provider != null) return;
     setState(() {
-      _uriCtrl.text = SwapDefaults.providerUri;
-      _knownUris = SwapDefaults.withDefault(_knownUris);
+      _defaultProbe =
+          available ? _DefaultProbe.reachable : _DefaultProbe.unreachable;
     });
-    debugPrint('[LoopEngineer] SwapScreen: provider predefinito proposto');
+    debugPrint('[LoopEngineer] SwapScreen: sonda nodo predefinito: $available');
   }
 
   Future<void> _loadKnownUris() async {
     final uris = await widget.swapService.knownProviderUris();
-    if (mounted) setState(() => _knownUris = uris);
+    if (!mounted) return;
+    // PERCHÉ: il nodo predefinito è sempre in coda al menu, anche se l'utente
+    // non l'ha mai usato — è l'unico modo per chi parte da zero.
+    setState(() => _knownUris = SwapDefaults.withDefault(uris));
+  }
+
+  /// Limiti e liquidità del provider collegato (`swap_info`).
+  ///
+  /// // PERCHÉ: senza questo dato l'utente scopriva il tetto solo dall'errore
+  /// // della quote, dopo aver scelto wallet e importo.
+  Future<void> _loadProviderInfo() async {
+    if (_provider == null) return;
+    try {
+      final info = await widget.swapService.providerInfo();
+      if (!mounted) return;
+      setState(() => _info = info);
+    } on SwapException catch (e) {
+      debugPrint(
+        '[LoopEngineer] SwapScreen: limiti provider non disponibili (${e.code})',
+      );
+    }
   }
 
   /// Wallet legato a [session] (null se non è più tra i wallet disponibili).
@@ -188,6 +233,7 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
       _uriCtrl.clear();
       setState(() => _provider = provider);
       await _loadKnownUris();
+      await _loadProviderInfo();
     } on FormatException catch (e) {
       _showError(e.message);
     } on SwapException catch (e) {
@@ -201,11 +247,50 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
     setState(() => _busy = true);
     try {
       await widget.swapService.disconnect();
-      if (mounted) setState(() => _provider = null);
+      if (mounted) {
+        setState(() {
+          _provider = null;
+          _info = null;
+          _peerCheck = null;
+        });
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
+
+  /// Verifica che il DESTINATARIO (peer) della invoice sia raggiungibile dal
+  /// provider e che l'importo stia nei limiti di liquidità.
+  ///
+  /// // PERCHÉ (27/10/2026): il controllo esiste anche server-side nella quote,
+  /// // ma lì l'utente lo scopre solo DOPO aver scelto wallet e importo. Qui è
+  /// // esplicito e non muove fondi: nessuna sessione viene aperta.
+  Future<SwapPeerCheck?> _checkPeer({String? invoice}) async {
+    final target = (invoice ?? _invoiceCtrl.text).trim();
+    if (target.isEmpty || _provider == null) return null;
+    setState(() => _checkingPeer = true);
+    try {
+      final info = await widget.swapService.providerInfo(invoice: target);
+      if (!mounted || info == null) return info?.check;
+      setState(() {
+        _info = info;
+        _peerCheck = info.check;
+      });
+      return info.check;
+    } on SwapException catch (e) {
+      if (mounted) setState(() => _peerCheck = null);
+      _showSwapError(e);
+      return null;
+    } finally {
+      if (mounted) setState(() => _checkingPeer = false);
+    }
+  }
+
+  /// Messaggio localizzato per un verdetto negativo sul destinatario.
+  String _peerIssueText(AppLocalizations loc, SwapPeerCheck check) =>
+      swapErrorReason(loc, check.reason ?? '') ??
+      check.message ??
+      loc.lightningSwapErrorPeerUnreachable;
 
   Future<void> _startSwap() async {
     final loc = AppLocalizations.of(context);
@@ -214,6 +299,20 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
       _showMessage(loc.lightningSwapInvalidInvoice);
       return;
     }
+    // CONTROLLO DESTINATARIO (obbligatorio prima di lockare fondi): una
+    // fattura senza rotta verso il peer non va finanziata — i fondi
+    // resterebbero nell'HTLC fino al refund.
+    if (_peerCheck == null) {
+      final check = await _checkPeer(invoice: invoice);
+      if (check != null && !check.reachable) {
+        _showMessage(_peerIssueText(loc, check));
+        return;
+      }
+    } else if (!_peerCheck!.reachable) {
+      _showMessage(_peerIssueText(loc, _peerCheck!));
+      return;
+    }
+    if (!mounted) return;
     setState(() => _busy = true);
     try {
       // STEP: 2 — chiave di refund DEDICATA (account 2') del wallet scelto +
@@ -264,15 +363,27 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
       final derivationPath =
           wallet.derivationPath ?? BitcoinNetworkConfig.defaultDerivationPath;
       // UTXO: prima dalla cache della home (istantaneo), altrimenti scan.
-      var utxos = BalanceCache.snapshotOf(wallet.publicAddress)?.utxos;
+      // PERCHÉ (A3): si usano SOLO gli spendibili — un payout di mining in
+      // periodo di attesa non può finanziare lo swap (la tx non sarebbe
+      // propagata); lo si cita solo nel messaggio d'errore.
+      final snapshot = BalanceCache.snapshotOf(wallet.publicAddress);
+      var utxos = snapshot?.utxos;
+      var blockedSats = snapshot?.blockedCoinbaseSats ?? 0;
       if (utxos == null || utxos.isEmpty) {
-        utxos = await widget.bitcoinService.fetchSpendableWalletUtxos(
+        final split = await widget.bitcoinService.fetchWalletUtxos(
           mnemonic,
           derivationPath: derivationPath,
         );
+        utxos = split.spendable;
+        blockedSats = sumUtxoSats(split.blocked);
       }
       if (utxos.isEmpty) {
-        _showMessage(loc.lightningSwapNoUtxos);
+        _showMessage(
+          blockedSats > 0
+              ? '${loc.walletBalanceWaiting('$blockedSats sat')} — '
+                    '${loc.walletUtxoWaitingHint(BitcoinNetworkConfig.coinbaseRelayMaturityBlocks)}'
+              : loc.lightningSwapNoUtxos,
+        );
         return;
       }
       // STEP: 3 — funding on-chain verso l'HTLC (fee: tier "normal").
@@ -284,7 +395,13 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
       final needed = session.fundingAmountSats + estimatedFee;
       if (totalIn < needed) {
         _showMessage(
-          loc.lightningSwapInsufficientFunds('$needed', '$totalIn'),
+          blockedSats > 0
+              ? loc.lightningSwapInsufficientFundsWaiting(
+                  '$needed',
+                  '$totalIn',
+                  '$blockedSats',
+                )
+              : loc.lightningSwapInsufficientFunds('$needed', '$totalIn'),
         );
         return;
       }
@@ -308,29 +425,20 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
 
   Future<void> _refund(SwapSession session) async {
     final loc = AppLocalizations.of(context);
-    final wallet = _walletFor(session);
-    if (wallet == null) {
-      _showMessage(loc.lightningSwapWalletMissing);
-      return;
-    }
     setState(() => _busy = true);
     try {
       // STEP: 5 — refund dopo il CLTV: la destinazione è l'indirizzo del
       // wallet LEGATO alla sessione (nessun input utente aggiuntivo nel PoC).
-      final mnemonic = await widget.walletRepository.decryptSeed(wallet);
-      final txid = await widget.swapService.refund(
-        session: session,
-        mnemonic: mnemonic,
-        destinationAddress: wallet.publicAddress,
-        feeRateSatVb: await _feeRateSatVb(),
-      );
-      _showMessage('refund: ${txid.substring(0, 12)}…');
+      final txid = await _refundTx(session);
+      _showMessage(loc.lightningSwapRefundSent('${txid.substring(0, 12)}…'));
       await _reloadSessions();
     } on SwapException catch (e) {
       // PERCHÉ: il refund è trasmissibile solo dal CLTV — messaggio dedicato
       // invece dell'errore grezzo del nodo (incidente 18/09/2026).
       if (e.code == 'REFUND_TOO_EARLY') {
         _showMessage(loc.lightningSwapRefundNotYet(session.cltvHeight));
+      } else if (e.code == 'WALLET_MISSING') {
+        _showMessage(loc.lightningSwapWalletMissing);
       } else {
         _showSwapError(e);
       }
@@ -338,6 +446,47 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
       _showError('$e');
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Costruisce, firma e trasmette il refund; ritorna il txid.
+  ///
+  /// // PERCHÉ separato da [_refund] (07/10/2026): il DETTAGLIO dello storico
+  /// // riusa questa stessa logica — una sola implementazione di firma/broadcast.
+  Future<String> _refundTx(SwapSession session) async {
+    final wallet = _walletFor(session);
+    if (wallet == null) {
+      throw const SwapException(
+        'WALLET_MISSING',
+        'wallet della sessione non disponibile',
+      );
+    }
+    final mnemonic = await widget.walletRepository.decryptSeed(wallet);
+    return widget.swapService.refund(
+      session: session,
+      mnemonic: mnemonic,
+      destinationAddress: wallet.publicAddress,
+      feeRateSatVb: await _feeRateSatVb(),
+    );
+  }
+
+  /// Apre il dettaglio di una transazione dello storico.
+  ///
+  /// // PERCHÉ seleziona anche la sessione: tornando indietro l'utente trova
+  /// // la card con le azioni (refund) già puntata sullo swap giusto.
+  Future<void> _openDetail(SwapSession session) async {
+    setState(() => _current = session);
+    final refunded = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => LightningSwapDetailScreen(
+          session: session,
+          recoveryBlob: widget.swapService.exportRecoveryBlob(session),
+          onRefund: session.state.isRefundable ? () => _refundTx(session) : null,
+        ),
+      ),
+    );
+    if (refunded == true) {
+      await _reloadSessions();
     }
   }
 
@@ -463,6 +612,8 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
               _buildSessionCard(loc, _current!),
               const SizedBox(height: 12),
             ],
+            _buildHistoryCard(loc),
+            const SizedBox(height: 12),
             _buildRecoveryCard(loc),
             if (_busy)
               const Padding(
@@ -521,6 +672,11 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 isExpanded: true,
+                // PERCHÉ: il nodo predefinito arriva già selezionato — chi non
+                // ha un provider non deve digitare nulla.
+                initialValue: _knownUris.contains(_uriCtrl.text.trim())
+                    ? _uriCtrl.text.trim()
+                    : null,
                 decoration: InputDecoration(
                   labelText: loc.lightningSwapKnownUris,
                 ),
@@ -529,7 +685,7 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
                     DropdownMenuItem(
                       value: uri,
                       child: Text(
-                        _shortUri(uri),
+                        _uriLabel(loc, uri),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
@@ -542,6 +698,17 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
                           setState(() => _uriCtrl.text = uri);
                         }
                       },
+              ),
+            ],
+            if (_defaultProbe != _DefaultProbe.unknown) ...[
+              const SizedBox(height: 6),
+              Text(
+                switch (_defaultProbe) {
+                  _DefaultProbe.checking => loc.lightningSwapProviderChecking,
+                  _DefaultProbe.reachable => loc.lightningSwapProviderReachable,
+                  _ => loc.lightningSwapProviderDown,
+                },
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
             const SizedBox(height: 12),
@@ -564,6 +731,21 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
                 ),
               ],
             ),
+            if (_info != null) ...[
+              const SizedBox(height: 8),
+              // Limite di invio dedotto dalla liquidità MISURATA dal provider.
+              Text(
+                loc.lightningSwapProviderSendLimit(
+                  _fmt(_info!.minSendableSats),
+                  _fmt(_info!.maxSendableSats),
+                ),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              Text(
+                loc.lightningSwapProviderLiquidity(_fmt(_info!.availableSats)),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             TextButton(
               onPressed: _busy ? null : _disconnect,
               child: Text(loc.lightningSwapProviderDisconnect),
@@ -625,7 +807,54 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
               ),
               maxLines: 3,
               minLines: 1,
+              // PERCHÉ: cambiando fattura il verdetto precedente non vale più.
+              onChanged: (_) {
+                if (_peerCheck != null) setState(() => _peerCheck = null);
+              },
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _busy || _checkingPeer ? null : _checkPeer,
+                  icon: _checkingPeer
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.route, size: 18),
+                  label: Text(loc.lightningSwapPeerCheck),
+                ),
+              ],
+            ),
+            if (_peerCheck != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    _peerCheck!.reachable
+                        ? Icons.check_circle
+                        : Icons.error_outline,
+                    size: 18,
+                    color: _peerCheck!.reachable
+                        ? Colors.green
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _peerCheck!.reachable
+                          ? loc.lightningSwapPeerReachable(
+                              _fmt(_peerCheck!.amountSats),
+                            )
+                          : _peerIssueText(loc, _peerCheck!),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _busy ? null : _startSwap,
@@ -680,7 +909,11 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
             if (session.errorCode != null) ...[
               const SizedBox(height: 6),
               Text(
-                '${session.errorCode}: ${session.errorMessage ?? ''}',
+                // PERCHÉ: il messaggio grezzo del nodo è troncato e tecnico —
+                // si mappa il CODICE su un testo comprensibile e si tiene il
+                // dettaglio solo come fallback (utile al supporto).
+                swapErrorReason(loc, session.errorCode!) ??
+                    '${session.errorCode}: ${session.errorMessage ?? ''}',
                 style: const TextStyle(color: Colors.orangeAccent),
               ),
             ],
@@ -719,16 +952,58 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
                 ),
               ],
             ],
-            if (session.state.isRefundable)
+            if (session.state.isRefundable) ...[
+              Text(
+                loc.lightningSwapRefundHint,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 6),
               OutlinedButton.icon(
                 onPressed: _busy ? null : () => _refund(session),
                 icon: const Icon(Icons.undo),
                 label: Text(loc.lightningSwapRefund),
               ),
+            ],
             TextButton(
               onPressed: () => _copyBlob(session),
               child: Text(loc.lightningSwapCopyBlob),
             ),
+          ],
+        ),
+      );
+
+  /// Storico delle transazioni fatte via provider (P9), più recenti prima.
+  ///
+  /// // PERCHÉ (07/10/2026): dopo un pagamento l'utente deve poterlo ritrovare
+  /// // e rileggere; tap sulla riga → dettaglio completo (dati on-chain,
+  /// // protocollo e recupero fondi).
+  Widget _buildHistoryCard(AppLocalizations loc) => GlassContainer(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              loc.lightningSwapHistoryTitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            if (_sessions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  loc.lightningSwapHistoryEmpty,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              )
+            else
+              for (final s in _sessions)
+                SwapHistoryTile(
+                  session: s,
+                  stateLabel: _stateLabel(loc, s.state),
+                  onTap: _busy ? null : () => _openDetail(s),
+                ),
           ],
         ),
       );
@@ -760,15 +1035,8 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
               icon: const Icon(Icons.file_download),
               label: Text(loc.lightningSwapRecoveryImport),
             ),
-            // Sessioni note recuperabili (refund) o da seguire.
-            for (final s in _sessions.where((s) => !s.state.isTerminal))
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                title: Text(s.swapId.substring(0, 8)),
-                subtitle: Text(_stateLabel(loc, s.state)),
-                onTap: () => setState(() => _current = s),
-              ),
+            // Le sessioni note sono elencate nella sezione "Storico" (con
+            // dettaglio e refund): qui niente doppioni.
           ],
         ),
       );
@@ -804,6 +1072,13 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
       ? '${uri.substring(0, 20)}…${uri.substring(uri.length - 22)}'
       : uri;
 
+  /// Etichetta nel menu: il nodo predefinito ha un nome leggibile, il resto
+  /// resta la URI abbreviata.
+  String _uriLabel(AppLocalizations loc, String uri) =>
+      uri == SwapDefaults.providerUri
+          ? loc.lightningSwapProviderDefaultLabel
+          : _shortUri(uri);
+
   /// Etichetta del wallet nel menu: SOLO il nome (o indirizzo abbreviato).
   ///
   /// // PERCHÉ niente saldo qui: è già nella riga sotto alla tendina e un
@@ -818,8 +1093,20 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
   }
 
   String _walletBalanceLine(AppLocalizations loc, WalletRecord w) {
-    final sats = BalanceCache.snapshotOf(w.publicAddress)?.balanceSats;
-    return loc.lightningSwapWalletBalance(sats?.toString() ?? '?');
+    final snapshot = BalanceCache.snapshotOf(w.publicAddress);
+    final sats = snapshot?.balanceSats;
+    final base = loc.lightningSwapWalletBalance(sats?.toString() ?? '?');
+    // PERCHÉ (A3 + saldo): il pagamento LN via provider può contare solo sui
+    // sat spendibili — se ce ne sono in periodo di attesa vanno detti, non
+    // sommati (il funding non li può usare).
+    final waiting = snapshot?.blockedCoinbaseSats ?? 0;
+    if (waiting <= 0) return base;
+    final remaining = snapshot?.blockedRemainingBlocks;
+    final waitingText = remaining != null
+        ? '${loc.walletBalanceWaiting('$waiting sat')} · '
+              '${loc.walletUtxoWaitingBlocks(remaining)}'
+        : loc.walletBalanceWaiting('$waiting sat');
+    return '$base\n$waitingText';
   }
 
   String _stateLabel(AppLocalizations loc, SwapClientState state) =>
@@ -835,3 +1122,9 @@ class _LightningSwapScreenState extends State<LightningSwapScreen> {
         SwapClientState.refunded => loc.swapStateRefunded,
       };
 }
+
+/// Stato della sonda sul provider predefinito (il nodo del progetto).
+///
+/// // PERCHÉ: il nodo è sempre selezionabile, ma l'utente deve sapere se in
+/// // questo momento risponde o se conviene riprovare più tardi.
+enum _DefaultProbe { unknown, checking, reachable, unreachable }

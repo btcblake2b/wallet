@@ -5,6 +5,7 @@ import '../../models/lightning_balance.dart';
 import '../../models/lightning_channel.dart';
 import '../../models/lightning_channel_fees.dart';
 import '../../models/lightning_connection.dart';
+import '../../models/lightning_cross_chain.dart';
 import '../../models/lightning_forward.dart';
 import '../../models/lightning_htlc.dart';
 import '../../models/lightning_invoice.dart';
@@ -15,13 +16,16 @@ import '../../models/lightning_network_node.dart';
 import '../../models/lightning_node_address.dart';
 import '../../models/lightning_node_info.dart';
 import '../../models/lightning_node_stats.dart';
+import '../../models/lightning_offer.dart';
 import '../../models/lightning_onchain_fees.dart';
 import '../../models/lightning_onchain_result.dart';
 import '../../models/lightning_peer.dart';
 import '../../models/lightning_payment_record.dart';
 import '../../models/lightning_payment_result.dart';
 import '../../models/lightning_route.dart';
+import '../../models/lightning_splice.dart';
 import '../../models/lightning_utxo.dart';
+import '../../utils/bolt12_offer_utils.dart';
 import '../nostr/nostr_crypto.dart';
 import 'lightning_service.dart';
 
@@ -41,6 +45,8 @@ class LightningServiceMock implements LightningService {
     this.peerDisconnected = false,
     this.inboundOverrideMsat,
     this.onchainFeesOverride,
+    this.onchainBalanceOverrideMsat,
+    this.versionOverride,
   }) {
     // PERCHÉ: canali e movimenti sono generati — i test delle liste lunghe
     // (e della paginazione) non devono dipendere da fixture duplicate a mano.
@@ -86,8 +92,19 @@ class LightningServiceMock implements LightningService {
   /// riprodurre il caso reale in cui più livelli hanno lo stesso sat/vB.
   final LightningOnchainFees? onchainFeesOverride;
 
+  /// Se valorizzato, sostituisce il saldo on-chain del nodo (test): permette di
+  /// riprodurre lo splice-in senza fondi sufficienti o con fondi abbondanti.
+  final int? onchainBalanceOverrideMsat;
+
   /// Latenza simulata per ogni operazione (per test/progress in UI).
   final Duration latency;
+
+  /// Se valorizzato, sostituisce la versione riportata da `getInfo` (test).
+  ///
+  /// // PERCHÉ (26/10): i gate dipendono dalla RELEASE del nodo (peering,
+  /// // splice). Senza poterla scegliere, un test non potrebbe esercitare né il
+  /// // caso "release vecchia" né quello "release aggiornata".
+  String? versionOverride;
 
   /// Metodi dichiarati dal nodo finto (`get_info.methods`).
   /// null = nodo legacy senza elenco → la UI assume supporto (retrocompat).
@@ -307,7 +324,7 @@ class LightningServiceMock implements LightningService {
       pubkey:
           '02043a9147488f237fc446daf17fca2a9fb0b4cf7ae7c952427aef8f20d97b0436',
       color: '0203a0',
-      version: 'v26.06.7-blake2b.2',
+      version: versionOverride ?? 'v26.06.7-blake2b.2',
       blockHeight: 971913,
       numPeers: _peers.length,
       // I4a: contatori "significativi" come nel bridge nuovo.
@@ -414,12 +431,33 @@ class LightningServiceMock implements LightningService {
     _notifications.add(null);
   }
 
+  /// Ultima offerta creata (assert dei test).
+  LightningOffer? lastOffer;
+
+  /// Importo dichiarato nell'ultimo pagamento (assert dei test BOLT12).
+  int? lastPayAmountMsat;
+
   @override
-  Future<LightningPaymentResult> payInvoice(String bolt11) async {
+  Future<LightningPaymentResult> payInvoice(
+    String bolt11, {
+    int? amountMsat,
+  }) async {
     _ensureConnected();
     await Future<void>.delayed(latency);
+    lastPayAmountMsat = amountMsat;
     if (bolt11.contains('fail')) {
       throw const LightningException('OTHER', 'pagamento rifiutato (mock)');
+    }
+    // PERCHÉ (BOLT12): un'offerta senza importo è pagabile solo se il client
+    // lo dichiara — il mock riproduce lo stesso vincolo del nodo. Se invece
+    // l'importo è scritto nell'offerta, lo legge il nodo: qui il mock accetta.
+    if (bolt11.toLowerCase().startsWith('lno1') &&
+        amountMsat == null &&
+        bolt12OfferAmountMsat(bolt11) == null) {
+      throw const LightningException(
+        'BAD_REQUEST',
+        'offerta senza importo: amount_msat richiesto',
+      );
     }
     _balanceMsat = max(0, _balanceMsat - 1000000);
     // PERCHÉ: il pagamento entra anche nello storico in uscita (fee 1 sat),
@@ -443,6 +481,73 @@ class LightningServiceMock implements LightningService {
       feesPaidMsat: 1000,
     );
   }
+
+  @override
+  Future<LightningOffer> makeOffer({
+    required String description,
+    int? amountMsat,
+    bool singleUse = false,
+  }) async {
+    _ensureConnected();
+    await Future<void>.delayed(latency);
+    if (description.trim().isEmpty) {
+      throw const LightningException('BAD_REQUEST', 'descrizione mancante');
+    }
+    lastOffer = LightningOffer(
+      offerId: 'mock_offer_1',
+      bolt12: 'lno1mockoffer${amountMsat ?? 0}',
+      description: description,
+      amountMsat: amountMsat,
+      singleUse: singleUse,
+    );
+    return lastOffer!;
+  }
+
+  @override
+  Future<LightningCrossChainEstimate> crossChainCheck(String invoice) async {
+    _ensureConnected();
+    await Future<void>.delayed(latency);
+    if (!invoice.toLowerCase().startsWith('ln')) {
+      throw const LightningException('BAD_REQUEST', 'fattura non valida');
+    }
+    return const LightningCrossChainEstimate(
+      amountSats: 5000,
+      costSats: 5110,
+      rate: 0.98,
+      spread: 0.02,
+      waitSeconds: 60,
+    );
+  }
+
+  @override
+  Future<LightningCrossChainResult> crossChainPay(
+    String invoice, {
+    int? maxSats,
+  }) async {
+    _ensureConnected();
+    await Future<void>.delayed(latency);
+    if (!invoice.toLowerCase().startsWith('ln')) {
+      throw const LightningException('BAD_REQUEST', 'fattura non valida');
+    }
+    if (maxSats != null && maxSats < 5110) {
+      throw const LightningException(
+        'BAD_REQUEST',
+        'costo superiore al tetto',
+      );
+    }
+    lastCrossChainPay = invoice;
+    return const LightningCrossChainResult(
+      state: 'settled',
+      preimage: 'mock_preimage',
+      paymentHash: 'mock_hash',
+      amountMsat: 5110000,
+      feesPaid: 1000,
+      paySats: 5110,
+    );
+  }
+
+  /// Ultima fattura pagata via bridge (assert dei test).
+  String? lastCrossChainPay;
 
   @override
   Future<LightningChannelFees> getChannelFees({
@@ -687,11 +792,12 @@ class LightningServiceMock implements LightningService {
   Future<LightningBalance> getBalance() async {
     _ensureConnected();
     await Future<void>.delayed(latency);
+    final onchain = onchainBalanceOverrideMsat ?? _onchainBalanceMsat;
     // PERCHÉ (mock): espone il breakdown come il bridge I1 — così widget test
     // e demo coprono il percorso "saldi separati".
     return LightningBalance(
-      balanceMsat: _balanceMsat + _onchainBalanceMsat,
-      onchainMsat: _onchainBalanceMsat,
+      balanceMsat: _balanceMsat + onchain,
+      onchainMsat: onchain,
       lightningMsat: _balanceMsat,
     );
   }
@@ -858,15 +964,20 @@ class LightningServiceMock implements LightningService {
     return List.unmodifiable(_channels);
   }
 
+  /// UTXO passati all'ultima apertura di canale (assert dei test, A8).
+  List<String> lastOpenChannelUtxos = const [];
+
   @override
   Future<void> openChannel({
     required String nodeId,
     required int amountSats,
     String? host,
     bool isPrivate = false,
+    List<String>? utxos,
   }) async {
     _ensureConnected();
     await Future<void>.delayed(latency);
+    lastOpenChannelUtxos = List<String>.from(utxos ?? const <String>[]);
     _channels.add(
       LightningChannel(
         id: 'mock_channel_${_channels.length + 1}',
@@ -890,6 +1001,77 @@ class LightningServiceMock implements LightningService {
     await Future<void>.delayed(latency);
     _channels.removeWhere((c) => c.id == channelId);
     _notifications.add(null);
+  }
+
+  /// Ultimo splice richiesto (assert dei test).
+  LightningSpliceResult? lastSplice;
+
+  @override
+  Future<LightningSpliceResult> spliceChannel({
+    required String channelId,
+    required int amountSats,
+    List<String>? utxos,
+    String? feerate,
+  }) async {
+    _ensureConnected();
+    await Future<void>.delayed(latency);
+    if (amountSats == 0) {
+      throw const LightningException('BAD_REQUEST', 'importo non valido');
+    }
+    final index = _channels.indexWhere((c) => c.id == channelId);
+    if (index >= 0) {
+      final c = _channels[index];
+      final delta = amountSats * 1000;
+      _channels[index] = LightningChannel(
+        id: c.id,
+        shortChannelId: c.shortChannelId,
+        peerPubkey: c.peerPubkey,
+        peerAlias: c.peerAlias,
+        state: c.state,
+        isPrivate: c.isPrivate,
+        localBalance: c.localBalance + delta,
+        remoteBalance: c.remoteBalance,
+        capacity: c.capacity + delta,
+        fundingTxid: c.fundingTxid,
+        confirmations: c.confirmations,
+        feeBaseMsat: c.feeBaseMsat,
+        feePpm: c.feePpm,
+        htlcCount: c.htlcCount,
+        spendableMsat: c.spendableMsat,
+        receivableMsat: c.receivableMsat,
+        peerConnected: c.peerConnected,
+        status: c.status,
+      );
+    }
+    lastSplice = LightningSpliceResult(
+      channelId: channelId,
+      amountSats: amountSats,
+      txid: 'mock_splice_tx',
+    );
+    _notifications.add(null);
+    return lastSplice!;
+  }
+
+  @override
+  Future<LightningSpliceEstimate> estimateSplice({
+    required int amountSats,
+    List<String>? utxos,
+    String? feerate,
+  }) async {
+    _ensureConnected();
+    await Future<void>.delayed(latency);
+    if (amountSats <= 0) {
+      throw const LightningException('BAD_REQUEST', 'importo non valido');
+    }
+    // PERCHÉ: valore deterministico (2000 perkw × 800 WU) — i test verificano
+    // la UI, non la formula delle fee del nodo.
+    return LightningSpliceEstimate(
+      amountSats: amountSats,
+      feerate: feerate ?? 'normal',
+      feeSats: 1600,
+      estimatedWeight: 800,
+      feeratePerKw: 2000,
+    );
   }
 
   void _ensureConnected() {

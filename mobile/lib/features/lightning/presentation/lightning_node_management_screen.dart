@@ -18,6 +18,7 @@ import 'lightning_movements_screen.dart';
 import 'lightning_onchain_screen.dart';
 import 'lightning_payments_screen.dart';
 import 'lightning_peers_screen.dart';
+import 'widgets/peer_discovery_card.dart';
 import 'widgets/movement_tile.dart';
 import 'widgets/peering_gate_banner.dart';
 
@@ -301,6 +302,17 @@ class _LightningNodeManagementScreenState
               loc.lightningLiquidityWarning,
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: Colors.orangeAccent),
+            ),
+            // PERCHÉ (adozione, 26/10): dire "non hai liquidità" senza dire
+            // dove prenderla lascia l'utente fermo. Stesso link della card
+            // *Trova peer e liquidità* (una sola fonte per l'URL).
+            TextButton.icon(
+              onPressed: () => PeerDiscoveryCard.openUrl(
+                context,
+                PeerDiscoveryCard.lspUrl,
+              ),
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: Text(loc.lightningInboundMissingCta),
             ),
           ],
           if (_balance?.onchainSats != null) ...[

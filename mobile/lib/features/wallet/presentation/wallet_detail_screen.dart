@@ -11,6 +11,7 @@ import '../../../core/widgets/password_dialog.dart';
 import '../../../core/config/bitcoin_network_config.dart';
 import '../../../core/models/wallet_record.dart';
 import '../../../core/services/balance_cache.dart';
+import '../../../core/services/balance_display.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/bitcoin_service.dart';
 import '../../../core/services/crypto_service.dart';
@@ -21,15 +22,25 @@ import '../../../core/services/rbf_params_registry.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/services/security_service.dart';
 import '../../../core/widgets/info_dot.dart';
+import '../../../core/widgets/tappable_balance.dart';
 import '../../../l10n/info_hints_l10n.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../l10n/app_localizations.dart';
 import 'api_error_text.dart';
+import 'psbt_sign_screen.dart';
+import 'psbt_spend_screen.dart';
 import 'send_screen.dart';
+import 'backup_seed_screen.dart';
+import '../../merchant/presentation/merchant_charge_screen.dart';
+import '../../merchant/presentation/merchant_convert_screen.dart';
+import '../../../core/services/lightning/lightning_service.dart';
+import '../../../core/services/fiat_currency.dart';
+import '../../../core/services/fiat_price.dart';
 import 'wallet_addresses_screen.dart';
 import '../../../core/models/transaction_record.dart';
 import '../../../core/models/wallet_snapshot.dart';
+import '../../../core/utils/coinbase_maturity.dart';
 import 'widgets/bump_fee_dialog.dart';
 import 'widgets/transaction_history_section.dart';
 import 'widgets/seed_phrase_verifier.dart';
@@ -44,6 +55,8 @@ class WalletDetailScreen extends StatefulWidget {
     required this.cryptoService,
     required this.deviceService,
     this.random,
+    this.lightningService,
+    this.requireSeedBackupBeforeReceive = kIsWeb,
   });
 
   final WalletRecord wallet;
@@ -53,8 +66,24 @@ class WalletDetailScreen extends StatefulWidget {
   final CryptoService cryptoService;
   final DeviceService deviceService;
 
+  /// Nodo Lightning collegato (facoltativo): abilita l'incasso via Lightning
+  /// in «Incassa». `null` = solo on-chain.
+  ///
+  /// // PERCHÉ opzionale: il Detail non ha bisogno del nodo per nulla d'altro,
+  /// // e i test/costruttori esistenti restano validi.
+  final LightningService? lightningService;
+
   /// Random iniettabile per test deterministici della verifica seed.
   final Random? random;
+
+  /// `true` = non si mostra un indirizzo per ricevere finché il backup della
+  /// seed non è confermato.
+  ///
+  /// // PERCHÉ (R2, 26/10): sul web la seed cifrata vive nello storage del
+  /// // sito — un aggiornamento della PWA o "cancella dati del sito" la
+  /// // cancellano. Su mobile il rischio è diverso (keyring del sistema).
+  /// // Seam iniettabile perché `kIsWeb` vale sempre `false` nei test.
+  final bool requireSeedBackupBeforeReceive;
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
@@ -109,6 +138,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     final utxos = _snapshot?.utxos;
     return (utxos == null || utxos.isEmpty) ? null : utxos;
   }
+
+  /// UTXO in PERIODO DI ATTESA (payout di mining non ancora propagabili):
+  /// visibili ma non selezionabili — restano fuori dal saldo e dal coin control.
+  List<UtxoInfo> get _blockedUtxos => _snapshot?.blockedUtxos ?? const [];
+
+  /// Satoshi in periodo di attesa (fuori dal saldo spendibile).
+  int get _blockedSats => _snapshot?.blockedCoinbaseSats ?? 0;
+
+  /// Blocchi mancanti al primo sblocco (null = conferme ignote).
+  int? get _blockedRemainingBlocks => _snapshot?.blockedRemainingBlocks;
 
   List<TransactionRecord> get _transactions =>
       _snapshot?.transactions ?? const [];
@@ -217,8 +256,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     }
 
     try {
-      // PERCHÉ (P1 watch-only): i watch-only non hanno seed — lo snapshot si
-      // costruisce dall'xpub (sola lettura); i wallet hot decriptano il seed.
+      // PERCHÉ (26/10): con l'xpub (watch-only O hot) saldo/storico si leggono
+      // senza decifrare la seed — le chiavi restano fuori dalla memoria finché
+      // l'utente non firma davvero.
       // getOrFetch deduplica: se la Home sta già caricando questo wallet
       // (avvio app) il Detail attende lo stesso fetch invece di lanciarne un
       // secondo (niente doppia chiamata di rete). Al completamento salva in
@@ -226,6 +266,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
       final snapshot = await BalanceCache.getOrFetch(
         _wallet.publicAddress,
         () async {
+          if (_wallet.hasAccountXpub) {
+            return widget.bitcoinService.fetchWatchOnlySnapshot(
+              accountXpub: _wallet.accountXpub!,
+              scriptType: WalletScriptType.fromDerivationPath(
+                _wallet.derivationPath,
+              ),
+            );
+          }
           if (_isWatchOnly) {
             return widget.bitcoinService.fetchWatchOnlySnapshot(
               accountXpub: _wallet.accountXpub ?? '',
@@ -602,12 +650,25 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
   }
 
   /// Derivazione indirizzi/xpub branchando sul tipo di wallet.
-  /// PERCHÉ (P1): per i watch-only la derivazione parte dall'xpub salvato
-  /// (nessun seed in memoria); per i wallet hot dal seed. Restituisce gli
-  /// indirizzi external e l'xpub (per il watch-only: quello salvato/validato).
+  ///
+  /// // PERCHÉ (26/10): con l'xpub salvato la derivazione NON richiede la seed
+  /// // — vale per il watch-only e per l'hot. Prima ogni elenco indirizzi, ogni
+  /// // indirizzo di ricezione e ogni apertura del dialog xpub decifravano la
+  /// // seed, allungando la finestra in cui le chiavi stavano in RAM.
   Future<({List<String> addresses, String xpub})> _deriveAddresses({
     int addressCount = 100,
   }) async {
+    if (_wallet.hasAccountXpub) {
+      final derived = await widget.bitcoinService.deriveWatchOnlyData(
+        accountXpub: _wallet.accountXpub!,
+        scriptType: WalletScriptType.fromDerivationPath(_wallet.derivationPath),
+        addressCount: addressCount,
+      );
+      return (
+        addresses: derived.externalAddresses,
+        xpub: derived.accountXpub,
+      );
+    }
     if (_isWatchOnly) {
       final derived = await widget.bitcoinService.deriveWatchOnlyData(
         accountXpub: _wallet.accountXpub ?? '',
@@ -786,37 +847,75 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
   /// Riusa `_utxos` già popolato dal refresh (avvio app + ingresso detail) —
   /// nessuna scan di rete aggiuntiva, quindi il dialog resta veloce.
   Future<String> _resolveReceiveAddress() async {
-    final used = (_utxos ?? const <UtxoInfo>[])
+    // PERCHÉ (A3): contano anche gli UTXO in periodo di attesa — un indirizzo
+    // che ha ricevuto un payout di mining è GIÀ usato, anche se i fondi non
+    // sono ancora spendibili (altrimenti si riuserebbe un indirizzo con fondi).
+    final used = [...?_utxos, ..._blockedUtxos]
         .map((u) => u.ownerAddress)
         .whereType<String>()
         .toSet();
     // PERCHÉ: nessun UTXO noto → il primo indirizzo è ancora libero.
     if (used.isEmpty) return _wallet.publicAddress;
 
-    // PERCHÉ (P1 watch-only): per i watch-only si deriva dall'xpub (nessun
-    // seed); per i wallet hot dal seed. decryptSeed SOLO nel ramo hot.
-    if (_isWatchOnly) {
-      final derived = await _deriveAddresses();
-      for (final addr in derived.addresses) {
-        if (!used.contains(addr)) return addr;
-      }
-      return _wallet.publicAddress;
-    }
-    final seed = await widget.walletRepository.decryptSeed(_wallet);
-    final derivationResult =
-        await widget.bitcoinService.deriveWalletDataFromMnemonic(
-      seed,
-      derivationPath: _wallet.derivationPath,
-    );
-    for (final addr in derivationResult.addresses) {
+    // PERCHÉ (26/10): un solo percorso — `_deriveAddresses` usa l'xpub quando
+    // c'è (hot o watch-only) e la seed solo per i wallet più vecchi. Prima il
+    // ramo hot decifrava SEMPRE la seed anche per mostrare un indirizzo.
+    final derived = await _deriveAddresses();
+    for (final addr in derived.addresses) {
       if (!used.contains(addr)) return addr;
     }
     // PERCHÉ: fallback conservativo — tutti i derivati usati, torna al primo.
     return _wallet.publicAddress;
   }
 
+  /// R2 (26/10): dialog + wizard di backup. Ritorna `true` solo se il backup
+  /// risulta confermato al ritorno (il wizard fa `pop(true)`).
+  Future<bool> _ensureSeedBackup(AppLocalizations loc) async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.receiveNeedsBackupTitle),
+        content: Text(loc.receiveNeedsBackupBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(loc.passwordDialogCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.receiveNeedsBackupAction),
+          ),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return false;
+    final confirmed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => BackupSeedScreen(
+          wallet: _wallet,
+          walletRepository: widget.walletRepository,
+          biometricService: widget.biometricService,
+        ),
+      ),
+    );
+    if (!mounted) return false;
+    if (confirmed == true) {
+      setState(() => _wallet = _wallet.copyWith(seedBackupConfirmed: true));
+    }
+    return confirmed == true;
+  }
+
   Future<void> _showReceiveDialog() async {
     final loc = AppLocalizations.of(context);
+    // PERCHÉ (R2, 26/10): prima di mostrare un indirizzo bisogna poter
+    // recuperare i fondi. Sul web la seed può sparire con lo storage del sito:
+    // se l'utente non ha confermato il backup, incassare qui significa soldi
+    // potenzialmente irrecuperabili. Il gate è nel punto di ingresso del flusso.
+    if (widget.requireSeedBackupBeforeReceive &&
+        !_wallet.seedBackupConfirmed &&
+        !_isWatchOnly) {
+      if (!await _ensureSeedBackup(loc) || !mounted) return;
+    }
     // PERCHÉ: mostra lo spinner mentre si risolve l'indirizzo (derivazione
     // locale, veloce — nessuna chiamata di rete).
     setState(() => _isLoading = true);
@@ -932,6 +1031,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
           biometricService: widget.biometricService,
           balanceSats: _balance.toInt(),
           initialUtxos: initialUtxos,
+          // PERCHÉ (A3): gli UTXO in periodo di attesa viaggiano con la
+          // selezione per essere mostrati segnalati (e mai selezionati).
+          initialBlockedUtxos: _blockedUtxos,
         ),
       ),
     );
@@ -1387,6 +1489,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
 
   /// 3. Card saldo con refresh
   Widget _buildBalanceCard(ColorScheme colorScheme, AppLocalizations loc) {
+    // PERCHÉ (leva 5): il controvalore dipende da una preferenza di processo;
+    // si legge qui, così la card resta un widget puro rispetto al servizio.
+    final fiatCents = FiatPrice.instance.centsFor(_balance.round());
     // PERCHÉ (errore primo avvio): se NON c'è ancora alcuno snapshot e il primo
     // caricamento è fallito, mostriamo un errore con retry — mai 0 BTC o uno
     // spinner infinito.
@@ -1442,7 +1547,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(loc.walletDetailBalanceLabel),
+        // PERCHÉ (26/10): "saldo" è il numero che l'utente confronta con quello
+        // di un exchange o di un amico — il pallino spiega perché è una somma
+        // di pezzi (UTXO) e non un "conto".
+        _buildLabel(
+          loc.walletDetailBalanceLabel,
+          hint: InfoHintId.balanceUtxo,
+        ),
         const SizedBox(height: 8),
         GlassContainer(
           padding: const EdgeInsets.all(20),
@@ -1454,17 +1565,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        // PERCHÉ (F4): senza snapshot (primo caricamento in
-                        // corso) niente "0.00000000 BTC" finto — stato
-                        // esplicito. Il caso errore esce prima con la card
-                        // error+retry (mai 0).
-                        _snapshot != null
-                            ? '${(_balance / 100000000).toStringAsFixed(8)} BTC'
-                            : loc.balanceUnavailable,
+                    if (_snapshot != null)
+                      // PERCHÉ (29/10): il saldo si tocca per cambiare unità
+                      // (XBT → sats → $, stile BlueWallet). La chiave è il
+                      // walletId: la scelta è la STESSA della riga in home per
+                      // questo wallet, e diversa da quella degli altri wallet.
+                      TappableBalance(
+                        unitKey: widget.wallet.walletId,
+                        sats: _balance.round(),
+                        fitted: true,
                         // PERCHÉ (S5): onSurface (bianco in dark, scuro in
                         // light) — prima era Colors.white fisso.
                         style: TextStyle(
@@ -1472,8 +1581,24 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
                           fontSize: 24,
                           color: colorScheme.onSurface,
                         ),
+                      )
+                    else
+                      // PERCHÉ (F4): senza snapshot (primo caricamento in
+                      // corso) niente "0.00000000 BTC" finto — stato
+                      // esplicito. Il caso errore esce prima con la card
+                      // error+retry (mai 0).
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          loc.balanceUnavailable,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
                       ),
-                    ),
                     Text(
                       _isLoading
                           ? loc.walletDetailUpdating
@@ -1484,6 +1609,58 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    // PERCHÉ (leva 5, 27/10): controvalore indicativo col prezzo
+                    // impostato dall'utente. Compare solo se l'utente l'ha
+                    // attivato E ha inserito un prezzo: nessun numero inventato.
+                    // PERCHÉ (29/10) niente riga quando il saldo è già nella
+                    // valuta scelta: sarebbe lo stesso numero ripetuto.
+                    if (_snapshot != null && fiatCents != null)
+                      ListenableBuilder(
+                        listenable: BalanceDisplay.instance,
+                        builder: (context, _) {
+                          if (BalanceDisplay.instance
+                              .isFiat(widget.wallet.walletId)) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '≈ ${formatMoney(fiatCents, FiatPrice.instance.currency)} · '
+                              '${FiatPrice.instance.auto ? loc.fiatPriceMarketNote : loc.fiatPriceManualNote}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    // PERCHÉ (A3 + saldo): i fondi in periodo di attesa NON
+                    // sono nel saldo qui sopra — senza questa riga sembrerebbero
+                    // spariti. Conteggio in BLOCCHI (non in giorni).
+                    if (_blockedSats > 0) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        loc.walletBalanceWaiting(_formatUtxoBtc(_blockedSats)),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.tertiary,
+                        ),
+                      ),
+                      if (_blockedRemainingBlocks != null)
+                        Text(
+                          loc.walletUtxoWaitingBlocks(
+                            _blockedRemainingBlocks!,
+                          ),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                    ],
                   ],
                 ),
               ),
@@ -1525,31 +1702,131 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
   Widget _buildQuickActions(ColorScheme colorScheme, AppLocalizations loc) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: FilledButton.icon(
-              onPressed: _showReceiveDialog,
-              icon: const Icon(Icons.call_received),
-              label: Text(loc.walletDetailReceive),
-            ),
-          ),
-          if (!_isWatchOnly) ...[
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: _openSendScreen,
-                icon: const Icon(Icons.call_made),
-                label: Text(loc.walletDetailSend),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.secondary,
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _showReceiveDialog,
+                  icon: const Icon(Icons.call_received),
+                  label: Text(loc.walletDetailReceive),
                 ),
               ),
-            ),
-          ],
+              if (!_isWatchOnly) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _openSendScreen,
+                    icon: const Icon(Icons.call_made),
+                    label: Text(loc.walletDetailSend),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.secondary,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          // PERCHÉ (leva 4, 27/10): «Incassa» è il gesto dell'esercente —
+          // chiedere un importo, non mostrare un indirizzo vuoto. Vale anche
+          // per il watch-only: incassare è sola lettura.
+          const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            children: [
+              TextButton.icon(
+                onPressed: _openMerchantCharge,
+                icon: const Icon(Icons.point_of_sale, size: 18),
+                label: Text(loc.merchantChargeTitle),
+              ),
+              TextButton.icon(
+                onPressed: _openMerchantConvert,
+                icon: const Icon(Icons.currency_exchange, size: 18),
+                label: Text(loc.merchantConvertOpen),
+              ),
+              ...(_psbtSupported
+                  ? [
+                      TextButton.icon(
+                        onPressed: _openPsbtSpendScreen,
+                        icon: const Icon(Icons.qr_code_2, size: 18),
+                        label: Text(loc.psbtSpendTitle),
+                      ),
+                      if (!_isWatchOnly)
+                        TextButton.icon(
+                          onPressed: _openPsbtSignScreen,
+                          icon: const Icon(Icons.draw, size: 18),
+                          label: Text(loc.psbtSignTitle),
+                        ),
+                    ]
+                  : const <Widget>[]),
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  /// Apre «Incassa» (richiesta di pagamento con importo).
+  Future<void> _openMerchantCharge() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MerchantChargeScreen(
+          wallet: _wallet,
+          bitcoinService: widget.bitcoinService,
+          lightningService: widget.lightningService,
+        ),
+      ),
+    );
+  }
+
+  /// Apre «Converti in BTC» (uscita dall'XBT tramite servizi di terzi).
+  Future<void> _openMerchantConvert() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MerchantConvertScreen(wallet: _wallet),
+      ),
+    );
+  }
+
+  /// True se il wallet può usare il percorso PSBT (native segwit).
+  bool get _psbtSupported =>
+      WalletScriptType.fromDerivationPath(_wallet.derivationPath) ==
+      WalletScriptType.p2wpkh;
+
+  /// Crea una PSBT da firmare altrove (watch-only compreso).
+  Future<void> _openPsbtSpendScreen() async {
+    final selected = _selectedUtxos();
+    final utxos = (selected != null && selected.isNotEmpty) ? selected : _utxos;
+    final pushed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PsbtSpendScreen(
+          wallet: _wallet,
+          utxos: utxos ?? const <UtxoInfo>[],
+          bitcoinService: widget.bitcoinService,
+          walletRepository: widget.walletRepository,
+          biometricService: widget.biometricService,
+        ),
+      ),
+    );
+    if (mounted) await _refresh();
+    debugPrint('[LoopEngineer] PSBT spend chiusa (push=$pushed)');
+  }
+
+  /// Firma una PSBT creata su un altro dispositivo.
+  Future<void> _openPsbtSignScreen() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PsbtSignScreen(
+          wallet: _wallet,
+          walletRepository: widget.walletRepository,
+          biometricService: widget.biometricService,
+          bitcoinService: widget.bitcoinService,
+        ),
+      ),
+    );
+    if (mounted) await _refresh();
   }
 
   /// Label del tipo di wallet mostrata in Wallet Info.
@@ -1737,6 +2014,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
   /// 5b. Coin control / UTXO (S7): lista UTXO con selezione manuale.
   Widget _buildUtxoSection(ColorScheme colorScheme, AppLocalizations loc) {
     final utxos = _utxos ?? const <UtxoInfo>[];
+    final blocked = _blockedUtxos;
     return GlassContainer(
       padding: EdgeInsets.zero,
       child: ExpansionTile(
@@ -1758,7 +2036,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
           color: colorScheme.secondary,
         ),
         children: [
-          if (utxos.isEmpty)
+          if (utxos.isEmpty && blocked.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
@@ -1768,40 +2046,63 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
             )
           else ...[
             for (final utxo in utxos) _buildUtxoRow(utxo, colorScheme, loc),
-            const Divider(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    loc.walletDetailUtxoSelected(
-                      _selectedUtxoCount,
-                      _selectedUtxoSats,
-                    ),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+            // PERCHÉ (A3): i payout di mining in periodo di attesa restano
+            // VISIBILI (l'utente li ha ricevuti) ma segnalati e non
+            // selezionabili: non entrano nel saldo né in una tx.
+            if (blocked.isNotEmpty) ...[
+              if (utxos.isNotEmpty) const Divider(height: 16),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  loc.walletUtxoWaitingHint(
+                    BitcoinNetworkConfig.coinbaseRelayMaturityBlocks,
+                  ),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                TextButton(
-                  onPressed:
-                      _selectedUtxoKeys.isEmpty ? null : _clearUtxoSelection,
-                  child: Text(loc.walletDetailUtxoClearSelection),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // PERCHÉ (P1): solo i wallet con chiavi possono inviare — il
-            // pulsante "Invia selezionati" del coin control è nascosto per i
-            // watch-only (la lista UTXO resta consultabile in sola lettura).
-            if (!_isWatchOnly)
-              FilledButton.icon(
-                // PERCHÉ: solo con selezione attiva — senza selezione si usa il
-                // pulsante Invia principale (comportamento attuale).
-                onPressed: _selectedUtxoKeys.isEmpty ? null : _openSendScreen,
-                icon: const Icon(Icons.send),
-                label: Text(loc.walletDetailUtxoSendSelected),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
               ),
+              for (final utxo in blocked)
+                _buildBlockedUtxoRow(utxo, colorScheme, loc),
+            ],
+            // Il riepilogo di selezione ha senso solo con UTXO spendibili.
+            if (utxos.isNotEmpty) ...[
+              const Divider(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      loc.walletDetailUtxoSelected(
+                        _selectedUtxoCount,
+                        _selectedUtxoSats,
+                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed:
+                        _selectedUtxoKeys.isEmpty ? null : _clearUtxoSelection,
+                    child: Text(loc.walletDetailUtxoClearSelection),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // PERCHÉ (P1): solo i wallet con chiavi possono inviare — il
+              // pulsante "Invia selezionati" del coin control è nascosto per i
+              // watch-only (la lista UTXO resta consultabile in sola lettura).
+              if (!_isWatchOnly)
+                FilledButton.icon(
+                  // PERCHÉ: solo con selezione attiva — senza selezione si usa il
+                  // pulsante Invia principale (comportamento attuale).
+                  onPressed: _selectedUtxoKeys.isEmpty ? null : _openSendScreen,
+                  icon: const Icon(Icons.send),
+                  label: Text(loc.walletDetailUtxoSendSelected),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+            ],
           ],
         ],
       ),
@@ -1879,6 +2180,78 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
                 fontSize: 11,
                 color: colorScheme.onSurfaceVariant,
               ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Riga di un UTXO in PERIODO DI ATTESA (payout di mining): badge dedicato
+  /// + blocchi mancanti, checkbox DISABILITATA.
+  ///
+  /// PERCHÉ (A3): la rete non propaga la spesa di un coinbase prima della
+  /// maturity di relay → includerlo produrrebbe una tx che nessun peer
+  /// accetta. La riga resta visibile (i sat sono dell'utente) ma non
+  /// selezionabile, così non entra mai nel coin control.
+  Widget _buildBlockedUtxoRow(
+    UtxoInfo utxo,
+    ColorScheme colorScheme,
+    AppLocalizations loc,
+  ) {
+    final label = _utxoLabel(utxo);
+    final shortTxid =
+        utxo.txid.length > 8 ? utxo.txid.substring(0, 8) : utxo.txid;
+    final blocks = remainingRelayBlocks(utxo);
+    return CheckboxListTile(
+      value: false,
+      onChanged: null,
+      dense: true,
+      controlAffinity: ListTileControlAffinity.leading,
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _formatUtxoBtc(utxo.valueSat),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              // PERCHÉ: colore diverso dal badge "In attesa" delle tx non
+              // confermate — qui non manca una conferma, manca la maturity.
+              color: colorScheme.tertiaryContainer,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              loc.walletUtxoWaitingBadge,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onTertiaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+      subtitle: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label == null || label.isEmpty
+                  ? '$shortTxid…:${utxo.vout}'
+                  : label,
+              style: TextStyle(
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (blocks != null && blocks > 0)
+            Text(
+              loc.walletUtxoWaitingBlocks(blocks),
+              style: TextStyle(fontSize: 11, color: colorScheme.tertiary),
             ),
         ],
       ),
@@ -2113,17 +2486,24 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, {InfoHintId? hint}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        text.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.grey,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.1,
-        ),
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
+              text.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ),
+          if (hint != null) InfoDot(id: hint, size: 14),
+        ],
       ),
     );
   }

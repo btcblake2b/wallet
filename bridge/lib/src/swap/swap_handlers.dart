@@ -29,6 +29,7 @@ class SwapHandlers {
   };
 
   static const Set<String> supportedMethods = {
+    'swap_info',
     'swap_quote',
     'swap_create',
     'swap_funding',
@@ -60,6 +61,13 @@ class SwapHandlers {
 
     late final Map<String, dynamic> result;
     switch (method) {
+      case 'swap_info':
+        // Sola lettura: limiti/liquidità del provider e, con `invoice`,
+        // il verdetto sul destinatario. Nessuna sessione, nessun fondo mosso.
+        final invoice = params['invoice'];
+        result = await _service.info(
+          bolt11: invoice is String && invoice.isNotEmpty ? invoice : null,
+        );
       case 'swap_quote':
         result = await _service.quote(
           bolt11: _str(params, 'invoice'),

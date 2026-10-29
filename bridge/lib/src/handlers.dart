@@ -1,17 +1,48 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'cln/cln_api.dart';
+import 'cross/kilobridge_client.dart';
 import 'logger.dart';
 import 'protocol.dart';
 
 /// Traduce i metodi NWC/NCC nei comandi CLN e mappa le risposte nel formato
 /// atteso dal client (spec dln-node, verificata nei test del client Flutter).
 class NwcHandlers {
-  NwcHandlers({required this.cln, Logger? logger})
-      : _logger = logger ?? Logger();
+  NwcHandlers({
+    required this.cln,
+    Logger? logger,
+    this.crossChain,
+    this.crossChainPollInterval = const Duration(seconds: 2),
+    this.crossChainMaxWait = const Duration(minutes: 10),
+    this.spliceUpdatePollInterval = const Duration(seconds: 1),
+    this.spliceFinalizeTimeout = const Duration(seconds: 20),
+  }) : _logger = logger ?? Logger();
 
   final ClnApi cln;
   final Logger _logger;
+
+  /// Client del bridge cross-chain (null = funzionalità non configurata).
+  ///
+  /// // PERCHÉ (P9): il pagamento di una fattura SHA-256 passa da un servizio
+  /// // esterno opt-in; senza URL configurato i metodi `cross_chain_*` devono
+  /// // rispondere NOT_IMPLEMENTED, non fallire in modo opaco.
+  final KilobridgeClient? crossChain;
+
+  /// Intervallo di polling dello stato dello swap.
+  final Duration crossChainPollInterval;
+
+  /// Attesa massima di uno swap cross-chain.
+  final Duration crossChainMaxWait;
+
+  /// Pausa tra due `splice_update` in attesa che il peer finalizzi lo splice.
+  final Duration spliceUpdatePollInterval;
+
+  /// Attesa massima della finalizzazione (`commitments_secured`) di uno splice.
+  ///
+  /// // PERCHÉ: la richiesta del client scade a 30 s — restando sotto, l'app
+  /// // riceve l'esito invece di un timeout opaco.
+  final Duration spliceFinalizeTimeout;
 
   final Random _random = Random();
 
@@ -30,6 +61,8 @@ class NwcHandlers {
         return _makeInvoice(params);
       case 'pay_invoice':
         return _payInvoice(params);
+      case 'make_offer':
+        return _makeOffer(params);
       case 'make_new_address':
         return _makeNewAddress(params);
       case 'pay_onchain':
@@ -58,6 +91,10 @@ class NwcHandlers {
         return _openChannel(params);
       case 'close_channel':
         return _closeChannel(params);
+      case 'splice_channel':
+        return _spliceChannel(params);
+      case 'estimate_splice':
+        return _estimateSplice(params);
       case 'connect_peer':
         return _connectPeer(params);
       case 'disconnect_peer':
@@ -84,6 +121,10 @@ class NwcHandlers {
         return _getRoute(params);
       case 'keysend':
         return _keysend(params);
+      case 'cross_chain_check':
+        return _crossChainCheck(params);
+      case 'cross_chain_pay':
+        return _crossChainPay(params);
       default:
         throw RpcError(
           'NOT_IMPLEMENTED',
@@ -199,13 +240,51 @@ class NwcHandlers {
   Future<Map<String, dynamic>> _payInvoice(
     Map<String, dynamic> params,
   ) async {
-    final bolt11 = params['invoice'] as String?;
-    if (bolt11 == null || bolt11.isEmpty) {
+    final request = params['invoice'] as String?;
+    if (request == null || request.isEmpty) {
       throw const RpcError('BAD_REQUEST', 'pay_invoice richiede invoice');
     }
+    final isOffer = request.toLowerCase().startsWith('lno1');
+    final amountMsat = (params['amount_msat'] as num?)?.toInt();
+
+    // PERCHÉ (26/10, verificato sul nodo `.9`): `pay` **non** ha un parametro
+    // `bolt12` — il plugin cln-xpay lo ignora ("Unknown arg bolt12, xpay will
+    // ignore it") e non redirige. E un'OFFERTA non è pagabile: xpay decodifica
+    // una BOLT12 *invoice* (`lni1…`) e su un'offerta risponde
+    // «Invalid bolt12 invoice: unexpected prefix lno». Quindi:
+    // offerta → `fetchinvoice` (con l'importo scelto dal client, se c'è) →
+    // `pay` della fattura ottenuta.
+    var invstring = request;
+    if (isOffer) {
+      final Map<String, dynamic> fetched;
+      try {
+        fetched = await cln.call('fetchinvoice', {
+          'offer': request,
+          if (amountMsat != null && amountMsat > 0)
+            'amount_msat': '$amountMsat',
+        });
+      } on RpcError catch (e) {
+        throw RpcError(
+          classifyClnFailure(e.message, fallback: 'PAYMENT_FAILED'),
+          e.message,
+        );
+      }
+      final invoice = '${fetched['invoice'] ?? ''}';
+      if (invoice.isEmpty) {
+        throw const RpcError('INTERNAL', 'fetchinvoice senza invoice');
+      }
+      invstring = invoice;
+    }
+
     final Map<String, dynamic> res;
     try {
-      res = await cln.call('pay', {'bolt11': bolt11});
+      res = await cln.call('pay', {
+        'bolt11': invstring,
+        // L'importo su `pay` serve solo a una bolt11 senza importo; su una
+        // bolt12 invoice l'importo è già dentro la fattura.
+        if (!isOffer && amountMsat != null && amountMsat > 0)
+          'amount_msat': '$amountMsat',
+      });
     } on RpcError catch (e) {
       throw RpcError(
         classifyClnFailure(e.message, fallback: 'PAYMENT_FAILED'),
@@ -218,6 +297,202 @@ class NwcHandlers {
       'preimage': '${res['payment_preimage'] ?? ''}',
       // Fee = inviato − richiesto (amount_sent_msat include le fee).
       'fees_paid': sent > amount ? sent - amount : 0,
+    };
+  }
+
+  /// Offerta riutilizzabile (BOLT12) — estensione del bridge.  ///
+  /// // PERCHÉ (BOLT12): una fattura BOLT11 è monouso e scade; un'offerta è un
+  /// // codice stabile che chi paga trasforma in fattura al momento — è il modo
+  /// // di ricevere senza rigenerare un QR ogni volta. Se `amount_msat` manca
+  /// // l'offerta è a importo libero (lo sceglie chi paga).
+  Future<Map<String, dynamic>> _makeOffer(
+    Map<String, dynamic> params,
+  ) async {
+    final amountMsat = (params['amount_msat'] as num?)?.toInt();
+    final description = '${params['description'] ?? ''}'.trim();
+    if (description.isEmpty) {
+      throw const RpcError(
+        'BAD_REQUEST',
+        'make_offer richiede description',
+      );
+    }
+    final singleUse = params['single_use'] == true;
+    final Map<String, dynamic> res;
+    try {
+      res = await cln.call('offer', {
+        // PERCHÉ (26/10): CLN **esige** l'argomento `amount` e rifiuta la
+        // chiamata senza — verificato sul nodo `.9`: `offer description=…` →
+        // `missing required parameter: amount`. Un'offerta a importo libero si
+        // chiede con la parola chiave `any`, non omettendo il campo. Senza
+        // questo, «codice riutilizzabile» con importo vuoto falliva sempre
+        // (l'app lo dichiara opzionale, quindi era un bug nostro).
+        'amount': (amountMsat != null && amountMsat > 0)
+            ? '${amountMsat}msat'
+            : 'any',
+        'description': description,
+        'single_use': singleUse,
+      });
+    } on RpcError catch (e) {
+      throw RpcError(
+        classifyClnFailure(e.message, fallback: 'OTHER'),
+        e.message,
+      );
+    }
+    final bolt12 = '${res['bolt12'] ?? ''}';
+    if (bolt12.isEmpty) {
+      throw const RpcError('INTERNAL', 'offer senza bolt12');
+    }
+    return {
+      'offer_id': '${res['offer_id'] ?? ''}',
+      'bolt12': bolt12,
+      'single_use': res['single_use'] as bool? ?? singleUse,
+      if (amountMsat != null && amountMsat > 0) 'amount_msat': amountMsat,
+    };
+  }
+
+  /// Quanto costa pagare una fattura SHA-256 tramite il bridge cross-chain.
+  ///
+  /// // PERCHÉ (P9): l'utente deve vedere il costo (e il limite minimo/massimo
+  /// // del servizio) PRIMA di autorizzare: il quote non prenota nulla.
+  Future<Map<String, dynamic>> _crossChainCheck(
+    Map<String, dynamic> params,
+  ) async {
+    final bridge = crossChain;
+    if (bridge == null) {
+      throw const RpcError(
+        'NOT_IMPLEMENTED',
+        'cross_chain_check non configurato (manca crossChainUrl)',
+      );
+    }
+    final invoice = '${params['invoice'] ?? ''}'.trim();
+    if (invoice.isEmpty) {
+      throw const RpcError('BAD_REQUEST', 'cross_chain_check richiede invoice');
+    }
+    final res = await bridge.check(invoice);
+    return {
+      if (res['sat'] != null) 'sat': res['sat'],
+      if (res['estimate_sat'] != null) 'cost_sats': res['estimate_sat'],
+      if (res['rate'] != null) 'rate': res['rate'],
+      if (res['spread'] != null) 'spread': res['spread'],
+      if (res['wait_s'] != null) 'wait_seconds': res['wait_s'],
+      if (res['hash'] != null) 'payment_hash': res['hash'],
+    };
+  }
+
+  /// Paga una fattura SHA-256 con i fondi della nostra chain.
+  ///
+  /// // PERCHÉ (P9, non-custodial): il bridge risponde con una **hold invoice**
+  /// // sulla nostra chain con lo STESSO payment hash. Noi la paghiamo (i fondi
+  /// // restano "in sospeso", non incassati) e il bridge la incassa solo quando
+  /// // ha pagato davvero la fattura SHA-256, presentando la preimage. Se non
+  /// // riesce, la hold invoice scade e i sat tornano indietro da soli.
+  ///
+  /// Parametri:
+  /// - `invoice` (obbligatorio) — fattura della chain SHA-256
+  /// - `max_sats` (opzionale) — tetto: se il quote costa di più si rifiuta
+  ///   (protezione dal movimento di prezzo tra check e quote)
+  Future<Map<String, dynamic>> _crossChainPay(
+    Map<String, dynamic> params,
+  ) async {
+    final bridge = crossChain;
+    if (bridge == null) {
+      throw const RpcError(
+        'NOT_IMPLEMENTED',
+        'cross_chain_pay non configurato (manca crossChainUrl)',
+      );
+    }
+    final invoice = '${params['invoice'] ?? ''}'.trim();
+    if (invoice.isEmpty) {
+      throw const RpcError('BAD_REQUEST', 'cross_chain_pay richiede invoice');
+    }
+    final maxSats = (params['max_sats'] as num?)?.toInt();
+
+    final quote = await bridge.quote(invoice);
+    final holdInvoice = '${quote['hold_invoice'] ?? ''}';
+    final paymentHash = '${quote['hash'] ?? ''}';
+    final token = '${quote['token'] ?? ''}';
+    final paySats =
+        (quote['pay_sat'] as num?)?.toInt() ?? (quote['sat'] as num?)?.toInt();
+    if (holdInvoice.isEmpty || paymentHash.isEmpty || token.isEmpty) {
+      throw const RpcError('OTHER', 'bridge: quote incompleto');
+    }
+    if (maxSats != null && paySats != null && paySats > maxSats) {
+      throw RpcError(
+        'BAD_REQUEST',
+        'bridge: il costo è salito a $paySats sat (tetto $maxSats)',
+      );
+    }
+    _logger.info(
+      'cross_chain_pay: ${paySats ?? '?'} sat per ${paymentHash.substring(0, 8)}…',
+    );
+
+    // PERCHÉ: `pay` su una hold invoice NON ritorna finché la fattura non è
+    // risolta (il bridge la incassa solo con la preimage). Va avviato e poi
+    // seguito via `/api/swap`: aspettarlo in linea bloccherebbe il polling e
+    // non sapremmo mai se lo swap è fallito.
+    final payFuture = cln.call('pay', {
+      'bolt11': holdInvoice,
+      'label': 'cross-chain-${paymentHash.substring(0, 16)}',
+    });
+    // Evita un'eccezione non gestita se il poll finisce prima del pagamento.
+    var payError = '';
+    unawaited(
+      payFuture.then<void>(
+        (_) {},
+        onError: (Object e) {
+          payError = '$e';
+        },
+      ),
+    );
+
+    final deadline = DateTime.now().add(crossChainMaxWait);
+    var state = 'pending';
+    var preimage = '';
+    while (DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(crossChainPollInterval);
+      try {
+        final swap = await bridge.swap(
+          paymentHash: paymentHash,
+          token: token,
+        );
+        state = '${swap['state'] ?? state}';
+        preimage = '${swap['preimage'] ?? ''}';
+      } on RpcError catch (e) {
+        _logger.warn('cross_chain_pay: swap non disponibile (${e.message})');
+      }
+      if (const {'settled', 'failed', 'aborted', 'expired', 'lost'}
+          .contains(state)) {
+        break;
+      }
+      if (payError.isNotEmpty) break;
+    }
+
+    if (state != 'settled') {
+      throw RpcError(
+        state == 'pending' ? 'OTHER' : 'PAYMENT_FAILED',
+        'cross-chain $state'
+        '${payError.isEmpty ? '' : ': $payError'}',
+      );
+    }
+    // A swap avvenuto il pagamento della hold invoice si chiude: si attende
+    // solo per leggere fee effettive e preimage dal nodo.
+    Map<String, dynamic> paid = const {};
+    try {
+      paid = await payFuture.timeout(const Duration(seconds: 30));
+    } catch (e) {
+      _logger.warn('cross_chain_pay: pay non confermato a swap avvenuto ($e)');
+    }
+    final sent = (paid['amount_sent_msat'] as num?)?.toInt() ?? 0;
+    final amount =
+        (paid['amount_msat'] as num?)?.toInt() ?? ((paySats ?? 0) * 1000);
+    return {
+      'state': state,
+      'preimage':
+          preimage.isNotEmpty ? preimage : '${paid['payment_preimage'] ?? ''}',
+      'payment_hash': paymentHash,
+      'amount_msat': amount,
+      'fees_paid': sent > amount ? sent - amount : 0,
+      if (paySats != null) 'pay_sats': paySats,
     };
   }
 
@@ -922,6 +1197,10 @@ class NwcHandlers {
         (params['amount'] as num?)?.toInt();
     final host = params['host'] as String?;
     final isPrivate = params['private'] as bool? ?? false;
+    // PERCHÉ (A8): coin control — l'utente può scegliere quali output on-chain
+    // finanziare il canale (parità con i tool degli operatori). Assente o vuoto
+    // = scelta automatica del nodo: comportamento storico invariato.
+    final utxos = _parseUtxos(params['utxos']);
     if (pubkey.isEmpty || amount == null || amount <= 0) {
       throw const RpcError(
         'BAD_REQUEST',
@@ -941,7 +1220,8 @@ class NwcHandlers {
       }
     }
     _logger.info(
-      'open_channel: $pubkey, $amount sat (private=$isPrivate)',
+      'open_channel: $pubkey, $amount sat (private=$isPrivate, '
+      'utxos=${utxos.length})',
     );
     final Map<String, dynamic> res;
     try {
@@ -949,6 +1229,7 @@ class NwcHandlers {
         'id': pubkey,
         'amount': '$amount',
         'announce': !isPrivate,
+        if (utxos.isNotEmpty) 'utxos': utxos,
       });
     } on RpcError catch (e) {
       throw RpcError(
@@ -960,6 +1241,53 @@ class NwcHandlers {
       if (res['txid'] != null) 'txid': res['txid'],
       if (res['channel_id'] != null) 'channel_id': res['channel_id'],
     };
+  }
+
+  /// Txid esadecimale (32 byte): la stessa forma che CLN si aspetta in `utxos`.
+  static final RegExp _txidPattern = RegExp(r'^[0-9a-fA-F]{64}$');
+
+  /// Normalizza il parametro `utxos` di `open_channel` in `["txid:vout", …]`.
+  ///
+  /// // PERCHÉ (A8): il formato va normalizzato QUI e non nel nodo: CLN accetta
+  /// solo la forma compatta e un errore di formato deve tornare all'app come
+  /// BAD_REQUEST (con la posizione), non come errore grezzo di fundchannel.
+  List<String> _parseUtxos(Object? raw) {
+    if (raw == null) return const [];
+    if (raw is! List) {
+      throw const RpcError('BAD_REQUEST', 'utxos deve essere una lista');
+    }
+    final out = <String>[];
+    for (final item in raw) {
+      if (item is String) {
+        final value = item.trim();
+        final parts = value.split(':');
+        final valid = parts.length == 2 &&
+            _txidPattern.hasMatch(parts[0]) &&
+            (int.tryParse(parts[1]) ?? -1) >= 0;
+        if (!valid) {
+          throw RpcError(
+            'BAD_REQUEST',
+            'utxo non valido: $value (atteso txid:vout)',
+          );
+        }
+        out.add(value);
+        continue;
+      }
+      if (item is Map) {
+        final txid = '${item['txid'] ?? ''}';
+        final vout = (item['vout'] as num?)?.toInt();
+        if (!_txidPattern.hasMatch(txid) || vout == null || vout < 0) {
+          throw const RpcError(
+            'BAD_REQUEST',
+            'utxo non valido (atteso txid + vout)',
+          );
+        }
+        out.add('$txid:$vout');
+        continue;
+      }
+      throw const RpcError('BAD_REQUEST', 'utxo non valido');
+    }
+    return out;
   }
 
   Future<Map<String, dynamic>> _closeChannel(
@@ -987,6 +1315,224 @@ class NwcHandlers {
       if (res['tx'] != null) 'txid': res['tx'],
       if (res['txid'] != null) 'txid': res['txid'],
     };
+  }
+
+  /// Ridimensiona un canale senza chiuderlo (splice).
+  ///
+  /// // PERCHÉ (SPLICE): chiudere e riaprire per cambiare la capacità costa due
+  /// // transazioni on-chain e interrompe il canale; lo splice lo ridimensiona
+  /// // restando online. `amount_sats` positivo = splice-in (aggiunge fondi),
+  /// // negativo = splice-out (libera fondi verso l'on-chain del nodo).
+  /// // `utxos` (solo splice-in) è il coin control: gli stessi output on-chain
+  /// // scelti per `open_channel`, normalizzati qui per il nodo.
+  ///
+  /// // NOTA: CLN non ha un comando unico — il flusso è PSBT in quattro passi
+  /// // (`splice_init` → `splice_update` → `signpsbt` → `splice_signed`) e per
+  /// // lo splice-in il PSBT iniziale va fondato prima con `fundpsbt` (che è
+  /// // anche il punto in cui si applica la selezione degli UTXO).
+  Future<Map<String, dynamic>> _spliceChannel(
+    Map<String, dynamic> params,
+  ) async {
+    final id = '${params['id'] ?? ''}';
+    final amount = (params['amount_sats'] as num?)?.toInt() ??
+        (params['amount'] as num?)?.toInt();
+    final feerate = _spliceFeerate(params['feerate']);
+    final utxos = _parseUtxos(params['utxos']);
+    if (id.isEmpty || amount == null || amount == 0) {
+      throw const RpcError(
+        'BAD_REQUEST',
+        'splice_channel richiede id e amount_sats diverso da zero',
+      );
+    }
+    if (amount < 0 && utxos.isNotEmpty) {
+      throw const RpcError(
+        'BAD_REQUEST',
+        'utxos vale solo per splice-in (amount_sats positivo)',
+      );
+    }
+    _logger.info(
+      'splice_channel: $id, $amount sat '
+      '(utxos=${utxos.length}, feerate=$feerate)',
+    );
+
+    var fundedPsbt = '';
+    try {
+      var psbt = '';
+      if (amount > 0) {
+        final funded = await cln.call('fundpsbt', {
+          'satoshi': '${amount}sat',
+          'feerate': feerate,
+          'startweight': _spliceStartWeight,
+          'excess_as_change': true,
+          if (utxos.isNotEmpty) 'utxos': utxos,
+        });
+        fundedPsbt = '${funded['psbt'] ?? ''}';
+        psbt = fundedPsbt;
+        if (psbt.isEmpty) {
+          throw const RpcError('CHANNEL_FAILED', 'fundpsbt senza psbt');
+        }
+      }
+
+      final init = await cln.call('splice_init', {
+        'channel_id': id,
+        'relative_amount': amount,
+        if (psbt.isNotEmpty) 'initialpsbt': psbt,
+      });
+      psbt = '${init['psbt'] ?? ''}';
+      if (psbt.isEmpty) {
+        throw const RpcError('CHANNEL_FAILED', 'splice_init senza psbt');
+      }
+
+      // PERCHÉ (SPLICE): `splice_update` va ripetuto finché il peer non ha
+      // finalizzato lo splice (`commitments_secured`): firmare prima dà
+      // "Can't sign a splice until the splice is finalized using splice_update".
+      // Di norma basta una chiamata, ma il giro sul relay può richiederne più.
+      var secured = false;
+      final deadline = DateTime.now().add(spliceFinalizeTimeout);
+      while (true) {
+        final updated = await cln.call('splice_update', {
+          'channel_id': id,
+          'psbt': psbt,
+        });
+        psbt = '${updated['psbt'] ?? ''}';
+        if (psbt.isEmpty) {
+          throw const RpcError('CHANNEL_FAILED', 'splice_update senza psbt');
+        }
+        secured = updated['commitments_secured'] == true;
+        if (secured || DateTime.now().isAfter(deadline)) break;
+        await Future<void>.delayed(spliceUpdatePollInterval);
+      }
+      if (!secured) {
+        throw const RpcError(
+          'CHANNEL_FAILED',
+          'il peer non ha finalizzato lo splice in tempo (commitments_secured)',
+        );
+      }
+
+      final signed = await cln.call('signpsbt', {'psbt': psbt});
+      final signedPsbt = '${signed['signed_psbt'] ?? ''}';
+      if (signedPsbt.isEmpty) {
+        throw const RpcError('CHANNEL_FAILED', 'signpsbt senza signed_psbt');
+      }
+
+      final done = await cln.call('splice_signed', {
+        'channel_id': id,
+        'psbt': signedPsbt,
+      });
+      return {
+        'channel_id': id,
+        'amount_sats': amount,
+        if (done['txid'] != null) 'txid': done['txid'],
+        if (done['tx'] != null) 'txid': done['tx'],
+        if (done['psbt'] != null) 'psbt': done['psbt'],
+      };
+    } on RpcError catch (e) {
+      // PERCHÉ (SPLICE): un fallimento dopo `fundpsbt` lascerebbe gli input
+      // riservati 72 blocchi (~12 h): l'on-chain del nodo sembrerebbe vuoto.
+      await _releaseReservation(fundedPsbt);
+      throw RpcError(
+        classifyClnFailure(e.message, fallback: 'CHANNEL_FAILED'),
+        e.message,
+      );
+    }
+  }
+
+  /// Libera la prenotazione degli input di un PSBT (best effort).
+  ///
+  /// // PERCHÉ: `unreserveinputs` non deve mai mascherare l'errore originale
+  /// // dello splice — se anche questa chiamata fallisce, si logga e si prosegue.
+  Future<void> _releaseReservation(String psbt) async {
+    if (psbt.isEmpty) return;
+    try {
+      await cln.call('unreserveinputs', {'psbt': psbt});
+      _logger.info('splice_channel: input on-chain liberati (splice fallito)');
+    } on RpcError catch (e) {
+      _logger.warn('unreserveinputs fallito: ${e.message}');
+    }
+  }
+
+  /// Stima la fee on-chain di uno splice-in (solo la parte `fundpsbt`).
+  ///
+  /// // PERCHÉ (SPLICE): l'utente deve vedere quanto costa PRIMA di confermare;
+  /// // la fee si ricava dalla feerate e dal peso finale stimati dal nodo.
+  /// // Non include la fee della tx di commitment (la paga il nodo secondo la
+  /// // sua policy): è una stima della parte on-chain, non un totale.
+  Future<Map<String, dynamic>> _estimateSplice(
+    Map<String, dynamic> params,
+  ) async {
+    final amount = (params['amount_sats'] as num?)?.toInt() ??
+        (params['amount'] as num?)?.toInt();
+    final feerate = _spliceFeerate(params['feerate']);
+    final utxos = _parseUtxos(params['utxos']);
+    if (amount == null || amount <= 0) {
+      throw const RpcError(
+        'BAD_REQUEST',
+        'estimate_splice richiede amount_sats positivo (splice-in)',
+      );
+    }
+    final Map<String, dynamic> res;
+    try {
+      res = await cln.call('fundpsbt', {
+        'satoshi': '${amount}sat',
+        'feerate': feerate,
+        'startweight': _spliceStartWeight,
+        'excess_as_change': true,
+        // PERCHÉ: è solo una stima. `fundpsbt` riserva gli input per 72 blocchi
+        // di default (~12 h): senza questo, ogni "Stima fee" toglierebbe fondi
+        // spendibili all'on-chain del nodo fino a mezza giornata dopo.
+        'reserve': 0,
+        if (utxos.isNotEmpty) 'utxos': utxos,
+      });
+    } on RpcError catch (e) {
+      throw RpcError(
+        classifyClnFailure(e.message, fallback: 'CHANNEL_FAILED'),
+        e.message,
+      );
+    }
+    final fee = _feeFromWeight(
+      feeratePerKw: (res['feerate_per_kw'] as num?)?.toInt(),
+      weight: (res['estimated_final_weight'] as num?)?.toInt(),
+    );
+    return {
+      'amount_sats': amount,
+      'feerate': feerate,
+      if (fee != null) 'fee_sats': fee,
+      if (res['estimated_final_weight'] != null)
+        'estimated_weight': res['estimated_final_weight'],
+      if (res['feerate_per_kw'] != null)
+        'feerate_per_kw': res['feerate_per_kw'],
+    };
+  }
+
+  /// Peso iniziale della tx di splice per `fundpsbt` (valore dell'esempio CLN).
+  static const int _spliceStartWeight = 800;
+
+  /// Feerate accettata da `fundpsbt`: preset CLN o `<n>perkw`.
+  ///
+  /// // PERCHÉ: il valore finisce nella riga di comando del nodo (path CLI);
+  /// // l'allowlist impedisce che un client passi testo arbitrario.
+  static final RegExp _feeratePattern = RegExp(r'^[a-zA-Z0-9]+$');
+
+  static String _spliceFeerate(Object? raw) {
+    final value = raw == null ? '' : '$raw'.trim();
+    if (value.isEmpty) return 'normal';
+    if (!_feeratePattern.hasMatch(value)) {
+      throw const RpcError(
+        'BAD_REQUEST',
+        'feerate non valida (atteso urgent/normal/slow o <n>perkw)',
+      );
+    }
+    return value;
+  }
+
+  /// Fee in sat da feerate (perkw) e peso: arrotonda per eccesso.
+  static int? _feeFromWeight({
+    required int? feeratePerKw,
+    required int? weight,
+  }) {
+    if (feeratePerKw == null || weight == null) return null;
+    final fee = (feeratePerKw * weight + 999) ~/ 1000;
+    return fee < 0 ? null : fee;
   }
 
   /// Peer del nodo (spec dln NCC `list_peers` → CLN `listpeers`).
@@ -1361,6 +1907,10 @@ class NwcHandlers {
   final Set<String> _seenPaidInvoices = <String>{};
   final Set<String> _seenCompletedPays = <String>{};
   final Map<String, String> _channelStates = <String, String>{};
+
+  /// Capacità (msat) per canale al giro precedente: serve a riconoscere uno
+  /// splice concluso (la capacità cambia, il channel id no).
+  final Map<String, int> _channelCapacities = <String, int>{};
   bool _notifyPrimed = false;
 
   /// Confronta lo stato del nodo con il giro precedente e ritorna i cambiamenti.
@@ -1426,16 +1976,21 @@ class NwcHandlers {
       _logger.warn('notifiche: listpays non disponibile (${e.message})');
     }
 
-    // 3) Canali: comparsi → channel_opened, scomparsi/on-chain → closed
+    // 3) Canali: comparsi → channel_opened, spariti/on-chain → closed,
+    //    capacità cambiata → channel_resized (splice concluso)
     try {
       final res = await cln.call('listpeerchannels');
       final current = <String, String>{};
+      final capacities = <String, int>{};
       for (final c in (res['channels'] as List? ?? const [])) {
         final ch = (c as Map).cast<String, dynamic>();
         final id = '${ch['channel_id'] ?? ''}';
         if (id.isEmpty) continue;
         final state = '${ch['state'] ?? ''}';
+        final capacity = (ch['total_msat'] as num?)?.toInt() ?? 0;
         current[id] = state;
+        capacities[id] = capacity;
+        final previous = _channelCapacities[id];
         if (_notifyPrimed && !_channelStates.containsKey(id)) {
           notifications.add(
             BridgeNotification(
@@ -1444,7 +1999,26 @@ class NwcHandlers {
               payload: {
                 'channel_id': id,
                 'peer_pubkey': '${ch['peer_id'] ?? ''}',
-                'capacity_msat': (ch['total_msat'] as num?)?.toInt() ?? 0,
+                'capacity_msat': capacity,
+              },
+            ),
+          );
+        } else if (_notifyPrimed &&
+            previous != null &&
+            previous != capacity &&
+            state != 'ONCHAIN') {
+          // PERCHÉ (SPLICE): lo splice non cambia il channel id ma cambia la
+          // capacità — è l'unico segnale che la transazione è stata confermata.
+          notifications.add(
+            BridgeNotification(
+              type: 'channel_resized',
+              isNcc: true,
+              payload: {
+                'channel_id': id,
+                'peer_pubkey': '${ch['peer_id'] ?? ''}',
+                'capacity_msat': capacity,
+                'previous_capacity_msat': previous,
+                'delta_msat': capacity - previous,
               },
             ),
           );
@@ -1468,6 +2042,9 @@ class NwcHandlers {
       _channelStates
         ..clear()
         ..addAll(current);
+      _channelCapacities
+        ..clear()
+        ..addAll(capacities);
     } on RpcError catch (e) {
       _logger.warn(
         'notifiche: listpeerchannels non disponibile (${e.message})',
@@ -1500,7 +2077,13 @@ class NwcHandlers {
         m.contains('does not exist')) {
       return 'NOT_FOUND';
     }
-    if (m.contains('insufficient')) {
+    if (m.contains('insufficient') ||
+        // PERCHÉ (SPLICE/on-chain): `fundpsbt` risponde "Could not afford
+        // 30000sat using all 1 available UTXOS: 25298sat short" quando il
+        // wallet on-chain del nodo non copre l'importo — non è un problema del
+        // canale né del peer, e va detto con un codice suo.
+        m.contains('could not afford') ||
+        m.contains('not enough')) {
       return 'INSUFFICIENT_BALANCE';
     }
     if (m.contains('could not connect') ||

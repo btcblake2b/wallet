@@ -15,8 +15,9 @@ import 'package:nwc_cln_bridge/src/swap/swap_consts.dart';
 ///   dart run bin/swapprobe.dart --uri=nostr+swap://… --invoice=lnbc… \
 ///       [--refund-pubkey=02…] [--keep-open]
 ///
-/// Senza `--invoice` esegue solo un giro di validazione (metodo inesistente):
-/// utile per verificare che il daemon risponda sul relay.
+/// Senza `--invoice` esegue `swap_info` (limiti e liquidità del provider): è
+/// il pre-flight che usa l'app. Su un provider precedente il metodo risponde
+/// NOT_IMPLEMENTED → fallback su `swap_status` per la sola raggiungibilità.
 Future<void> main(List<String> args) async {
   final opts = _parseArgs(args);
   var uri = opts['uri'] ?? '';
@@ -25,7 +26,8 @@ Future<void> main(List<String> args) async {
     uri = File(uriFile).readAsStringSync().trim();
   }
   if (uri.isEmpty) {
-    stderr.writeln('Uso: --uri-file=swap-uri.txt (oppure --uri=nostr+swap://…)');
+    stderr
+        .writeln('Uso: --uri-file=swap-uri.txt (oppure --uri=nostr+swap://…)');
     exit(1);
   }
   final parsed = Uri.parse(uri);
@@ -121,12 +123,29 @@ Future<void> main(List<String> args) async {
   }
 
   if (invoice.isEmpty) {
-    stdout.writeln('[probe] nessuna invoice: verifico solo la raggiungibilità…');
-    final res = await request('swap_status', {'swap_id': 'probe'});
-    stdout.writeln('[probe] swap_status → ${jsonEncode(res)}');
+    stdout.writeln('[probe] nessuna invoice: chiedo limiti e liquidità…');
+    final info = await request('swap_info', const {});
+    if (info['error'] == null) {
+      stdout.writeln('[probe] swap_info → ${jsonEncode(info['result'])}');
+    } else {
+      // PERCHÉ: il fallback tiene il probe usabile anche su un provider
+      // precedente (il metodo è nuovo) senza confondere l'errore con un guasto.
+      stdout.writeln(
+        '[probe] swap_info non supportato: ${jsonEncode(info['error'])}',
+      );
+      stdout.writeln('[probe] fallback: swap_status di sonda…');
+      final res = await request('swap_status', {'swap_id': 'probe'});
+      stdout.writeln('[probe] swap_status → ${jsonEncode(res)}');
+    }
     await transport.close();
     return;
   }
+
+  // STEP: 0 — verdetto sul DESTINATARIO prima della quote: se il peer non è
+  // raggiungibile lo si scopre qui, senza aprire sessioni.
+  stdout.writeln('[probe] swap_info (verdetto sul destinatario)…');
+  final info = await request('swap_info', {'invoice': invoice});
+  stdout.writeln('[probe] swap_info → ${jsonEncode(info['result'] ?? info)}');
 
   stdout.writeln('[probe] swap_quote…');
   final quote = await request('swap_quote', {

@@ -27,6 +27,24 @@ class BitcoinNetworkConfig {
   static const BtcNetwork current = BtcNetwork.mainnet;
 
   // ============================================================
+  // Maturity di RELAY di un output coinbase (policy di rete, non consenso)
+  // ============================================================
+  // PERCHÉ: dalla release CLN `v26.06.8-blake2b.5` un output di coinbase non è
+  // propagabile dai peer prima di questa soglia (PR privkeyio/lightning#11:
+  // 6.480 blocchi mainnet, 6.705 testnet4, 100 altrove). Il mining del progetto
+  // paga in coinbase → il coin selection e il SALDO devono escluderli finché
+  // non maturano (6.480 blocchi ≈ 45 giorni col block time attuale ~600 s).
+  // Il conteggio è in BLOCCHI: la UI mostra i blocchi mancanti allo sblocco.
+  static int get coinbaseRelayMaturityBlocks {
+    switch (current) {
+      case BtcNetwork.mainnet:
+        return 6480;
+      case BtcNetwork.testnet:
+        return 6705;
+    }
+  }
+
+  // ============================================================
   // BIP32 – prefissi extended key (xpub/xprv per mainnet, tpub/tprv per testnet)
   // ============================================================
   static bip32.NetworkType get bip32NetworkType {

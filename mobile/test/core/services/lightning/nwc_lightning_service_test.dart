@@ -617,6 +617,21 @@ void main() {
       final params = (last['params'] as Map).cast<String, dynamic>();
       expect(params['pubkey'], '02${'cc' * 32}');
       expect(params['amount_sats'], 20000);
+      // A8: senza selezione esplicita il parametro NON deve viaggiare
+      // (il nodo sceglie da sé: comportamento storico).
+      expect(params.containsKey('utxos'), isFalse);
+    });
+
+    test('openChannel con utxos → passa il coin control (A8)', () async {
+      final txid = 'ab' * 32;
+      await service.openChannel(
+        nodeId: '02${'cc' * 32}',
+        amountSats: 20000,
+        utxos: ['$txid:0'],
+      );
+      final params = (node.receivedRequests.last['params'] as Map)
+          .cast<String, dynamic>();
+      expect(params['utxos'], ['$txid:0']);
     });
 
     test('closeChannel invia id+force', () async {

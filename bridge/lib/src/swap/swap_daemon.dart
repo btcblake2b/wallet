@@ -6,6 +6,7 @@ import '../nostr/nostr_crypto.dart';
 import '../nostr/nostr_event.dart';
 import '../nostr/nostr_transport.dart';
 import '../protocol.dart';
+import 'swap_client_admission.dart';
 import 'swap_config.dart';
 import 'swap_consts.dart';
 import 'swap_handlers.dart';
@@ -32,6 +33,7 @@ class SwapDaemon {
     required SwapStore store,
     required SwapConfig config,
     required String providerKeyHex,
+    SwapClientAdmission? admission,
     Logger? logger,
     Duration maxSocketAge = const Duration(minutes: 10),
   })  : _transport = transport,
@@ -41,7 +43,9 @@ class SwapDaemon {
         _config = config,
         _privHex = providerKeyHex.toLowerCase(),
         _logger = logger ?? Logger(),
-        _maxSocketAge = maxSocketAge;
+        _maxSocketAge = maxSocketAge,
+        _admission = admission ??
+            SwapClientAdmission(config: config, logger: logger);
 
   final NostrTransport _transport;
   final SwapService _service;
@@ -51,6 +55,7 @@ class SwapDaemon {
   final String _privHex;
   final Logger _logger;
   final Duration _maxSocketAge;
+  final SwapClientAdmission _admission;
 
   late final String _pubHex = NostrCrypto.derivePublicKey(_privHex);
 
@@ -74,9 +79,16 @@ class SwapDaemon {
 
   Future<void> start() async {
     _stopped = false;
+    await _admission.load();
     await _connect();
     _logger.info('swapd: in ascolto su $_activeRelay');
     _logger.info('swapd: pubkey provider: $_pubHex');
+    _logger.info(
+      'swapd: client ammessi: allowlist=${_config.allowedClientPubkeys.length}, '
+      'auto=${_admission.admittedCount}'
+      '${_config.allowAnyClient ? ', modo aperto' : ''}'
+      '${_config.autoAdmit ? ', auto-admit ON' : ''}',
+    );
     _tickTimer = Timer.periodic(
       Duration(seconds: _config.timeouts.tickSec),
       (_) => unawaited(tick()),
@@ -175,8 +187,12 @@ class SwapDaemon {
       _logger.warn('swapd: richiesta con firma non valida ignorata (${event.id})');
       return;
     }
-    final allowed = _config.allowedClientPubkeys;
-    if (allowed.isNotEmpty && !allowed.contains(event.pubkey)) {
+    // // PERCHÉ (B1, 05/10/2026): fail-closed come il bridge — senza allowlist
+    // // NON si accetta nessuno; il modo aperto va DICHIARATO con
+    // // `allowAnyClient: true` (beta sui relay di test). Dal 07/10/2026 il
+    // // primo contatto può essere ammesso DA SÉ (`clients.autoAdmit`) con
+    // // tetti giornalieri/totali: la lista non va mantenuta a mano.
+    if (!await _admission.admit(event.pubkey)) {
       _logger.warn('swapd: client non autorizzato ignorato: ${event.pubkey}');
       return;
     }

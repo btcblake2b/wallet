@@ -9,7 +9,9 @@ import '../../../core/services/bitcoin_service.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/info_dot.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/info_hints_l10n.dart';
 
 /// Indirizzi e UTXO del wallet on-chain, in **sola lettura**.
 ///
@@ -66,7 +68,17 @@ class _WalletAddressesScreenState extends State<WalletAddressesScreen> {
     });
     try {
       final List<WalletAddress> addresses;
-      if (_isWatchOnly) {
+      if (widget.wallet.hasAccountXpub) {
+        // PERCHÉ (26/10): con l'xpub salvato l'elenco indirizzi non richiede
+        // la seed — vale anche per i wallet hot. Le chiavi servono solo dove
+        // si firma.
+        addresses = await widget.bitcoinService.fetchWalletAddresses(
+          accountXpub: widget.wallet.accountXpub!,
+          scriptType: WalletScriptType.fromDerivationPath(
+            widget.wallet.derivationPath,
+          ),
+        );
+      } else if (_isWatchOnly) {
         addresses = await widget.bitcoinService.fetchWalletAddresses(
           accountXpub: widget.wallet.accountXpub ?? '',
           scriptType: WalletScriptType.fromDerivationPath(
@@ -159,12 +171,22 @@ class _WalletAddressesScreenState extends State<WalletAddressesScreen> {
             ),
           ),
           if (receive.isNotEmpty) ...[
-            _buildBranchHeader(loc.walletAddressesReceiveBranch, receive),
+            _buildBranchHeader(
+              loc.walletAddressesReceiveBranch,
+              receive,
+              hint: InfoHintId.receiveAddress,
+            ),
             ...receive.map((a) => _buildAddressTile(loc, a)),
           ],
           if (change.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _buildBranchHeader(loc.walletAddressesChangeBranch, change),
+            // PERCHÉ (26/10): "indirizzi di resto" è il concetto che più
+            // spesso fa credere a un principiante di avere fondi doppi.
+            _buildBranchHeader(
+              loc.walletAddressesChangeBranch,
+              change,
+              hint: InfoHintId.changeAddress,
+            ),
             ...change.map((a) => _buildAddressTile(loc, a)),
           ],
         ],
@@ -172,7 +194,11 @@ class _WalletAddressesScreenState extends State<WalletAddressesScreen> {
     );
   }
 
-  Widget _buildBranchHeader(String label, List<WalletAddress> items) {
+  Widget _buildBranchHeader(
+    String label,
+    List<WalletAddress> items, {
+    InfoHintId? hint,
+  }) {
     final active = items.where((a) => a.hasActivity).length;
     final loc = AppLocalizations.of(context);
     return Padding(
@@ -185,6 +211,7 @@ class _WalletAddressesScreenState extends State<WalletAddressesScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
+          if (hint != null) InfoDot(id: hint, size: 14),
           Text(
             loc.walletAddressesTxCount(active),
             style: Theme.of(context).textTheme.bodySmall,

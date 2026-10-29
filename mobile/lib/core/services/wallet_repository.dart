@@ -68,6 +68,9 @@ class WalletRepository {
       createdAt: createdAt,
       masterFingerprint: derivationResult.masterFingerprint,
       derivationPath: derivationResult.derivationPath,
+      // PERCHÉ (26/10): salvare l'xpub alla creazione fa sì che saldo,
+      // indirizzi e storico si leggano SENZA decifrare la seed.
+      accountXpub: derivationResult.xpub,
     );
 
     // STEP: 4 — persistenza locale (nessuna registrazione cloud).
@@ -127,6 +130,17 @@ class WalletRepository {
     _secureSeedStorage.lock();
     _cryptoService.lockWebStorage();
   }
+
+  /// Web: dimentica SUBITO le chiavi sbloccate appena l'operazione sensibile è
+  /// finita (firma, scansione UTXO, creazione PSBT).
+  ///
+  /// // PERCHÉ (R1, 26/10): la finestra in cui le chiavi stanno in RAM deve
+  /// // durare quanto l'operazione, non quanto l'utente resta sulla schermata.
+  /// // Prima restava aperta fino all'auto-lock (10 min di inattività) anche
+  /// // dopo un invio concluso. Il prossimo gesto sensibile richiederà di nuovo
+  /// // la password: è il comportamento voluto, non un fastidio.
+  /// Su native è un no-op (il keyring è del sistema operativo).
+  Future<void> forgetWebKeysNow() => lockWebStorage();
 
   Future<WalletRecord> updateWallet(WalletRecord wallet) async {
     await _secureSeedStorage.upsertWallet(wallet);
@@ -189,6 +203,35 @@ class WalletRepository {
     return updated;
   }
 
+  /// Ricava e salva l'[WalletRecord.accountXpub] di un wallet HOT creato prima
+  /// che il campo esistesse (migrazione silenziosa, una volta sola).
+  ///
+  /// // PERCHÉ (26/10): senza questo, solo i wallet nuovi leggerebbero senza
+  /// // seed e i wallet già installati continuerebbero a richiedere la
+  /// // password a ogni apertura. La migrazione costa una decifratura UNA volta
+  /// // e poi le letture non toccano più le chiavi.
+  ///
+  /// No-op (nessun I/O) se il wallet ha già l'xpub o è watch-only. Gli errori
+  /// di decifratura risalgono al chiamante: è lui a sapere se il vault è
+  /// bloccato e a decidere di riprovare più tardi.
+  Future<WalletRecord> backfillAccountXpub(WalletRecord wallet) async {
+    if (wallet.hasAccountXpub || wallet.kind == WalletKind.watchOnly) {
+      return wallet;
+    }
+    final mnemonic = await decryptSeed(wallet);
+    final derived = await _bitcoinService.deriveWalletDataFromMnemonic(
+      mnemonic,
+      derivationPath: wallet.derivationPath,
+      addressCount: 1,
+    );
+    final updated = wallet.copyWith(accountXpub: derived.xpub);
+    await _secureSeedStorage.upsertWallet(updated);
+    if (kDebugMode) {
+      debugPrint('[LoopEngineer] xpub salvato per ${wallet.walletId}');
+    }
+    return updated;
+  }
+
   /// Importa un wallet da una mnemonic phrase (e derivazione path opzionale).
   /// Il wallet viene salvato esclusivamente in locale.
   Future<WalletRecord> importWallet({
@@ -215,6 +258,9 @@ class WalletRepository {
       createdAt: DateTime.now().toUtc(),
       masterFingerprint: derivationResult.masterFingerprint,
       derivationPath: derivationResult.derivationPath,
+      // PERCHÉ (26/10): stesso motivo della creazione — l'xpub è pubblico e
+      // rende superflua la decifratura per le sole letture.
+      accountXpub: derivationResult.xpub,
     );
 
     try {

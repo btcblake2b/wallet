@@ -24,7 +24,7 @@
     "name": "Btc Blake2b Wallet",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Android",
-    "softwareVersion": "0.2.0",
+    "softwareVersion": "0.4.0",
     "url": "https://btcblake2b.org/",
     "downloadUrl": "https://github.com/btcblake2b/wallet/releases",
     "installUrl": "https://zapstore.dev/apps/com.btcblake2b.wallet",
@@ -46,6 +46,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="/download.html">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
         <li><a href="/node.html">Node</a></li>
         <li><a href="/privacy.html">Privacy</a></li>
         <li><a href="/legal.html">Legal</a></li>
@@ -91,13 +92,33 @@
             <p>Supports BIP84, BIP49 and BIP44. SIGHASH_UNIFIED helps reduce replay risk, but the network has no consensus-level replay protection.</p>
           </article>
           <article class="card">
+            <h3>⚡ Lightning</h3>
+            <p>Control your own Lightning node remotely with the app. No node? An experimental atomic swap with a provider pays the invoice while your funds stay in your on-chain wallet (testing phase).</p>
+          </article>
+          <article class="card">
+            <h3>🔎 Addresses and UTXOs</h3>
+            <p>Every receive and change address with its on-chain state, derivation path and balance, plus a read-only UTXO view.</p>
+          </article>
+          <article class="card">
             <h3>🎯 Professional UX</h3>
-            <p>Guided onboarding, confirmed backups, coin control, RBF fee bump, QR send/receive and 7 languages. Built for newcomers and users who want direct control of their keys.</p>
+            <p>Guided onboarding, confirmed backups, coin control, RBF fee bump, batch send to up to 20 recipients in one payment, private notes on transactions, CSV/JSON history export, QR send/receive and 7 languages.</p>
           </article>
           <article class="card">
             <h3>🕊️ Free and open source</h3>
             <p>MIT licensed. No paid features, accounts or paywalls. Donations are voluntary gifts.</p>
           </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY: the same images as the store listing, self-hosted (no third-party CDN request). -->
+    <section class="screenshots" aria-label="App screenshots">
+      <div class="container">
+        <h2>Screenshots</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">
+          <img src="screenshots/01-home.png" alt="Home screen with the on-chain wallet list" loading="lazy" width="921" height="2048" style="width:min(100%,230px);height:auto;border-radius:18px">
+          <img src="screenshots/02-wallet-detail.png" alt="Wallet detail with balance, receive and send actions" loading="lazy" width="921" height="2048" style="width:min(100%,230px);height:auto;border-radius:18px">
+          <img src="screenshots/03-lightning.png" alt="Lightning tab with node balance, channels and on-chain deposit" loading="lazy" width="921" height="2048" style="width:min(100%,230px);height:auto;border-radius:18px">
         </div>
       </div>
     </section>
@@ -136,6 +157,8 @@
             <p>Verify the network, address, amount and fee before signing or broadcasting a transaction.</p>
           </article>
         </div>
+        <!-- WHY: the app is beginner-facing; the guide is the place where "why" is answered. -->
+        <p class="journey-cta"><a class="btn btn-ghost" href="/learn.html">New to bitcoin? Read the guide</a></p>
       </div>
     </section>
 
@@ -153,7 +176,7 @@
         </details>
         <details>
           <summary>What data is transmitted?</summary>
-          <p>For balance, fees and history the app queries one public API (<code>mempool.guide</code>). If that service is unavailable, the app may query two community Esplora-compatible mirrors (<code>mempool.kilombino.com</code>, <code>mempool.maveth.ca</code>). This can be turned off in Settings. These requests may expose your IP address and the queried public address to the provider.</p>
+          <p>For balance, fees and history the app queries one public API (<code>mempool.guide</code>). If that service is unavailable, the app may query two community Esplora-compatible mirrors (<code>mempool.kilombino.com</code>, <code>mempool.maveth.ca</code>). This can be turned off in Settings. If you enable the automatic price in Settings, the app reads the last XBT/USDC trade from <code>neoxa.exchange</code> (NeoXEX) on demand. If the value currency is not USD, it also reads the USDT exchange rates from <code>api.coinbase.com</code>. Both can be turned off in Settings. These requests may expose your IP address and the queried public address to the provider.</p>
         </details>
         <details>
           <summary>Is there replay protection?</summary>

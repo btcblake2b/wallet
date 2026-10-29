@@ -7,6 +7,9 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../models/wallet_record.dart';
+import 'storage_lock_exception.dart';
+
+export 'storage_lock_exception.dart';
 
 // ──────────────────────────────────────────────────────────────
 // JS interop bindings per Web Crypto API (NON usare `dynamic` o
@@ -58,15 +61,6 @@ external JSPromise<JSArrayBuffer> _jsDeriveBits(
   JSObject key,
   JSNumber length,
 );
-
-/// Sollevata quando lo storage web è protetto da password ma non è stato
-/// ancora sbloccato con [SecureSeedStorage.unlockWithPassword].
-class StorageLockedException implements Exception {
-  final String message;
-  StorageLockedException(this.message);
-  @override
-  String toString() => 'StorageLockedException: $message';
-}
 
 /// Helper: converte [Uint8List] in [JSUint8Array] (built-in in dart:js_interop).
 extension type _AesGcmParams._(JSObject _) implements JSObject {

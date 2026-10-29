@@ -21,9 +21,19 @@ class OnboardingService {
 
   // PERCHÉ: verifica se l'utente ha già completato l'onboarding
   // per decidere se mostrare OnboardingScreen o SplashScreen → HomeScreen
+  //
+  // Un valore cifrato illeggibile (tipico dopo che la chiave interna di
+  // flutter_secure_storage è stata rigenerata) NON deve bloccare l'avvio:
+  // si riparte dall'onboarding, che riscrive il consenso con la chiave
+  // corrente. I wallet restano nel vault (chiavi indipendenti).
   Future<bool> isCompleted() async {
-    final value = await _storage.read(key: _completedKey);
-    return value == 'true';
+    try {
+      final value = await _storage.read(key: _completedKey);
+      return value == 'true';
+    } catch (error) {
+      debugPrint('[OnboardingService] isCompleted non leggibile: $error');
+      return false;
+    }
   }
 
   // PERCHÉ: salva i dati onboarding. Il flag 'completed' è separato

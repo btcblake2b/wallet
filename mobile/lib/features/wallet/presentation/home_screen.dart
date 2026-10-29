@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import '../../../core/widgets/password_dialog.dart';
+import '../../../core/widgets/tappable_balance.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -11,10 +12,13 @@ import '../../../core/models/wallet_record.dart';
 import '../../../core/config/bitcoin_network_config.dart';
 import '../../../core/models/wallet_snapshot.dart';
 import '../../../core/services/balance_cache.dart';
+import '../../../core/services/balance_display.dart';
 import '../../../core/services/bitcoin_service.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/crypto_service.dart';
 import '../../../core/services/device_service.dart';
+import '../../../core/services/fiat_price.dart';
+import '../../../core/services/storage_lock_exception.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/services/locale_provider.dart';
 import '../../../core/services/theme_provider.dart';
@@ -24,6 +28,7 @@ import '../../../core/services/lightning/lightning_connection_store.dart';
 import '../../../core/services/lightning/lightning_service.dart';
 import '../../../core/services/swap/swap_service.dart';
 import '../../donate/presentation/donate_screen.dart';
+import '../../guide/presentation/guide_screen.dart';
 import '../../lightning/presentation/lightning_swap_screen.dart';
 import '../../lightning/presentation/lightning_view.dart';
 import '../../settings/presentation/settings_screen.dart';
@@ -93,13 +98,28 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  late Future<List<WalletRecord>> _walletsFuture;
+  /// PERCHÉ (auto-lock web): inizializzata subito con una lista vuota. Su web i
+  /// wallet arrivano solo DOPO lo sblocco del vault, ma `build` legge questo
+  /// campo: con `late` il primo frame lanciava LateInitializationError, la
+  /// navigazione del router non si completava e l'app restava sullo spinner
+  /// dello splash (bug segnalato: "rotellina" dopo la scadenza del timer).
+  Future<List<WalletRecord>> _walletsFuture =
+      Future<List<WalletRecord>>.value(const <WalletRecord>[]);
+
+  /// Web: vault chiavi bloccato (auto-lock oppure sblocco annullato). È uno
+  /// stato NORMALE, non un errore: la lista già nota resta visibile e le azioni
+  /// sensibili richiedono la password.
+  bool _vaultLocked = false;
 
   /// Auto-lock del vault web (hardening 2.4): attivo solo su web, null altrove.
   VaultAutoLock? _vaultAutoLock;
 
   bool _creating = false;
   final Map<String, double> _balances = {};
+
+  /// Satoshi in periodo di attesa (payout di mining non propagabili) per
+  /// wallet: NON concorrono al saldo, ma vanno mostrati (A3).
+  final Map<String, int> _waitingBalances = {};
   bool _loadingBalances = false;
 
   /// Codice del primo errore di caricamento saldi (per mostrare il motivo nel
@@ -156,7 +176,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// Web (audit F1): gate di avvio — sblocca (o crea) la password e solo poi
   /// carica i wallet. Senza password il vault chiavi NON è leggibile.
+  ///
+  /// PERCHÉ: qualunque errore qui (es. valore di flutter_secure_storage
+  /// illeggibile perché la chiave è stata rigenerata) non deve lasciare la
+  /// home su uno spinner: si passa allo stato "vault bloccato".
   Future<void> _initWebVault() async {
+    try {
+      await _initWebVaultInner();
+    } catch (error) {
+      debugPrint('[LoopEngineer] _initWebVault error: $error');
+      if (!mounted) return;
+      _loadEmpty(locked: true);
+    }
+  }
+
+  Future<void> _initWebVaultInner() async {
     if (!mounted) return;
     final loc = AppLocalizations.of(context);
 
@@ -177,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
       if (!mounted) return;
       if (entered == null || entered.isEmpty) {
-        _loadEmpty(); // utente ha annullato → lista vuota (vault bloccato)
+        _loadEmpty(locked: true); // utente ha annullato → vault bloccato
         return;
       }
       final ok = await widget.biometricService.verifyPassword(entered);
@@ -186,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(loc.passwordDialogWrong)),
         );
-        _loadEmpty();
+        _loadEmpty(locked: true);
         return;
       }
       await widget.walletRepository.unlockWebStorage(entered);
@@ -229,13 +263,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _vaultAutoLock?.start();
       _loadData();
     } else {
-      _loadEmpty();
+      _loadEmpty(locked: protected);
     }
   }
 
   /// Mostra una lista wallet vuota (usata quando il vault web è bloccato).
-  void _loadEmpty() {
+  ///
+  /// PERCHÉ: se la chiave AES non è in RAM la lista NON è "persa", è solo
+  /// illeggibile: con [locked] marchiamo lo stato così la UI propone lo
+  /// sblocco invece del primo avvio ("crea il tuo primo wallet").
+  void _loadEmpty({bool locked = false}) {
     setState(() {
+      _vaultLocked = locked;
       _walletsFuture = Future.value(<WalletRecord>[]);
     });
   }
@@ -251,6 +290,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     unawaited(widget.walletRepository.lockWebStorage());
     widget.biometricService.lockCache();
     if (!mounted) return;
+    // PERCHÉ: le chiavi non sono più in RAM → le letture che richiedono la
+    // chiave AES fallirebbero; marchiamo lo stato per non mostrare la lista
+    // come "persa" e per offrire lo sblocco.
+    setState(() => _vaultLocked = true);
     // PERCHÉ: notifica non invasiva — le azioni sensibili (invio, backup,
     // dettaglio) chiederanno di nuovo la password perché le chiavi non sono
     // più in RAM; la lista wallet (dati pubblici) resta visibile.
@@ -296,9 +339,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Controlla tutti i wallet con stato pendingTransfer: verifica lo stato
   /// sul server e, se assente, tenta la registrazione automatica.
   Future<void> _loadDisclaimerAccepted() async {
-    final accepted = await _secureStorage.read(key: _disclaimerKey);
+    // PERCHÉ: un valore cifrato illeggibile (chiave di storage rigenerata) non
+    // deve far fallire l'avvio: si mostra di nuovo il disclaimer.
+    var accepted = false;
+    try {
+      accepted = await _secureStorage.read(key: _disclaimerKey) == 'true';
+    } catch (error) {
+      debugPrint('[LoopEngineer] disclaimer non leggibile: $error');
+    }
     if (mounted) {
-      setState(() => _disclaimerAccepted = accepted == 'true');
+      setState(() => _disclaimerAccepted = accepted);
     }
   }
 
@@ -324,16 +374,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _loadData({bool force = false}) {
+  Future<void> _loadData({bool force = false}) async {
+    if (!mounted) return;
+    final Future<List<WalletRecord>> future;
+    try {
+      future = widget.walletRepository.loadWallets();
+    } on StorageLockedException {
+      // PERCHÉ (auto-lock): quando il timer scatta le chiavi vengono rimosse
+      // dalla RAM → "vault bloccato" NON è un errore di lettura.
+      _applyLockedState();
+      return;
+    }
     setState(() {
-      _walletsFuture = widget.walletRepository.loadWallets();
+      _walletsFuture = future;
     });
-    return _walletsFuture.then((wallets) {
+    try {
+      final wallets = await future;
       // PERCHÉ: la cache evita rifetch a ogni navigazione; force solo su
       // apertura/pull/invio/import.
       _lastWallets = wallets;
+      _vaultLocked = false;
       _fetchBalances(wallets, force: force);
       // PERCHÉ: wallet 100% locale — nessun sync con backend.
+    } on StorageLockedException {
+      // Race: il timer è scattato tra la chiamata e la risoluzione.
+      _applyLockedState();
+    } catch (_) {
+      // Errore vero: resta nel FutureBuilder (homeErrorLoading), nulla da
+      // propagare al chiamante.
+    }
+  }
+
+  /// Stato "vault bloccato" (auto-lock web).
+  ///
+  /// PERCHÉ: mantiene la lista già nota (i metadati dei wallet sono dati
+  /// pubblici) e mostra il banner di sblocco, invece di svuotare la home e
+  /// mostrare "impossibile leggere il wallet".
+  void _applyLockedState() {
+    if (!mounted) return;
+    setState(() {
+      _vaultLocked = true;
+      _walletsFuture = Future.value(_lastWallets ?? const <WalletRecord>[]);
     });
   }
 
@@ -357,27 +438,53 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final snap = BalanceCache.snapshotOf(w.publicAddress);
         if (snap != null) {
           _balances[w.publicAddress] = snap.balanceSats.toDouble();
+          _waitingBalances[w.publicAddress] = snap.blockedCoinbaseSats;
         }
       }
     });
   }
 
-  /// Carica (o riusa in cache) lo snapshot di un singolo wallet, branchando
-  /// sul tipo: watch-only → fetch da xpub (nessun seed); hot → decrypt seed →
-  /// fetchWalletSnapshot. PERCHÉ (P1): un watch-only non deve MAI passare da
-  /// decryptSeed (niente chiavi private in memoria).
+  /// Carica (o riusa in cache) lo snapshot di un singolo wallet.
+  ///
+  /// // PERCHÉ (26/10): se il wallet ha l'xpub, saldo e storico si leggono
+  /// // dall'xpub — nessuna chiave privata in memoria, nessuna password per
+  /// // guardare i propri soldi. La seed si decifra solo per i wallet creati
+  /// // prima dell'introduzione dell'xpub (qui vengono migrati una volta sola).
   Future<WalletSnapshot?> _loadSnapshotForWallet(
     WalletRecord w,
     BitcoinService bitcoinService,
   ) async {
-    if (w.kind == WalletKind.watchOnly) {
-      final xpub = w.accountXpub;
-      if (xpub == null || xpub.isEmpty) return null;
+    if (w.hasAccountXpub) {
       return BalanceCache.getOrFetch(
         w.publicAddress,
         () => bitcoinService.fetchWatchOnlySnapshot(
-          accountXpub: xpub,
+          accountXpub: w.accountXpub!,
           scriptType: WalletScriptType.fromDerivationPath(w.derivationPath),
+          includeHistory: false,
+        ),
+      );
+    }
+    if (w.kind == WalletKind.watchOnly) {
+      // Watch-only senza xpub valido: niente da leggere.
+      return null;
+    }
+    // Wallet hot senza xpub (creato prima del 26/10): migra e riusa lo stesso
+    // percorso. Se la decifratura non è possibile (vault web bloccato) si
+    // ricade sul percorso storico senza interrompere il caricamento.
+    WalletRecord readable = w;
+    try {
+      readable = await widget.walletRepository.backfillAccountXpub(w);
+    } catch (e) {
+      debugPrint('[LoopEngineer] xpub non ricavabile per ${w.walletId}: $e');
+    }
+    if (readable.hasAccountXpub) {
+      return BalanceCache.getOrFetch(
+        readable.publicAddress,
+        () => bitcoinService.fetchWatchOnlySnapshot(
+          accountXpub: readable.accountXpub!,
+          scriptType: WalletScriptType.fromDerivationPath(
+            readable.derivationPath,
+          ),
           includeHistory: false,
         ),
       );
@@ -406,6 +513,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _balances.clear();
+          _waitingBalances.clear();
           _loadingBalances = false;
         });
       }
@@ -462,11 +570,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       setState(() {
         _balances.clear();
+        _waitingBalances.clear();
         // PERCHÉ (F4): `_balances` contiene SOLO snapshot caricati con
         // successo (anche con saldo 0 REALE). L'assenza di una chiave =
         // fetch fallito → la UI mostra "non disponibile", mai 0 confermato.
         for (final entry in fresh.entries) {
           _balances[entry.key] = entry.value.balanceSats.toDouble();
+          _waitingBalances[entry.key] = entry.value.blockedCoinbaseSats;
         }
         _loadingBalances = false;
       });
@@ -533,6 +643,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!_disclaimerAccepted) {
       _showDisclaimerRequired(loc);
       return;
+    }
+    // PERCHÉ (auto-lock): creare un wallet richiede la chiave AES del vault; se
+    // è bloccata la scrittura fallirebbe. Chiediamo prima la password.
+    if (_vaultLocked) {
+      await _initWebVault();
+      if (!mounted || _vaultLocked) return;
     }
     if (!await _hasInternet()) {
       if (!mounted) return;
@@ -610,6 +726,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           bitcoinService: widget.bitcoinService,
           cryptoService: widget.cryptoService,
           deviceService: widget.deviceService,
+          // PERCHÉ (leva 4): senza il nodo «Incassa» offrirebbe solo on-chain.
+          lightningService: widget.lightningService,
         ),
       ),
     );
@@ -655,6 +773,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // i fondi reali, non 0).
       await _loadData(force: true);
     }
+  }
+
+  /// Apre la guida "Come funziona" (spiegazioni per principianti).
+  void _openGuide() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const GuideScreen()),
+    );
   }
 
   /// Apre la pagina Impostazioni (sostituisce il vecchio menu overflow).
@@ -764,9 +889,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // PERCHÉ: lo swap firma on-chain (funding + refund) → solo wallet hot
     // (i watch-only non hanno il seed); QUALE usare lo sceglie l'utente
     // nella schermata swap (con controllo fondi prima di firmare).
-    final hot = wallets
-        .where((w) => w.kind != WalletKind.watchOnly)
-        .toList();
+    final hot = wallets.where((w) => w.kind != WalletKind.watchOnly).toList();
     if (hot.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1004,9 +1127,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ? LightningView(
                       lightningService: widget.lightningService!,
                       connectionStore: widget.lightningConnectionStore!,
-                      onOpenSwap: widget.swapService == null
-                          ? null
-                          : _openSwapScreen,
+                      onOpenSwap:
+                          widget.swapService == null ? null : _openSwapScreen,
                     )
                   : Stack(
                       children: [
@@ -1021,6 +1143,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               return ListView(
                                 padding:
                                     const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                                // PERCHÉ: con pochi wallet il contenuto sta
+                                // nello schermo → senza questa physics il
+                                // pull-to-refresh non si attiva (nessun
+                                // overscroll).
+                                physics:
+                                    const AlwaysScrollableScrollPhysics(),
                                 children: [
                                   if (!_disclaimerAccepted)
                                     GlassContainer(
@@ -1068,6 +1196,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     ),
                                   if (!_disclaimerAccepted)
                                     const SizedBox(height: 16),
+                                  // PERCHÉ (auto-lock): con il vault bloccato le
+                                  // chiavi non sono in RAM → la lista è solo
+                                  // illeggibile, NON persa. Il banner spiega lo
+                                  // stato e offre lo sblocco senza far pensare
+                                  // a un errore o a un primo avvio.
+                                  if (_vaultLocked) ...[
+                                    GlassContainer(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.lock_outline,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  loc.homeVaultLocked,
+                                                  style: textTheme.titleMedium,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(loc.homeVaultLockedBody),
+                                          const SizedBox(height: 12),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: FilledButton.icon(
+                                              onPressed: () => _initWebVault(),
+                                              icon: const Icon(
+                                                Icons.lock_open,
+                                                size: 18,
+                                              ),
+                                              label: Text(loc.appLockUnlock),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
                                   if (!_selectionMode) ...[
                                     const SizedBox(height: 20),
                                     // ── Bilancio totale ──
@@ -1076,6 +1250,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       _TotalBalanceCard(
                                         wallets: wallets,
                                         balances: _balances,
+                                        waitingBalances: _waitingBalances,
                                         isLoading: _loadingBalances,
                                         errorCode: _loadErrorCode,
                                       ),
@@ -1106,6 +1281,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                         ),
                                       ),
                                     )
+                                  else if (_vaultLocked && wallets.isEmpty)
+                                    // PERCHÉ: vault bloccato e lista vuota →
+                                    // niente CTA "crea il tuo primo wallet"
+                                    // (sarebbe un falso primo avvio). Il banner
+                                    // in alto spiega già lo stato.
+                                    const SizedBox.shrink()
                                   else if (wallets.isEmpty)
                                     EmptyStateWidget(
                                       icon:
@@ -1116,6 +1297,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       onAction: _createWallet,
                                       secondaryLabel: loc.homeImportWallet,
                                       onSecondaryAction: _importWalletFlow,
+                                      // PERCHÉ (26/10): primo avvio = zero
+                                      // wallet. È l'unico momento in cui un
+                                      // principiante ha il tempo (e il dubbio)
+                                      // per leggere "come funziona".
+                                      tertiaryLabel: loc.guideTitle,
+                                      onTertiaryAction: _openGuide,
                                     )
                                   else
                                     Column(
@@ -1289,7 +1476,11 @@ class _WalletCard extends StatelessWidget {
       button: true,
       label: AppLocalizations.of(context).homeWalletSemantics(
         balance != null
-            ? '${(balance! / 100000000).toStringAsFixed(8)} BTC'
+            ? formatBalanceValue(
+                BalanceDisplay.instance.unitFor(wallet.walletId),
+                balance!.round(),
+                fiatCents: FiatPrice.instance.centsFor(balance!.round()),
+              )
             : AppLocalizations.of(context).balanceUnavailable,
         name,
       ),
@@ -1384,13 +1575,18 @@ class _WalletCard extends StatelessWidget {
                                       ),
                                     )
                                   : balance != null
-                                      ? Text(
-                                          '${(balance! / 100000000).toStringAsFixed(8)} BTC',
+                                      ? TappableBalance(
+                                          // PERCHÉ: la chiave è il walletId →
+                                          // ogni wallet ha la sua unità, e la
+                                          // stessa scelta vale nel dettaglio.
+                                          unitKey: wallet.walletId,
+                                          sats: balance!.round(),
                                           style: TextStyle(
                                             color: colorScheme.primary,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13,
                                           ),
+                                          maxWidth: 110,
                                         )
                                       : Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -1481,12 +1677,16 @@ class _TotalBalanceCard extends StatelessWidget {
   const _TotalBalanceCard({
     required this.wallets,
     required this.balances,
+    required this.waitingBalances,
     required this.isLoading,
     this.errorCode,
   });
 
   final List<WalletRecord> wallets;
   final Map<String, double> balances;
+
+  /// Satoshi in periodo di attesa per wallet (fuori dal totale spendibile).
+  final Map<String, int> waitingBalances;
   final bool isLoading;
 
   /// Codice d'errore del caricamento (rate limit / servizio giù / rete…).
@@ -1515,6 +1715,18 @@ class _TotalBalanceCard extends StatelessWidget {
         break;
       }
       total += balance;
+    }
+
+    // PERCHÉ (A3): i sat in periodo di attesa non entrano nel totale qui
+    // sopra — si sommano a parte per poterli MOSTRARE (mai far sparire fondi).
+    // Se anche un solo wallet ha il saldo mancante, anche questo totale è
+    // parziale: non va mostrato come vero.
+    var waitingTotal = 0;
+    if (!hasMissing) {
+      for (final w in wallets) {
+        if (!w.displayInHomeScreen) continue;
+        waitingTotal += waitingBalances[w.publicAddress] ?? 0;
+      }
     }
     // PERCHÉ: motivo del "—" (rate limit / servizio giù / rete) quando c'è
     // un errore di caricamento noto; altrimenti resta il messaggio generico.
@@ -1590,13 +1802,33 @@ class _TotalBalanceCard extends StatelessWidget {
           else
             Column(
               children: [
-                Text(
-                  '${(total / 100000000).toStringAsFixed(8)} BTC',
+                // PERCHÉ (29/10): il totale si tocca come il singolo wallet
+                // (BlueWallet) per passare fra XBT, sats e dollari. Chiave
+                // dedicata: il totale non è un wallet, quindi ha una sua
+                // unità indipendente da quelle dei wallet.
+                TappableBalance(
+                  unitKey: BalanceDisplay.totalKey,
+                  sats: total.round(),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                // PERCHÉ (A3): riga dedicata per i fondi in periodo di attesa
+                // (payout di mining): fuori dal totale, ma non nascosti.
+                if (waitingTotal > 0) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    loc.walletBalanceWaiting(
+                      '${(waitingTotal / 100000000).toStringAsFixed(8)} BTC',
+                    ),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.tertiary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ],
             ),
         ],

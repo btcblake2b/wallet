@@ -32,6 +32,7 @@ class BridgeConfig {
     this.clnTlsInsecure = false,
     this.uiPort = 0,
     this.uiToken,
+    this.crossChainUrl,
   }) : allowedClientPubkeys = allowedClientPubkeys ?? [];
 
   /// Relay Nostr (wss://) su cui il bridge ascolta le richieste.
@@ -80,6 +81,13 @@ class BridgeConfig {
   /// Token richiesto dalla pagina web (null = accesso libero).
   final String? uiToken;
 
+  /// URL del bridge cross-chain (es. `https://bridge.kilombino.com`).
+  ///
+  /// // PERCHÉ (P9): abilita `cross_chain_check`/`cross_chain_pay` — pagare una
+  /// // fattura della chain SHA-256 con i fondi della nostra. Assente = metodi
+  /// // non annunciati e non eseguibili (nessun fallback implicito).
+  final String? crossChainUrl;
+
   /// True se il nodo è raggiunto in https.
   bool get usesTls => clnUrl.startsWith('https://');
 
@@ -109,6 +117,7 @@ class BridgeConfig {
         clnTlsInsecure: clnTlsInsecure,
         uiPort: uiPort,
         uiToken: uiToken,
+        crossChainUrl: crossChainUrl,
       );
 
   static final RegExp _hex64 = RegExp(r'^[0-9a-fA-F]{64}$');
@@ -170,7 +179,25 @@ class BridgeConfig {
       clnTlsInsecure: json['clnTlsInsecure'] == true,
       uiPort: (json['uiPort'] as num?)?.toInt() ?? 0,
       uiToken: json['uiToken']?.toString(),
+      crossChainUrl: _nonEmptyUrl(json['crossChainUrl']),
     );
+  }
+
+  /// // PERCHÉ: un URL di bridge malformato deve fallire qui, non al primo
+  /// // pagamento — e `http://` è ammesso solo verso host locali (dev).
+  static String? _nonEmptyUrl(Object? raw) {
+    final value = raw?.toString().trim() ?? '';
+    if (value.isEmpty) return null;
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      throw FormatException('crossChainUrl non valido: $value');
+    }
+    if (uri.scheme != 'https' && !_isLocalRelay(value)) {
+      throw const FormatException(
+        'crossChainUrl non sicuro: usare https:// (http:// solo su localhost)',
+      );
+    }
+    return value;
   }
 
   /// Riscrive il file di config (usato da --genuri per salvare l'allowlist).
@@ -205,6 +232,7 @@ class BridgeConfig {
         if (clnTlsInsecure) 'clnTlsInsecure': true,
         if (uiPort > 0) 'uiPort': uiPort,
         if (uiToken != null) 'uiToken': uiToken,
+        if ((crossChainUrl ?? '').isNotEmpty) 'crossChainUrl': crossChainUrl,
       };
 
   /// Legge la rune dal file (formato RTL `LIGHTNING_RUNE="…"` o valore raw).

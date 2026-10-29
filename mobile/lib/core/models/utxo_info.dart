@@ -18,6 +18,11 @@ class UtxoInfo {
   // PERCHÉ (S7): 0 = pending, 1+ = confermata, null = sconosciuta (API fallita).
   // Campo OPZIONALE → zero breaking su costruttori/copyWith esistenti.
   final int? confirmations;
+  // PERCHÉ (A3): i payout di mining arrivano da una coinbase e la rete non ne
+  // propaga la spesa prima della maturity di relay (6.480 blocchi sulla mainnet
+  // blake2b): il coin selection deve poterli riconoscere ed escludere.
+  // Default `false` → zero breaking sui costruttori esistenti.
+  final bool isCoinbase;
 
   UtxoInfo({
     required this.txid,
@@ -29,6 +34,7 @@ class UtxoInfo {
     this.ownerAddress,
     this.ownerDerivationPath,
     this.confirmations,
+    this.isCoinbase = false,
   });
 
   UtxoInfo copyWith({
@@ -38,6 +44,7 @@ class UtxoInfo {
     String? ownerAddress,
     String? ownerDerivationPath,
     int? confirmations,
+    bool? isCoinbase,
   }) {
     return UtxoInfo(
       txid: txid,
@@ -49,6 +56,7 @@ class UtxoInfo {
       ownerAddress: ownerAddress ?? this.ownerAddress,
       ownerDerivationPath: ownerDerivationPath ?? this.ownerDerivationPath,
       confirmations: confirmations ?? this.confirmations,
+      isCoinbase: isCoinbase ?? this.isCoinbase,
     );
   }
 }

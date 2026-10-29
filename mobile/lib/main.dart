@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app/app.dart';
+import 'core/services/balance_display.dart';
 import 'core/services/explorer_mirrors.dart';
+import 'core/services/fiat_price.dart';
+import 'core/services/fx_rates.dart';
 import 'core/services/info_hints.dart';
 import 'core/services/locale_provider.dart';
 import 'core/services/security_service.dart';
@@ -141,6 +144,19 @@ Future<void> main() async {
   // PERCHÉ (pallini info): la preferenza va letta PRIMA di runApp, così nessuna
   // schermata mostra un "flash" di pallini se l'utente li ha disattivati.
   await InfoHints.instance.init();
+
+  // PERCHÉ (controvalore, leva 5): senza prezzo letto qui la card del saldo
+  // comparirebbe per un istante senza la riga "≈ … $" e poi la aggiungerebbe.
+  await FiatPrice.instance.init();
+
+  // PERCHÉ (valute): i cambi USDT→EUR/GBP/… sono persistiti, così dopo un
+  // riavvio il controvalore nella valuta scelta compare subito anche offline.
+  await FxRates.instance.init();
+
+  // PERCHÉ (unità del saldo): la scelta XBT/sats/$ è per wallet e persistita;
+  // va letta prima di runApp, altrimenti i saldi comparirebbero in BTC e poi
+  // cambierebbero unità al primo frame.
+  await BalanceDisplay.instance.init();
 
   runApp(
     BtcBlake2bWalletApp(

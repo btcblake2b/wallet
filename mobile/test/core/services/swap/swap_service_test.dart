@@ -199,6 +199,55 @@ void main() {
     });
   });
 
+  group('providerInfo (swap_info)', () {
+    test('limiti e liquidità del provider collegato', () async {
+      await connectProvider();
+      fake.responder = (method, params) => {'result': infoResult()};
+      final info = await service.providerInfo();
+      expect(info!.minSendableSats, 4750);
+      expect(info.maxSendableSats, 23750);
+      expect(info.availableSats, 24000);
+      expect(info.check, isNull);
+    });
+
+    test('con invoice: verdetto sul destinatario', () async {
+      await connectProvider();
+      fake.responder = (method, params) {
+        expect(params['invoice'], 'lnbc50u1ptest');
+        return {
+          'result': infoResult(
+            check: {
+              'valid': true,
+              'reachable': true,
+              'amount_sats': 5000,
+              'payee': '03${'22' * 31}',
+            },
+          ),
+        };
+      };
+      final info = await service.providerInfo(invoice: 'lnbc50u1ptest');
+      expect(info!.check!.reachable, true);
+      expect(info.check!.amountSats, 5000);
+    });
+
+    test('provider senza swap_info (NOT_IMPLEMENTED) → null, nessun errore',
+        () async {
+      await connectProvider();
+      fake.responder = (method, params) => {
+            'error': {
+              'code': 'NOT_IMPLEMENTED',
+              'message': 'metodo swap non supportato.',
+            },
+          };
+      expect(await service.providerInfo(invoice: 'lnbc50u1ptest'), isNull);
+    });
+
+    test('senza provider collegato → null (nessuna richiesta)', () async {
+      expect(await service.providerInfo(), isNull);
+      expect(fake.receivedRequests, isEmpty);
+    });
+  });
+
   group('startSwap', () {
     test('quote → create → sessione persistita nel registro', () async {
       fake.responder = (method, params) {

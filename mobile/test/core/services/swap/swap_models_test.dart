@@ -123,6 +123,73 @@ void main() {
     });
   });
 
+  group('SwapProviderInfo (swap_info)', () {
+    Map<String, dynamic> infoJson() => {
+          'network': 'blake2b',
+          'min_sats': 5000,
+          'max_sats': 250000,
+          'min_sendable_sats': 4750,
+          'max_sendable_sats': 23750,
+          'available_sats': 24000,
+          'spendable_sats': 30000,
+          'outstanding_sats': 0,
+          'service_fee_sats': 0,
+          'claim_fee_sats': 250,
+          'active_sessions': 0,
+        };
+
+    test('fromJson: limiti e liquidità (senza verdetto)', () {
+      final info = SwapProviderInfo.fromJson(infoJson())!;
+      expect(info.minSendableSats, 4750);
+      expect(info.maxSendableSats, 23750);
+      expect(info.availableSats, 24000);
+      expect(info.canSend(5000), true);
+      expect(info.canSend(4749), false);
+      expect(info.canSend(23751), false);
+      expect(info.check, isNull);
+    });
+
+    test('fromJson: verdetto sul destinatario raggiungibile', () {
+      final json = infoJson()
+        ..['check'] = {
+          'valid': true,
+          'reachable': true,
+          'payee': '03${'22' * 31}',
+          'amount_sats': 5000,
+          'funding_amount_sats': 5250,
+        };
+      final info = SwapProviderInfo.fromJson(json)!;
+      expect(info.check!.valid, true);
+      expect(info.check!.reachable, true);
+      expect(info.check!.amountSats, 5000);
+      expect(info.check!.payee, '03${'22' * 31}');
+      expect(info.check!.reason, isNull);
+    });
+
+    test('fromJson: destinatario non raggiungibile porta il motivo', () {
+      final json = infoJson()
+        ..['check'] = {
+          'valid': true,
+          'reachable': false,
+          'reason': 'PEER_UNREACHABLE',
+          'message': 'nessuna rotta trovata verso il destinatario.',
+        };
+      final info = SwapProviderInfo.fromJson(json)!;
+      expect(info.check!.reachable, false);
+      expect(info.check!.reason, 'PEER_UNREACHABLE');
+      expect(info.check!.message, contains('rotta'));
+    });
+
+    test('fromJson: payload senza limiti → null (provider incompatibile)', () {
+      expect(SwapProviderInfo.fromJson({'network': 'blake2b'}), isNull);
+    });
+
+    test('check: payload senza verdetto resta null', () {
+      expect(SwapPeerCheck.fromJson(null), isNull);
+      expect(SwapPeerCheck.fromJson('nope'), isNull);
+    });
+  });
+
   group('SwapStatus', () {
     test('fromJson: stato, funding e errore', () {
       final status = SwapStatus.fromJson({
@@ -203,6 +270,37 @@ void main() {
       expect(updated.state, SwapClientState.completed);
       expect(updated.swapId, session.swapId);
       expect(updated.refundKeyIndex, session.refundKeyIndex);
+    });
+
+    test('amountSats: round-trip, fallback da amount_msat, null sui vecchi', () {
+      // Sessione "nuova": importo invoice noto.
+      final withSats = SwapSession.fromJson({
+        ...buildSession().toJson(),
+        'amount_sats': 5001,
+      });
+      expect(withSats.amountSats, 5001);
+      expect(SwapSession.fromJson(withSats.toJson()).amountSats, 5001);
+
+      // Blob del PROVIDER: porta `amount_msat` → arrotondato per eccesso.
+      final fromBlob = SwapSession.fromJson({
+        ...buildSession().toJson(),
+        'amount_msat': 5001000,
+      });
+      expect(fromBlob.amountSats, 5001);
+
+      // Sessioni salvate prima del 07/10/2026: nessun importo → UI degrada.
+      expect(buildSession().amountSats, isNull);
+    });
+
+    test('copyWith conserva l importo invoice', () {
+      final session = SwapSession.fromJson({
+        ...buildSession().toJson(),
+        'amount_sats': 5001,
+      });
+      expect(
+        session.copyWith(state: SwapClientState.paid).amountSats,
+        5001,
+      );
     });
   });
 

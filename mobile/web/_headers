@@ -19,7 +19,16 @@
   # un `wss:` generico sarebbe un canale di esfiltrazione per un XSS attivo.
   # ⚠️ La lista DEVE restare allineata a `kWebAllowedSwapRelays` in
   # mobile/lib/core/services/swap/swap_web_policy.dart.
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://mempool.guide https://mempool.kilombino.com https://mempool.maveth.ca wss://relay.primal.net; worker-src 'self' blob:; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+    # PERCHÉ (29/10): + neoxa.exchange per il prezzo automatico XBT/USDC
+    # (FiatPrice.refreshFromNeoxex, on-demand, mai polling) e + api.coinbase.com
+    # per il cambio USDT→EUR/GBP/CHF/JPY/CAD del controvalore (FxRates.refresh,
+    # on-demand quando si sceglie una valuta diversa da USD). Allowlist esplicita:
+    # le richieste partono SOLO se l'utente attiva il controvalore/la valuta.
+    # PERCHÉ (27/10) `base-uri 'self'` e non `'none'`: Flutter Web usa
+    # `<base href="/">` e con `'none'` il browser lo BLOCCA (verificato
+    # sull'app online: violazione CSP in console). `'self'` impedisce comunque
+    # di puntare il base a un'origine esterna — che è l'attacco da fermare.
+    Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://mempool.guide https://mempool.kilombino.com https://mempool.maveth.ca https://neoxa.exchange https://api.coinbase.com wss://relay.primal.net; worker-src 'self' blob:; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

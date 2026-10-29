@@ -105,6 +105,10 @@ class AppLocalizationsFi extends AppLocalizations {
   String get homeVaultLocked => 'Holvi lukittu';
 
   @override
+  String get homeVaultLockedBody =>
+      'Avaimet poistettiin muistista käyttämättömyyden jälkeen. Syötä salasanasi nähdäksesi saldot ja allekirjoittaaksesi uudelleen. Lompakkosi ovat turvassa: mitään ei poistettu.';
+
+  @override
   String get settingsTitle => 'Asetukset';
 
   @override
@@ -161,6 +165,127 @@ class AppLocalizationsFi extends AppLocalizations {
       'Näytä pienet info-napit, jotka selittävät jokaisen toiminnon';
 
   @override
+  String get guideTitle => 'Näin se toimii';
+
+  @override
+  String get guideEntryDesc =>
+      'Selkeitä selityksiä: lompakko, seed, maksut, Lightning.';
+
+  @override
+  String get guideIntro =>
+      'Tämä opas selittää yksinkertaisin sanoin, mitä sovellus tekee ja miksi. Kaikkea ei tarvitse lukea: avaa vain kiinnostava luku. Jokainen selitys löytyy myös ⓘ-merkistä vastaavan kentän vierestä.';
+
+  @override
+  String get guideOpenFailed => 'Selainta ei voitu avata.';
+
+  @override
+  String get guideHintsNote =>
+      'Voit piilottaa ⓘ-merkit kohdasta Asetukset → Käyttöliittymä.';
+
+  @override
+  String get guideSectionBasics => 'Perusteet';
+
+  @override
+  String get guideSectionSecurity => 'Turvallisuus ja varmuuskopio';
+
+  @override
+  String get guideSectionTransactions => 'Lähettäminen ja vastaanotto';
+
+  @override
+  String get guideSectionLightning => 'Lightning';
+
+  @override
+  String get guideSectionAdvanced => 'Syventävät aiheet';
+
+  @override
+  String get guideFullGuideTitle => 'Koko opas verkossa';
+
+  @override
+  String get guideFullGuideDesc =>
+      'Sivustolla on pitkä versio, esimerkit ja UKK.';
+
+  @override
+  String get guideFullGuideOpen => 'Avaa opas';
+
+  @override
+  String get infoWhatIsWalletTitle => 'Mikä lompakko on (ja mitä ei)';
+
+  @override
+  String get infoWhatIsWalletBody =>
+      'Lompakko ei \'sisällä\' kolikoita: se sisältää yksityiset avaimet, joilla käytät lohkoketjuun kirjattuja kolikoita. Saldon laskevat solmut ketjusta, ja sovellus rakentaa sen osoitteistasi. Siksi avainten menetys = varojen menetys, mutta puhelimen menetys palautuu 12 sanan lauseella.';
+
+  @override
+  String get infoSelfCustodyTitle =>
+      'Itsesäilytys: kukaan ei voi jäädyttää varojasi';
+
+  @override
+  String get infoSelfCustodyBody =>
+      'Tässä sinä olet pankki: ei tiliä, ei kirjautumista, ei yritystä, joka pitää rahasi. Etu: kukaan ei voi jäädyttää saldoasi. Riski: kukaan ei voi palauttaa salasanaasi tai palautuslausettasi. Se on suvereniteetin hinta.';
+
+  @override
+  String get infoSeedPhraseTitle => 'Palautuslause (12 sanaa)';
+
+  @override
+  String get infoSeedPhraseBody =>
+      'Se on yksityisen avaimesi luettava muoto: noista sanoista rakentuvat KAIKKI osoitteesi ja siten varasi. Kirjoita se paperille, älä koskaan kuvaan, chatteihin, pilveen tai salasanasovellukseen. Sen lukija voi tyhjentää lompakon; sen kadottaja on menettänyt kaiken.';
+
+  @override
+  String get infoAppEncryptionTitle => 'Paikallinen salaus ja salasana';
+
+  @override
+  String get infoAppEncryptionBody =>
+      'Lause pysyy laitteellasi AES-GCM-salattuna: avain johdetaan salasanastasi (tai sormenjäljestä, joka avaa järjestelmän avainsäilön). Mikään palvelin ei saa salasanaa. Jos unohdat sen, \'palautusta\' ei ole: vain palautuslause auttaa.';
+
+  @override
+  String get infoNetworkBlake2bTitle => 'Verkko: bitcoin-blake2b';
+
+  @override
+  String get infoNetworkBlake2bBody =>
+      'Käytät bitcoin-blake2b-verkkoa, joka on KOKEELLINEN ja jolla on omat sääntönsä (BLAKE2b-tiiviste, ei konsensustason replay-suojaa): se ei ole Bitcoin, eivätkä ketjut jaa kolikoita. Kohtele tätä lompakkoa testiympäristönä, älä lopullisena säästöpaikkana.';
+
+  @override
+  String get infoBalanceUtxoTitle => 'Miten saldo muodostuu';
+
+  @override
+  String get infoBalanceUtxoBody =>
+      'Ei ole \'tiliä\', jossa on luku: saldo on UTXOjen summa eli vastaanotetut ja vielä käyttämättömät kolikot, kuin setelit taskussa. Siirto kuluttaa UTXOja ja luo uusia (maksu + vaihtoraha). Itsellesi lähettäminen ei muuta saldoa.';
+
+  @override
+  String get infoConfirmationsTitle => 'Vahvistukset';
+
+  @override
+  String get infoConfirmationsBody =>
+      'Tuore maksu on \'odottava\' (mempool): se on olemassa, mutta yksikään lohko ei ole kirjannut sitä. Jokainen seuraava lohko lisää vahvistuksen; kolmesta vahvistuksesta maksu on melko vakaa. Odottaessa summa voi näkyä käyttämättömänä: se ei ole kadonnut, se odottaa.';
+
+  @override
+  String get infoFeeConceptTitle => 'Miksi maksat siirtomaksun';
+
+  @override
+  String get infoFeeConceptBody =>
+      'Maksu on palkkio sille, joka lisää siirtosi lohkoon. Maksat koosta (sat/vB), et summasta: 1 000 tai 1 000 000 sat maksaa saman. Kun mempool on täynnä, hinnat nousevat; maksu EI ole sovelluksen maksu: se menee louhijoille.';
+
+  @override
+  String get infoChangeAddressTitle => 'Vaihtoraha';
+
+  @override
+  String get infoChangeAddressBody =>
+      'Kuin kaupassa: jos käytetyt UTXOt ovat arvoltaan suurempia kuin summa, erotus palaa sinulle saman lompakon UUTEEN osoitteeseen (\'vaihtoraha\'). Kaksi lähtöä siirrossa on normaalia: maksu vastaanottajalle ja vaihtoraha sinulle.';
+
+  @override
+  String get infoLightningVsOnchainTitle => 'On-chain ja Lightning';
+
+  @override
+  String get infoLightningVsOnchainBody =>
+      'On-chain: jokainen liike on julkinen siirto ketjussa — turvallinen ja todennettava, mutta hitaampi ja maksullinen per siirto. Lightning: välittömät, lähes ilmaiset maksut \'kanavissa\', jotka avataan yhdellä on-chain-siirrolla. Kanavan avaus siirtää varat ketjulta kanavaan; sulkeminen palauttaa ne ketjulle.';
+
+  @override
+  String get infoPrivacyBasicsTitle => 'Yksityisyys: kuka näkee mitä';
+
+  @override
+  String get infoPrivacyBasicsBody =>
+      'Jokainen \'Vastaanota\' luo uuden osoitteen: saman osoitteen käyttö yhdistää maksusi. Sovelluksessa ei ole tiliä eikä telemetriaa, ja ketjutiedot haetaan julkisesta API:sta (mempool.guide), joka näkee IP-osoitteesi. Parhaaseen yksityisyyteen: VPN tai oma solmu, äläkä koskaan julkaise xpub-avaintasi.';
+
+  @override
   String get infoCoinControlTitle => 'Coin control (UTXO-valinta)';
 
   @override
@@ -186,7 +311,7 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get infoBatchSendBody =>
-      'Yhdessä transaktiossa voit maksaa jopa 5 osoitteelle, jakamalla maksun sen sijaan, että maksaisit sen joka siirrolle erikseen. Kaikki vastaanottajat näytetään vahvistuksessa ennen allekirjoitusta.';
+      'Yhdessä transaktiossa voit maksaa jopa 20 osoitteelle, jakamalla maksun sen sijaan, että maksaisit sen joka siirrolle erikseen. Kaikki vastaanottajat näytetään vahvistuksessa ennen allekirjoitusta.';
 
   @override
   String get infoBumpFeeTitle => 'Lisää maksua (RBF)';
@@ -572,6 +697,24 @@ class AppLocalizationsFi extends AppLocalizations {
   String get walletDetailUtxoClearSelection => 'Tyhjennä valinta';
 
   @override
+  String get walletUtxoWaitingBadge => 'Odotusaika';
+
+  @override
+  String walletUtxoWaitingBlocks(int count) {
+    return '$count lohkoa vapautumiseen';
+  }
+
+  @override
+  String walletUtxoWaitingHint(int blocks) {
+    return 'Verkko välittää louhintamaksut (coinbase) vasta $blocks lohkon jälkeen: niitä ei voi vielä käyttää.';
+  }
+
+  @override
+  String walletBalanceWaiting(String amount) {
+    return 'Odotusaika: $amount';
+  }
+
+  @override
   String get walletDetailPasswordSeedReason =>
       'Vahvista salasana nähdäksesi siemenlauseen';
 
@@ -723,7 +866,7 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String legalPrivacyContent(String holder, String email) {
-    return 'Tämä tietosuojakäytäntö on väliaikainen, ja se korvataan lopullisella versiolla, joka julkaistaan virallisella verkkosivustolla, kun se on saatavilla.\n\n1) LAITTEELLA OLEVAT TIEDOT. Sovellus ei vaadi tiliä eikä tallenna henkilötietoja tekijän palvelimille. Salattu siemenlause (AES-256-GCM), asetukset ja suostumukset pysyvät VAIN laitteellasi.\n\n2) KOLMANSILLE OSAPUOLILLE TOIMINTAA VARTEN LÄHETETTÄVÄT TIEDOT. Saldon ja maksujen näyttämiseksi sovellus kysyy julkisia kolmansien osapuolten rajapintoja:\n• mempool.guide (lohkoketjuselain).\n• Jos mempool.guide ei ole saatavilla, sovellus voi kysyä kahta yhteisön ylläpitämää Esplora-yhteensopivaa peilipalvelinta (mempool.kilombino.com, mempool.maveth.ca). Tämän voi poistaa käytöstä asetuksissa.\nJokaisessa pyynnössä lähetetään IP-osoitteesi ja kysytyn lompakon julkinen osoite. Yksityisiä avaimia ja siemenlausetta EI KOSKAAN lähetetä.\n\n3) EI SEURANTAA. Ei analytiikkaa, ei mainontaa, ei evästeitä sovelluksen sisällä.\n\n4) OIKEUDET (GDPR, 13-14 art.). Sinulla on oikeus saada pääsy tietoihin sekä oikeus oikaisuun, poistamiseen ja vastustamiseen kirjoittamalla rekisterinpitäjälle: $holder — $email. Koska emme säilytä henkilötietoja, nämä oikeudet ovat suurelta osin jo taattuja sillä, että tiedot pysyvät laitteellasi.';
+    return 'Tämä tietosuojakäytäntö on väliaikainen, ja se korvataan lopullisella versiolla, joka julkaistaan virallisella verkkosivustolla, kun se on saatavilla.\n\n1) LAITTEELLA OLEVAT TIEDOT. Sovellus ei vaadi tiliä eikä tallenna henkilötietoja tekijän palvelimille. Salattu siemenlause (AES-256-GCM), asetukset ja suostumukset pysyvät VAIN laitteellasi.\n\n2) KOLMANSILLE OSAPUOLILLE TOIMINTAA VARTEN LÄHETETTÄVÄT TIEDOT. Saldon ja maksujen näyttämiseksi sovellus kysyy julkisia kolmansien osapuolten rajapintoja:\n• mempool.guide (lohkoketjuselain).\n• Jos mempool.guide ei ole saatavilla, sovellus voi kysyä kahta yhteisön ylläpitämää Esplora-yhteensopivaa peilipalvelinta (mempool.kilombino.com, mempool.maveth.ca). Tämän voi poistaa käytöstä asetuksissa.\n• Jos otat automaattisen hinnan käyttöön asetuksissa, sovellus lukee viimeisimmän XBT/USDC-kaupan pyynnöstä osoitteesta neoxa.exchange (NeoXEX). Jos valuuttasi ei ole USD, sovellus lukee myös USDT-kurssit osoitteesta api.coinbase.com. Molemmat voi poistaa käytöstä asetuksissa.\nJokaisessa pyynnössä lähetetään IP-osoitteesi ja kysytyn lompakon julkinen osoite. Yksityisiä avaimia ja siemenlausetta EI KOSKAAN lähetetä.\n\n3) EI SEURANTAA. Ei analytiikkaa, ei mainontaa, ei evästeitä sovelluksen sisällä.\n\n4) OIKEUDET (GDPR, 13-14 art.). Sinulla on oikeus saada pääsy tietoihin sekä oikeus oikaisuun, poistamiseen ja vastustamiseen kirjoittamalla rekisterinpitäjälle: $holder — $email. Koska emme säilytä henkilötietoja, nämä oikeudet ovat suurelta osin jo taattuja sillä, että tiedot pysyvät laitteellasi.';
   }
 
   @override
@@ -793,6 +936,10 @@ class AppLocalizationsFi extends AppLocalizations {
       'Skannattu koodi ei ole kelvollinen Lightning-lasku.';
 
   @override
+  String get scanQrInvalidMnemonic =>
+      'Skannattu koodi ei ole kelvollinen BIP39-muistilause.';
+
+  @override
   String get scanQrTorch => 'Vaihda taskulamppua';
 
   @override
@@ -837,6 +984,9 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get importScreenHint => 'sana1 sana2 sana3 ...';
+
+  @override
+  String get importScreenScanSeed => 'Skannaa siemenlauseen QR-koodi';
 
   @override
   String get importScreenValidateEmpty => 'Anna muistilause.';
@@ -1348,6 +1498,27 @@ class AppLocalizationsFi extends AppLocalizations {
   String get lightningOpenChannelNodeId => 'Node ID (pubkey)';
 
   @override
+  String get lightningCoinControlTitle => 'Coin control (valinnainen)';
+
+  @override
+  String get lightningCoinControlHint =>
+      'Valitse, mitkä solmun on-chain-outputit rahoittavat kanavan. Ilman valintaa solmu päättää itse.';
+
+  @override
+  String get lightningCoinControlNoneSelected =>
+      'Ei valintaa: solmu valitsee automaattisesti.';
+
+  @override
+  String get lightningCoinControlSelectedTotal => 'Valittu yhteensä';
+
+  @override
+  String get lightningCoinControlUnconfirmed => 'vahvistamaton';
+
+  @override
+  String get lightningCoinControlUnavailable =>
+      'Output-luettelo ei saatavilla: solmu valitsee automaattisesti.';
+
+  @override
   String get lightningOpenChannelHost => 'Isäntä (valinnainen, ip:portti)';
 
   @override
@@ -1546,6 +1717,159 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get lightningChannelFundingTxid => 'Funding-txid';
+
+  @override
+  String get lightningSplice => 'Muuta kanavan kokoa';
+
+  @override
+  String get lightningSpliceTitle => 'Muuta kanavan kokoa sulkematta sitä';
+
+  @override
+  String get lightningSpliceIn => 'Lisää varoja';
+
+  @override
+  String get lightningSpliceOut => 'Nosta varoja';
+
+  @override
+  String get lightningSpliceAmountLabel => 'Määrä (sat)';
+
+  @override
+  String get lightningSpliceEstimate => 'Arvioi ketjun siirtomaksu';
+
+  @override
+  String lightningSpliceFee(int fee) {
+    final intl.NumberFormat feeNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String feeString = feeNumberFormat.format(fee);
+
+    return 'Ketjun siirtomaksu: noin $feeString sat';
+  }
+
+  @override
+  String get lightningSpliceFeeUnavailable =>
+      'Solmu ei antanut arviota siirtomaksusta';
+
+  @override
+  String get lightningSpliceConfirm =>
+      'Muutetaanko kanavan kokoa nyt? Kanava pysyy verkossa ja lohkoketjuun lähetetään yksi siirto.';
+
+  @override
+  String get lightningSpliceDone => 'Kanavan koko muutettu';
+
+  @override
+  String get lightningSpliceInvalidAmount => 'Anna nollaa suurempi summa';
+
+  @override
+  String get lightningSpliceUnavailable =>
+      'Koon muuttaminen on mahdollista vain käytettävissä olevilla kanavilla, kun vertaisnoodi on verkossa.';
+
+  @override
+  String get lightningSpliceChannelFailed =>
+      'Solmu hylkäsi splicen: vertaisnoodi ei ehkä tue sitä (vaatii CLN:n, jossa on yhtenäiset allekirjoitukset). Kanava pysyy ennallaan.';
+
+  @override
+  String get lightningSpliceBridgeOutdated =>
+      'Tämän solmun bridge ei vielä tarjoa koon muuttamista: päivitä bridge palvelimella.';
+
+  @override
+  String lightningSpliceOnchainAvailable(String sats) {
+    return 'Solmun on-chain-varat: $sats sat';
+  }
+
+  @override
+  String get lightningSpliceInsufficientOnchain =>
+      'Solmun on-chain-varat eivät riitä tähän summaan: lataa solmun lompakkoon varoja (Talleta) ja yritä uudelleen.';
+
+  @override
+  String get lightningReceiveModeInvoice => 'Kertaluonteinen lasku';
+
+  @override
+  String get lightningReceiveModeOffer => 'Uudelleenkäytettävä koodi';
+
+  @override
+  String get lightningOfferTitle => 'Uudelleenkäytettävä maksukoodi';
+
+  @override
+  String get lightningOfferReusableHint =>
+      'Jaa tämä koodi: kuka tahansa voi maksaa sen ja valita summan, jos jätit sen avoimeksi. Se ei vanhene kuten lasku.';
+
+  @override
+  String get lightningOfferAmountOptional => 'Summa (sat) — valinnainen';
+
+  @override
+  String get lightningOfferAmountLabel => 'Summa (sat)';
+
+  @override
+  String get lightningOfferAmountRequired =>
+      'Anna summa tämän tarjouksen maksamiseksi';
+
+  @override
+  String lightningOfferFixedAmount(String sats) {
+    return 'Tarjouksen summa: $sats sat';
+  }
+
+  @override
+  String get lightningOfferDefaultDescription => 'Maksu';
+
+  @override
+  String get lightningPayOffer => 'Maksa tarjous';
+
+  @override
+  String get lightningCrossChainEntry => 'Maksa BTC-lasku (SHA-256)';
+
+  @override
+  String get lightningCrossChainTitle => 'Ketjujen välinen maksu';
+
+  @override
+  String get lightningCrossChainHint =>
+      'Maksaa SHA-256-ketjun Lightning-laskun BLAKE2b-varoillasi ulkoisen, varoja säilyttämättömän sillan kautta. Silta saa rahat vasta maksettuaan laskun; muuten maksu palaa sinulle.';
+
+  @override
+  String get lightningCrossChainCheck => 'Tarkista kustannus';
+
+  @override
+  String lightningCrossChainCost(String sats) {
+    return 'Maksat: $sats sat';
+  }
+
+  @override
+  String lightningCrossChainInvoiceAmount(String sats) {
+    return 'Laskun summa: $sats sat';
+  }
+
+  @override
+  String lightningCrossChainRate(String rate) {
+    return 'Vaihtokurssi: 1 XBT = $rate BTC';
+  }
+
+  @override
+  String lightningCrossChainSpread(String percent) {
+    return 'Bridgen kate: $percent %';
+  }
+
+  @override
+  String lightningCrossChainWait(int seconds) {
+    return 'Arvioitu odotus: noin $seconds s';
+  }
+
+  @override
+  String get lightningCrossChainPay => 'Maksa sillan kautta';
+
+  @override
+  String get lightningCrossChainConfirmTitle => 'Maksetaanko sillan kautta?';
+
+  @override
+  String lightningCrossChainConfirmBody(String sats) {
+    return 'Maksat $sats sat tässä ketjussa. Varat pysyvät lukittuina, kunnes silta maksaa kohdelaskun; jos se ei onnistu, maksu palaa sinulle.';
+  }
+
+  @override
+  String get lightningCrossChainDone => 'Maksu valmis';
+
+  @override
+  String lightningCrossChainState(String state) {
+    return 'Sillan tila: $state';
+  }
 
   @override
   String get lightningNodeManagement => 'Solmun hallinta';
@@ -1948,6 +2272,14 @@ class AppLocalizationsFi extends AppLocalizations {
   String get lightningPeeringGateLink => 'Yhteensopivuusmatriisi';
 
   @override
+  String get lightningPeeringGateNewTitle =>
+      'Peering rajoitettu uuden protokollan julkaisuihin';
+
+  @override
+  String get lightningPeeringGateNewBody =>
+      'Tämä solmu käyttää lopullisia feature-bittejä (option_blake2b 512, option_unified_sigs 514): solmut, joita ei ole päivitetty — julkaisu .4 ja vanhemmat — eivät voi muodostaa yhteyttä. Kyse on verkon valinnasta, ei sovelluksen tai bridgen ongelmasta. Vertaisten on päivitettävä julkaisuun .5 tai uudempaan.';
+
+  @override
   String lightningPeersRegisteredOnly(int count) {
     return '$count rekisteröityä vertaista, ei yhtään yhdistetty';
   }
@@ -1980,6 +2312,40 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get lightningSwapProviderDisconnect => 'Katkaise yhteys';
+
+  @override
+  String get lightningSwapProviderDefaultLabel => 'btcblake2b-solmu (suositus)';
+
+  @override
+  String get lightningSwapProviderChecking => 'Tarkistetaan oletussolmua...';
+
+  @override
+  String get lightningSwapProviderReachable => 'Oletussolmu tavoitettavissa';
+
+  @override
+  String get lightningSwapProviderDown => 'Oletussolmu ei vastaa juuri nyt.';
+
+  @override
+  String lightningSwapProviderSendLimit(String min, String max) {
+    return 'Voit nyt lähettää $min-$max sat';
+  }
+
+  @override
+  String lightningSwapProviderLiquidity(String amount) {
+    return 'Käytettävissä oleva likviditeetti nyt: $amount sat';
+  }
+
+  @override
+  String get lightningSwapPeerCheck => 'Tarkista vastaanottaja';
+
+  @override
+  String lightningSwapPeerReachable(String amount) {
+    return 'Vastaanottaja tavoitettavissa: maksettavaa $amount sat';
+  }
+
+  @override
+  String get lightningSwapErrorPeerUnreachable =>
+      'Vastaanottaja ei ole tavoitettavissa palveluntarjoajan kautta: reittiä hänen solmuunsa ei ole. Tarkista lasku tai yritä myöhemmin uudelleen.';
 
   @override
   String get lightningSwapInvoiceHint => 'Lightning-lasku (lnbc...)';
@@ -2066,6 +2432,48 @@ class AppLocalizationsFi extends AppLocalizations {
   String get lightningSwapBlobCopied => 'Palautus-blob kopioitu';
 
   @override
+  String get lightningSwapHistoryTitle => 'Swappien historia';
+
+  @override
+  String get lightningSwapHistoryEmpty =>
+      'Ei vielä swappeja: palveluntarjoajan kautta tehdyt maksut näkyvät täällä.';
+
+  @override
+  String get lightningSwapDetailTitle => 'Swapin tiedot';
+
+  @override
+  String get lightningSwapDetailCreated => 'Luotu';
+
+  @override
+  String get lightningSwapDetailSummary => 'Yhteenveto';
+
+  @override
+  String get lightningSwapDetailProtocol => 'Protokollatiedot';
+
+  @override
+  String get lightningSwapDetailSwapId => 'Swap-tunnus';
+
+  @override
+  String get lightningSwapDetailInvoice => 'Lasku';
+
+  @override
+  String get lightningSwapDetailPaymentHash => 'Payment hash';
+
+  @override
+  String get lightningSwapDetailProvider => 'Palveluntarjoaja';
+
+  @override
+  String get lightningSwapDetailFundingTx => 'Rahoitustapahtuma';
+
+  @override
+  String get lightningSwapOpenInExplorer => 'Avaa lohkoselaimessa';
+
+  @override
+  String lightningSwapRefundSent(String txid) {
+    return 'Hyvitys lähetetty: $txid';
+  }
+
+  @override
   String get lightningSwapClaimTxid => 'Claim-txid';
 
   @override
@@ -2104,6 +2512,12 @@ class AppLocalizationsFi extends AppLocalizations {
   }
 
   @override
+  String lightningSwapInsufficientFundsWaiting(
+      String needed, String available, String waiting) {
+    return 'Riittämättömät varat: tarvitaan $needed sat, saatavilla $available sat ($waiting sat odotusajassa)';
+  }
+
+  @override
   String get lightningSwapCancel => 'Peruuta swap';
 
   @override
@@ -2120,6 +2534,50 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get lightningSwapErrorRelayNotAllowed =>
       'Tämä tarjoaja käyttää relettä, jota verkkoversio ei tavoita. Käytä mobiiliversiota puhelimessa maksaaksesi tämän tarjoajan kanssa.';
+
+  @override
+  String get lightningSwapErrorPaymentFailed =>
+      'Palveluntarjoaja ei pystynyt maksamaan tätä laskua. Varasi ovat edelleen HTLC:ssä: voit palauttaa ne hyvityksellä (katso lohko alta).';
+
+  @override
+  String get lightningSwapErrorProviderUnavailable =>
+      'Palveluntarjoaja ei voi maksaa juuri nyt (ei reittiä tai likviditeetti ei riitä). Yritä myöhemmin uudelleen.';
+
+  @override
+  String get lightningSwapErrorRateLimited =>
+      'Palveluntarjoaja on tilapäisesti täydessä kapasiteetissa. Yritä myöhemmin uudelleen.';
+
+  @override
+  String get lightningSwapErrorDuplicateSwap =>
+      'Tätä laskua on jo käytetty toisessa swapissa.';
+
+  @override
+  String get lightningSwapErrorQuoteExpired =>
+      'Tarjous vanheni. Aloita swappi uudelleen.';
+
+  @override
+  String get lightningSwapErrorInvoiceInvalid =>
+      'Palveluntarjoaja hylkäsi tämän laskun: se ei ole kelvollinen.';
+
+  @override
+  String get lightningSwapErrorInvoiceExpired =>
+      'Tämä lasku on vanhentunut. Pyydä uusi.';
+
+  @override
+  String get lightningSwapErrorAmountOutOfRange =>
+      'Palveluntarjoaja ei hyväksy tätä summaa (sallitun vaihteluvälin ulkopuolella).';
+
+  @override
+  String get lightningSwapErrorFundingTimeout =>
+      'Rahoitusta ei vahvistettu ajoissa: swappi vanheni ilman maksua.';
+
+  @override
+  String get lightningSwapErrorTooLate =>
+      'Maksu peruutettiin, koska se oli liian lähellä aikarajaa. Varasi voidaan palauttaa.';
+
+  @override
+  String get lightningSwapRefundHint =>
+      'Nämä varat ovat edelleen sinun: hyvitys avautuu automaattisesti aikarajalla, vaikka palveluntarjoaja katoaisi.';
 
   @override
   String get lightningSwapCancelTitle => 'Peruutetaanko tämä swappi?';
@@ -2158,4 +2616,364 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get lightningChannelPeerAddress => 'Vertaisen osoite';
+
+  @override
+  String get lightningSpliceNodeTooOld =>
+      'Kanavan koon muuttaminen vaatii solmun versiosta .6 alkaen (suositus .9). Tämä solmu on vanhempi, joten toiminto on piilotettu. Päivitä solmu ottaaksesi sen käyttöön.';
+
+  @override
+  String get lightningSpliceNodeOutdated =>
+      'Tämä solmu on versiota .9 vanhempi: päivitykset .8:sta lähtien sulkevat splice-haavoittuvuuden, jonka kautta solmu voi menettää kanavan varat. Koon muuttaminen toimii edelleen, mutta päivitä .9:ään heti kun voit.';
+
+  @override
+  String get lightningDiscoveryTitle => 'Löydä vertaiset ja likviditeetti';
+
+  @override
+  String get lightningDiscoveryBody =>
+      'Tässä verkossa ei ole keskitettyä luetteloa. Nämä ovat aktiivisia lähteitä, joihin yhteisö listaa solmuja, kanavia ja saapuvaa likviditeettiä.';
+
+  @override
+  String get lightningDiscoveryNetworkTitle => 'Verkkoselain (Paperclip)';
+
+  @override
+  String get lightningDiscoveryNetworkBody =>
+      'Julkiset solmut, kanavat ja ilmoitettu kapasiteetti.';
+
+  @override
+  String get lightningDiscoveryLspTitle =>
+      'Saapuva likviditeetti (Paperclip LSP)';
+
+  @override
+  String get lightningDiscoveryLspBody =>
+      'Kanava solmuusi, maksettuna ketjussa XBT:nä.';
+
+  @override
+  String get lightningDiscoveryNodexTitle => 'Nodex - kanavat ja maksut';
+
+  @override
+  String get lightningDiscoveryNodexBody =>
+      'Kanavaselain, jossa maksut molempiin suuntiin ja uptime.';
+
+  @override
+  String get lightningDiscoverySwapTitle => 'Lightning Fork Swap';
+
+  @override
+  String get lightningDiscoverySwapBody =>
+      'Ei-säilyttävä swap Lightningin ja ketjun välillä likviditeetin siirtämiseen.';
+
+  @override
+  String get lightningDiscoveryWatchtowerTitle =>
+      'Watchtowerit (vain lnd-solmut)';
+
+  @override
+  String get lightningDiscoveryWatchtowerBody =>
+      'Watchtower valvoo ketjua, kun solmusi on offline, ja rankaisee vertaista, joka julkaisee vanhan tilan. Käytä useampaa kuin yhtä: lnd vaatii wtclient.active=true ja Torin. CLN-solmut puhuvat sen sijaan BOLT 13:ta (TEOS), jota sovellus ei vielä määritä. Lisää ne komennolla lncli wtclient add <uri>.';
+
+  @override
+  String get lightningDiscoveryOpenFailed => 'Selain ei avannut linkkiä.';
+
+  @override
+  String get lightningInboundMissingTitle => 'Et voi vielä vastaanottaa';
+
+  @override
+  String get lightningInboundMissingBody =>
+      'Tässä solmussa ei ole saapuvaa likviditeettiä: toisen solmun on avattava kanava siihen ennen kuin kukaan voi maksaa sinulle. Siihen asti jaetut laskut eivät ole maksettavissa.';
+
+  @override
+  String get lightningInboundMissingCta => 'Hanki saapuvaa likviditeettiä';
+
+  @override
+  String get lightningInboundMissingRefresh => 'Tarkista uudelleen';
+
+  @override
+  String get webVaultNoticeTitle => 'Käytät selainversiota';
+
+  @override
+  String get webVaultNoticeBody =>
+      'Täällä salattu seed tallennetaan selaimeen (localStorage, varmuuskopio IndexedDB:ssä) ja avain on kääritty salasanallasi. Holvi lukittuu 10 minuutin käyttämättömyyden jälkeen ja kun sivu piilotetaan, mutta sivulla holvin ollessa auki suoritettava koodi voi lukea avaimet: selain ei voi suojautua siltä. Käytä todellisille summille Android-sovellusta, jossa avaimet pysyvät järjestelmän avainnipussa.';
+
+  @override
+  String get webVaultNoticeDownload => 'Hanki Android-sovellus';
+
+  @override
+  String get splashStartupError => 'Sovelluksen käynnistys epäonnistui';
+
+  @override
+  String get splashRetry => 'Yritä uudelleen';
+
+  @override
+  String webVaultOriginOfficial(Object origin) {
+    return 'Vahvistettu verkkotunnus: $origin';
+  }
+
+  @override
+  String webVaultOriginDev(Object origin) {
+    return 'Paikallinen testiympäristö: $origin';
+  }
+
+  @override
+  String webVaultOriginUnofficial(Object origin) {
+    return 'VAROITUS: tämä ei ole virallinen verkkotunnus. Olet osoitteessa $origin — oikea on app.btcblake2b.org. Älä syötä tänne seediä tai salasanaa.';
+  }
+
+  @override
+  String get receiveNeedsBackupTitle => 'Varmuuskopioi seed ensin';
+
+  @override
+  String get receiveNeedsBackupBody =>
+      'Selaimessa salattu seed on tämän sivuston tallennustilassa: PWA-päivitys tai «tyhjennä sivuston tiedot» poistaa sen, ja nyt jaettu osoite vastaanottaisi varoja, joita et voisi enää käyttää. Vahvista seedin varmuuskopio (tai siirrä lompakko sovellukseen) ennen vastaanottamista.';
+
+  @override
+  String get receiveNeedsBackupAction => 'Tee varmuuskopio';
+
+  @override
+  String get merchantChargeTitle => 'Periytä maksu';
+
+  @override
+  String get merchantChargeAmount => 'Summa';
+
+  @override
+  String get merchantChargeAmountInvalid =>
+      'Anna summa, joka on suurempi kuin nolla.';
+
+  @override
+  String get merchantChargeLabel => 'Kuvaus (valinnainen)';
+
+  @override
+  String get merchantChargeModeLightning => 'Lightning';
+
+  @override
+  String get merchantChargeModeOnchain => 'On-chain';
+
+  @override
+  String get merchantChargeLightningHint =>
+      'Asiakas maksaa Lightning-laskun: hyvitetään heti, kun solmu vastaanottaa sen.';
+
+  @override
+  String get merchantChargeOnchainHint =>
+      'Asiakas lukee QR-koodin: summa on jo mukana, hän vain vahvistaa.';
+
+  @override
+  String get merchantChargeLightningUnavailable =>
+      'Lightning-solmua ei ole yhdistetty: toistaiseksi voit periä on-chain. Yhdistä solmu Lightning-välilehdeltä hyväksyäksesi myös Lightning-maksuja.';
+
+  @override
+  String get merchantChargeCreate => 'Luo maksupyyntö';
+
+  @override
+  String get merchantChargeInvoiceTitle => 'Lightning-lasku';
+
+  @override
+  String get merchantChargeUriTitle => 'Bitcoin-URI (BIP21)';
+
+  @override
+  String get merchantChargeWaiting => 'Odotetaan maksua…';
+
+  @override
+  String get merchantChargePaid => 'Maksu vastaanotettu';
+
+  @override
+  String get merchantChargeNew => 'Uusi pyyntö';
+
+  @override
+  String get merchantConvertTitle => 'Vaihda BTC:hen';
+
+  @override
+  String get merchantConvertIntro =>
+      'XBT elää bitcoin-blake2b-verkossa, joka on erillinen Bitcoinista: XBT:n vaihtaminen BTC:hen (tai päinvastoin) on ketjujen välinen swap. Tämä sovellus ei tee sitä eikä voi tehdä sitä: ei vaihtoa, ei säilytystä. Vaihto tapahtuu kolmannen osapuolen ei-säilyttävissä palveluissa, jotka sinä valitset.';
+
+  @override
+  String get merchantConvertAddressTitle => 'XBT-osoitteesi';
+
+  @override
+  String get merchantConvertAddressBody =>
+      'Kopioi lompakon osoite, jota haluat käyttää siellä, tai vastaanota ensin XBT täällä ja vaihda myöhemmin. Älä koskaan lähetä varoja palveluun, joka pyytää seediäsi.';
+
+  @override
+  String get merchantConvertUnnamedWallet => 'Lompakko';
+
+  @override
+  String get merchantConvertPaperclipTitle => 'Paperclip Bridge (beta)';
+
+  @override
+  String get merchantConvertPaperclipBody =>
+      'Yhteisön ei-säilyttävä bridge: se vastaanottaa vain, kun lasku on todella maksettu. Beta, ei kolmannen osapuolen auditoima.';
+
+  @override
+  String get merchantConvertForkTitle => 'Lightning Fork Swap';
+
+  @override
+  String get merchantConvertForkBody =>
+      'Yhteisön swap, jonka on-chain-lahjoitukset käytetään vain sen omaan likviditeettiin. Tarkista kulut ja rajat ennen lähettämistä.';
+
+  @override
+  String get merchantConvertWarningTitle => 'Ennen vaihtoa';
+
+  @override
+  String get merchantConvertWarningBody =>
+      '1) Vertaa saatavaa ja lähetettävää summaa: pienissä summisa kulut voivat syödä erotuksen. 2) Swap ei ole peruutettavissa: tarkista osoite ja ketju. 3) Emme vastaanota, säilytä emmekä takaa mitään: jos palvelu jumittuu, vain se palvelu voi vastata. 4) Todellisilla summilla tee ensin pieni kokeilu.';
+
+  @override
+  String get merchantConvertOpen => 'Vaihda';
+
+  @override
+  String get fiatPriceShow => 'Näytä arvo dollareina';
+
+  @override
+  String get fiatPriceNotSet =>
+      'Hintaa ei ole asetettu: lisää se nähdäksesi arvon';
+
+  @override
+  String fiatPriceCurrent(Object cents) {
+    return '1 XBT = $cents';
+  }
+
+  @override
+  String get fiatPriceSet => 'Aseta XBT:n hinta';
+
+  @override
+  String get fiatPriceSetDesc =>
+      'Vastineen hinta: syötä se itse tai anna sovelluksen lukea se NeoXEX:stä.';
+
+  @override
+  String get fiatPriceDialogBody =>
+      'Syötä 1 XBT:n hinta USD:nä. Voit halutessasi ottaa automaattisen hinnan käyttöön asetuksissa: sovellus lukee tällöin viimeisimmän XBT/USDC-kaupan pyynnöstä NeoXEX:stä (ja valitun valuutan USDT-kurssin). Näytetty arvo on viitteellinen, ei noteeraus.';
+
+  @override
+  String get fiatPriceFieldLabel => '1 XBT:n hinta';
+
+  @override
+  String get fiatPriceSave => 'Tallenna';
+
+  @override
+  String get fiatPriceInvalid =>
+      'Virheellinen hinta: nollaa suurempi luku, enintään 2 desimaalia.';
+
+  @override
+  String get fiatPriceManualNote => 'oma hinta, ei markkinanoteeraus';
+
+  @override
+  String get fiatPriceMarketNote => 'markkinahinta, viimeisin NeoXEX-kauppa';
+
+  @override
+  String get fiatPriceCurrency => 'Vastineen valuutta';
+
+  @override
+  String get fiatPriceCurrencyDesc => 'Muunnettu USDT-kurssilla';
+
+  @override
+  String get fiatPriceFxFailed =>
+      'Valuuttakurssi ei saatavilla: yhdistä internetiin ja yritä uudelleen.';
+
+  @override
+  String get fiatPriceAuto => 'Hae hinta NeoXEX:stä';
+
+  @override
+  String get fiatPriceAutoDesc =>
+      'Lukee viimeisimmän XBT/USDC-kaupan pyynnöstä. Ei pollausta, ei taustakyselyjä.';
+
+  @override
+  String get fiatPriceAutoUpdated => 'Hinta päivitetty NeoXEX:stä';
+
+  @override
+  String get fiatPriceAutoFailed => 'NeoXEX ei vastaa: edellinen hinta säilyy.';
+
+  @override
+  String get balanceChangeUnitHint =>
+      'Napauta vaihtaaksesi saldon XBT:n, satoshien ja dollarien välillä';
+
+  @override
+  String get psbtSpendTitle => 'Käytä PSBT:llä';
+
+  @override
+  String get psbtSpendIntro =>
+      'Watch-only-lompakko ei voi allekirjoittaa. Luo PSBT täällä, allekirjoita se laitteella jossa siemen on ja lähetä se sieltä.';
+
+  @override
+  String get psbtCreate => 'Luo PSBT';
+
+  @override
+  String get psbtCreating => 'Luodaan PSBT…';
+
+  @override
+  String psbtDraftReady(Object change, Object fee) {
+    return 'PSBT valmis · maksu $fee sat · vaihtoraha $change sat';
+  }
+
+  @override
+  String get psbtQrTitle => 'Skannaa tämä PSBT';
+
+  @override
+  String psbtQrFrames(Object count) {
+    return '$count kehystä — pidä kamera paikallaan, kun QR pyörii';
+  }
+
+  @override
+  String get psbtCopyBase64 => 'Kopioi PSBT (base64)';
+
+  @override
+  String get psbtSignTitle => 'Allekirjoita PSBT';
+
+  @override
+  String get psbtSignIntro =>
+      'Liitä tai skannaa toisella laitteella luotu PSBT. Tarkista vastaanottajat ja maksu ennen allekirjoitusta.';
+
+  @override
+  String get psbtPasteLabel => 'PSBT (base64)';
+
+  @override
+  String get psbtScan => 'Skannaa QR';
+
+  @override
+  String get psbtReviewTitle => 'Yhteenveto';
+
+  @override
+  String psbtReviewFee(Object fee) {
+    return 'Maksu: $fee sat';
+  }
+
+  @override
+  String psbtReviewInputs(Object count) {
+    return 'Syötteet: $count';
+  }
+
+  @override
+  String psbtReviewOutputs(Object count) {
+    return 'Vastaanottajat: $count';
+  }
+
+  @override
+  String get psbtSign => 'Allekirjoita';
+
+  @override
+  String get psbtSignedTitle => 'Allekirjoitettu PSBT';
+
+  @override
+  String get psbtBroadcast => 'Lähetä';
+
+  @override
+  String get psbtBroadcasting => 'Lähetetään…';
+
+  @override
+  String psbtBroadcastDone(Object txid) {
+    return 'Lähetetty: $txid';
+  }
+
+  @override
+  String get psbtInvalid => 'PSBT ei ole kelvollinen';
+
+  @override
+  String get psbtNoFrames => 'PSBT-kehystä ei tunnistettu';
+
+  @override
+  String psbtScanProgress(Object received, Object total) {
+    return 'Kehyksiä luettu: $received/$total';
+  }
+
+  @override
+  String get psbtSigning => 'Allekirjoitetaan…';
+
+  @override
+  String get psbtNeedsSeed =>
+      'Tässä lompakossa ei ole siementä: allekirjoita laitteella, jossa se on.';
 }

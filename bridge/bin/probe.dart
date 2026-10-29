@@ -135,6 +135,20 @@ Future<void> main(List<String> args) async {
         'description': 'probe-test',
       }
     ),
+    // PERCHÉ (26/10): l'offerta SENZA importo è il caso che l'app usa con
+    // «codice riutilizzabile» e che falliva (`missing required parameter:
+    // amount` lato CLN). La sonda lo copre end-to-end.
+    // PERCHÉ (26/10): descrizione univoca — CLN riusa l'offerta esistente con
+    // la stessa descrizione e, se è stata disabilitata, risponde "Already
+    // exists, but isn't active" facendo fallire una sonda altrimenti sana.
+    (
+      Protocol.nwcRequestKind,
+      'make_offer',
+      <String, dynamic>{
+        'description':
+            'probe-offer-any-${DateTime.now().millisecondsSinceEpoch}',
+      }
+    ),
   ];
   for (final probe in probes) {
     final method = probe.$2;
@@ -238,6 +252,33 @@ Future<void> main(List<String> args) async {
   } catch (e) {
     stdout.writeln('get_network_node/query_routes → FALLITO: $e');
     failures++;
+  }
+
+  // PERCHÉ (26/10): pagare un'OFFERTA BOLT12 è il percorso che richiede
+  // `fetchinvoice` lato bridge (un'offerta non è pagabile: `pay` vuole una
+  // invoice `lni1…`). È una scrittura che spende fondi → si esegue SOLO se
+  // richiesta esplicitamente con `--pay-offer=<lno1…>` (e importo opzionale
+  // con `--pay-amount-msat=<n>`).
+  final payOffer = opts['pay-offer'] ?? '';
+  if (payOffer.isNotEmpty) {
+    final amountMsat = int.tryParse(opts['pay-amount-msat'] ?? '');
+    try {
+      final res = await request(
+        Protocol.nwcRequestKind,
+        'pay_invoice',
+        <String, dynamic>{
+          'invoice': payOffer,
+          if (amountMsat != null && amountMsat > 0) 'amount_msat': amountMsat,
+        },
+      );
+      stdout.writeln('pay_offer → ${jsonEncode(res)}');
+      if (res['error'] != null) {
+        failures++;
+      }
+    } catch (e) {
+      stdout.writeln('pay_offer → FALLITO: $e');
+      failures++;
+    }
   }
 
   await transport.close();

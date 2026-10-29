@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module 5 — Lightning and swaps | Learn</title>
+  <meta name="description" content="How Lightning works in plain words: channels, capacity, inbound liquidity, reserves, force closes, routing fees, running your own node and paying invoices with an atomic swap.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/learn-lightning.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/download.html">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/node.html">Node</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
+        <li><a href="/it/learn.html" lang="it" aria-label="Switch to Italian">IT</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <p class="crumbs"><a href="/learn.html">Learn</a> › Module 5 of 6</p>
+    <h1>Lightning and swaps</h1>
+    <p class="lead">On-chain payments are public, final and relatively slow. Lightning moves payments off the chain — inside a shared deposit called a channel.</p>
+
+    <nav class="toc" aria-label="In this module">
+      <strong>In this module</strong>
+      <ol>
+        <li><a href="#why">Why Lightning exists</a></li>
+        <li><a href="#channel">Anatomy of a channel</a></li>
+        <li><a href="#terms">The words you will meet</a></li>
+        <li><a href="#closing">Closing: cooperative vs forced</a></li>
+        <li><a href="#node">Your node, and the app as a remote control</a></li>
+        <li><a href="#swaps">Swaps: paying without a node</a></li>
+        <li><a href="#start">Starting small</a></li>
+        <li><a href="#check">Check yourself</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="why">1. Why Lightning exists</h2>
+    <p>Every on-chain payment occupies space in a block, must be confirmed, and costs a fee. That is fine for buying a house, and terrible for buying coffee.</p>
+    <p>Lightning pays for the coffee by moving value <strong>off-chain</strong> between two parties who already locked funds together, and only settles on-chain when they decide to close. Result: instant confirmation, fees of a few satoshis, and privacy by default (payments are not published).</p>
+    <p>The trade: you depend on a counterparty staying reachable and on having liquidity where you need it.</p>
+
+    <h2 id="channel">2. Anatomy of a channel</h2>
+    <p>A channel is a shared deposit between you and another node:</p>
+    <ol>
+      <li><strong>Open</strong> — one on-chain transaction locks funds in a contract that requires both signatures (2-of-2). From the chain's point of view the money now belongs to "the channel".</li>
+      <li><strong>Use</strong> — you and the peer exchange signed updates. Each payment shifts the split: some of it is yours, some is theirs. Updates are instant and do not touch the chain.</li>
+      <li><strong>Close</strong> — the final split goes back on-chain, to your address and theirs, in a normal transaction.</li>
+    </ol>
+    <p>Think of it as a tab at a bar: you deposit an amount, you both keep signing the current balance, and at the end you settle once.</p>
+
+    <h2 id="terms">3. The words you will meet</h2>
+    <ul>
+      <li><strong>Capacity</strong> — the total locked in the channel. It never grows by itself; you can add funds with a splice or a new channel.</li>
+      <li><strong>Your side / peer's side</strong> — how the capacity is split right now. Your side grows when people pay you and shrinks when you pay.</li>
+      <li><strong>Inbound liquidity</strong> — how much the peer can send <em>to you</em>. A freshly opened channel has <strong>none</strong>: you can pay, not receive. To receive you need someone to open toward you, or a service that sells inbound liquidity.</li>
+      <li><strong>Reserve</strong> — a slice of your side that stays locked as a safety margin, so a misbehaving peer cannot empty the channel.</li>
+      <li><strong>Force close</strong> — broadcasting the last signed state unilaterally. Irreversible, slower and more expensive than a cooperative close.</li>
+      <li><strong>To-self delay</strong> — after a force close, your money is encumbered for a number of blocks before you can spend it. That delay is what punishes cheating.</li>
+      <li><strong>HTLC</strong> — a conditional payment: "these funds move if the receiver reveals the secret before the deadline". It is how a payment hops across several channels safely.</li>
+      <li><strong>Routing fees</strong> — what a node earns for forwarding someone else's payment through its channel. If you route payments, this is income, not a cost.</li>
+      <li><strong>Peers</strong> — the nodes you are directly connected to. Connectivity is not the same as having a channel.</li>
+    </ul>
+
+    <h2 id="closing">4. Closing: cooperative vs forced</h2>
+    <p>A <strong>cooperative close</strong> is the normal path: both sides agree, one on-chain transaction, funds available after it confirms, fees shared.</p>
+    <p>A <strong>force close</strong> is the emergency exit: you stop waiting for the peer and publish the last state yourself. You pay the on-chain fee alone, wait for confirmations, and then wait again for the to-self delay. Use it when the peer is offline or hostile — not as a shortcut.</p>
+
+    <h2 id="node">5. Your node, and the app as a remote control</h2>
+    <p>Lightning needs a node that stays online: a small computer or a VPS running the Lightning daemon. This app can connect to <em>your</em> node and act as its remote control, keeping the keys on your machine.</p>
+    <ul>
+      <li>Channels, payments, invoices, peers and channel management are all driven from the app.</li>
+      <li>Your node's identity (pubkey) and funds stay yours; the connection is authenticated, not a cloud account.</li>
+      <li>Node installer, checksum verification and the threat model: <a href="/node.html">node page</a>.</li>
+    </ul>
+
+    <h2 id="swaps">6. Swaps: paying without a node</h2>
+    <p>If you do not run a node, you can still pay a Lightning invoice with an <strong>atomic swap</strong> through a provider:</p>
+    <ol>
+      <li>the provider pays the invoice immediately on Lightning;</li>
+      <li>you reimburse the provider on-chain;</li>
+      <li>an escrow contract with timelocks guarantees that either both legs execute or your funds come back — after the timeout.</li>
+    </ol>
+    <p>What to know before using it:</p>
+    <ul>
+      <li>it is <strong>experimental</strong> on this network and depends on the provider's liquidity;</li>
+      <li>you pay the swap fee on top of the on-chain fee;</li>
+      <li>if the provider disappears mid-way, you wait for the timelock to reclaim your funds — so never swap an amount you may need urgently;</li>
+      <li>an "atomic" guarantee protects you from losing the money, not from losing time.</li>
+    </ul>
+
+    <h2 id="start">7. Starting small</h2>
+    <ol>
+      <li>Open a channel with a modest amount — enough to pay for a few weeks of tests, small enough to lose without drama.</li>
+      <li>Leave funds on-chain for fees and for emergencies: an empty on-chain balance with an active channel is a bad place to be.</li>
+      <li>Pay something to yourself (another wallet, or an invoice you generated) to see confirmations, statuses and fees in the app.</li>
+      <li>Only then think about inbound liquidity, routing and bigger channels.</li>
+    </ol>
+    <div class="takeaway">
+      <strong>Takeaway</strong> — Lightning = instant payments inside channels opened with one on-chain transaction. Capacity is fixed, inbound liquidity decides whether you can receive, force closes cost time and money, and swaps let you pay invoices without a node — with a timelock as your safety net.
+    </div>
+
+    <h2 id="check">8. Check yourself</h2>
+    <ol>
+      <li>You open a channel with 100 000 sat. Can you immediately receive 5 000 sat over Lightning?</li>
+      <li>Why does a force close take longer than a cooperative one?</li>
+      <li>What does the escrow in a swap guarantee, and what does it not guarantee?</li>
+    </ol>
+
+    <nav class="chapter-nav" aria-label="Course navigation">
+      <a class="btn btn-ghost" href="/learn-privacy.html">← Module 4: Privacy</a>
+      <a class="btn btn-primary" href="/learn-app.html">Module 6: The app, screen by screen →</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/privacy.html">Privacy policy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

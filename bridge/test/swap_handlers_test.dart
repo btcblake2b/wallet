@@ -86,6 +86,30 @@ void main() {
     );
   });
 
+  test('swap_info: limiti e verdetto sul destinatario', () async {
+    final limits = await handlers.handle(
+      method: 'swap_info',
+      params: const {},
+      requestId: 'i-1',
+      clientPubkey: client,
+    );
+    expect(limits['min_sats'], 5000);
+    expect(limits['max_sats'], 250000);
+    expect(limits['max_sendable_sats'], isA<int>());
+    expect(limits.containsKey('check'), isFalse);
+
+    final checked = await handlers.handle(
+      method: 'swap_info',
+      params: {'invoice': SwapFixtures.bolt11},
+      requestId: 'i-2',
+      clientPubkey: client,
+    );
+    final verdict = checked['check']! as Map<String, dynamic>;
+    expect(verdict['valid'], true);
+    expect(verdict['reachable'], true);
+    expect(verdict['amount_sats'], 5000);
+  });
+
   test('swap_create: idempotente per request_id (una sola sessione)', () async {
     final q = await doQuote();
     final quoteId = q['quote_id'] as String;

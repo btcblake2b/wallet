@@ -51,9 +51,24 @@ class WalletRecord {
   /// [WalletKind.watchOnly] (solo xpub, sola lettura).
   final WalletKind kind;
 
-  /// Chiave pubblica estesa di account (es. `xpub…`, BIP44/49/84) — presente
-  /// SOLO per [WalletKind.watchOnly]. Mai una chiave privata.
+  /// Chiave pubblica estesa di account (es. `xpub…`, BIP44/49/84).
+  ///
+  /// // PERCHÉ (26/10): per i wallet HOT questo campo è la chiave che rende
+  /// // «leggere senza chiavi private». Saldata alla creazione/import (o
+  /// // ricavata una volta dal seed per i wallet più vecchi), permette di
+  /// // derivare indirizzi, saldo e storico senza decifrare la seed: le chiavi
+  /// // servono solo per firmare, mostrare la seed e fare il backup.
+  /// Mai una chiave privata (deriva sempre da `neutered()`).
   final String? accountXpub;
+
+  /// True se il wallet può essere letto senza seed (xpub disponibile).
+  ///
+  /// // PERCHÉ: una sola condizione condivisa da Home, Detail, Indirizzi e
+  /// // Ricevi — se ognuna controllasse `null`/stringa vuota per conto suo, un
+  /// // wallet con xpub vuoto ricadrebbe nel percorso "decifra la seed" in
+  /// // alcuni punti e non in altri.
+  bool get hasAccountXpub =>
+      accountXpub != null && accountXpub!.trim().isNotEmpty;
 
   /// Whether the user has confirmed they've saved the seed phrase
   /// (e.g. written it down or stored it securely).

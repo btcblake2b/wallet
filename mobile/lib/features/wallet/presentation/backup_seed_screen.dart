@@ -9,8 +9,10 @@ import '../../../core/services/security_service.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/info_dot.dart';
 import '../../../core/widgets/password_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/info_hints_l10n.dart';
 import 'widgets/seed_phrase_verifier.dart';
 
 enum _BackupStep { intro, seed, verify, done }
@@ -202,6 +204,22 @@ class _BackupSeedScreenState extends State<BackupSeedScreen> {
         children: [
           Icon(Icons.visibility, size: 40, color: theme.colorScheme.primary),
           const SizedBox(height: 16),
+          // PERCHÉ (26/10): è il momento in cui la frase viene MOSTRATA — qui
+          // un principiante decide come trattarla (carta sì, foto no).
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  loc.infoSeedPhraseTitle,
+                  style: theme.textTheme.titleSmall,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const InfoDot(id: InfoHintId.seedPhrase),
+            ],
+          ),
+          const SizedBox(height: 12),
           // Griglia di 12 chip numerati per facilitare la lettura.
           Wrap(
             spacing: 8,

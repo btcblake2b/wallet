@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:bip39/bip39.dart' as bip39;
 import '../../../core/config/bitcoin_network_config.dart';
 import '../../../core/models/wallet_record.dart';
 import '../../../core/services/security_service.dart';
 import '../../../core/utils/connectivity.dart';
 import '../../../core/services/wallet_repository.dart';
+import '../../../core/utils/mnemonic_utils.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../l10n/app_localizations.dart';
-
-/// Lunghezze mnemoniche valide BIP39 (entropia 128-256 bit): 12/15/18/21/24
-/// parole. PERCHÉ: il package bip39 1.0.6 accetta queste lunghezze (entropia
-/// 16-32 byte) — il validator di import non deve restringere a 12.
-const _kBip39WordCounts = <int>[12, 15, 18, 21, 24];
+import 'scan_qr_screen.dart';
 
 /// Modalità di import dello schermo.
 /// PERCHÉ (P1 watch-only): seed phrase (wallet con chiavi) oppure xpub
@@ -65,6 +61,25 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
   // Uses platform-specific implementation from `core/utils/connectivity.dart`.
   Future<bool> _hasInternet() async => hasInternet();
 
+  /// Apre lo scanner QR e riporta la seed letta nel campo mnemonic.
+  /// PERCHÉ: chi importa un wallet spesso ha la seed su un QR (backup
+  /// cartaceo del vecchio wallet) — digitare 24 parole è error-prone.
+  Future<void> _scanSeedQr() async {
+    final scanned = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const ScanQrScreen(mode: ScanQrMode.mnemonic),
+      ),
+    );
+    if (scanned == null || !mounted) return;
+    setState(() {
+      _mnemonicController.text = scanned;
+      _errorMessage = null;
+    });
+    // PERCHÉ: feedback immediato — se il QR non torna valido (es. frase di
+    // un'altra rete) l'errore compare subito e non solo al tap su Import.
+    _formKey.currentState?.validate();
+  }
+
   Future<void> _importWallet() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -103,10 +118,7 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
           scriptType: _selectedType,
         );
       } else {
-        final mnemonic = _mnemonicController.text
-            .trim()
-            .toLowerCase()
-            .replaceAll(RegExp(r'\s+'), ' ');
+        final mnemonic = normalizeMnemonic(_mnemonicController.text);
         wallet = await widget.walletRepository.importWallet(
           mnemonic: mnemonic,
           derivationPath: _selectedType.accountPath(),
@@ -229,22 +241,27 @@ class _ImportWalletScreenState extends State<ImportWalletScreen> {
                     ),
                     filled: true,
                     fillColor: theme.colorScheme.surfaceContainerLow,
+                    // PERCHÉ: la seed può arrivare dal QR di backup di un
+                    // altro wallet — lo scan evita di digitare 24 parole.
+                    suffixIcon: IconButton(
+                      key: const Key('import_seed_scan_qr'),
+                      tooltip: loc.importScreenScanSeed,
+                      icon: const Icon(Icons.qr_code_scanner),
+                      onPressed: _importing ? null : _scanSeedQr,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return loc.importScreenValidateEmpty;
                     }
-                    final clean = value
-                        .trim()
-                        .toLowerCase()
-                        .replaceAll(RegExp(r'\s+'), ' ');
+                    final clean = normalizeMnemonic(value);
                     final words = clean.split(' ');
                     // PERCHÉ: BIP39 standard ammette 12/15/18/21/24 parole;
                     // il vincolo "!= 12" scartava le seed da 15/18/21/24.
-                    if (!_kBip39WordCounts.contains(words.length)) {
+                    if (!kBip39WordCounts.contains(words.length)) {
                       return loc.importScreenValidateCount(words.length);
                     }
-                    if (!bip39.validateMnemonic(clean)) {
+                    if (!isValidMnemonic(clean)) {
                       return loc.importScreenValidateInvalid;
                     }
                     return null;

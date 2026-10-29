@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guida — il bitcoin spiegato da zero | Btc Blake2b Wallet</title>
+  <meta name="description" content="Guida in parole semplici per principianti: cos'è davvero un wallet, la frase di 12 parole, le commissioni, le conferme, gli UTXO, i canali Lightning e la privacy.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/it/learn.html">
+  <link rel="alternate" hreflang="en" href="https://btcblake2b.org/learn.html">
+  <link rel="alternate" hreflang="it" href="https://btcblake2b.org/it/learn.html">
+  <link rel="alternate" hreflang="x-default" href="https://btcblake2b.org/learn.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Salta al contenuto</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Navigazione principale">
+      <a class="brand" href="/it/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/it/download.html">Download</a></li>
+        <li><a href="/it/learn.html" aria-current="page">Guida</a></li>
+        <li><a href="/it/node.html">Nodo</a></li>
+        <li><a href="/it/privacy.html">Privacy</a></li>
+        <li><a href="/it/legal.html">Note legali</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Sorgente</a></li>
+        <li><a href="/learn.html" lang="en" aria-label="Passa all'inglese">EN</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <h1>Guida: il bitcoin spiegato da zero</h1>
+    <p class="lead">Tutto quello che l'app dà per scontato, spiegato senza gergo. Leggi i primi tre capitoli e saprai già più della maggior parte degli utenti.</p>
+
+    <div class="notice">
+      <strong>Versione breve</strong> — Questa pagina è la guida italiana compatta. Il <strong>corso completo in 6 moduli</strong> (con esercizi, errori da principiante, tour dell'app e glossario) è in inglese: <a href="/learn.html" lang="en">learn.html</a>. Il corso è in inglese di proposito, così resta uno solo da mantenere aggiornato — usa il traduttore del browser per leggerlo in italiano.
+    </div>
+
+    <nav class="toc" aria-label="Indice">
+      <strong>Capitoli</strong>
+      <ol>
+        <li><a href="#wallet">Cos'è davvero un wallet</a></li>
+        <li><a href="#custodia">L'autocustodia, in pratica</a></li>
+        <li><a href="#seed">La frase di 12 parole</a></li>
+        <li><a href="#password">Password, cifratura, biometria</a></li>
+        <li><a href="#rete">La rete: bitcoin-blake2b</a></li>
+        <li><a href="#utxo">Come nasce un pagamento (UTXO)</a></li>
+        <li><a href="#commissioni">Le commissioni senza mal di testa</a></li>
+        <li><a href="#conferme">Conferme e attese</a></li>
+        <li><a href="#indirizzi">Indirizzi: sempre nuovi, sempre tuoi</a></li>
+        <li><a href="#watchonly">Sola lettura con la xpub</a></li>
+        <li><a href="#lightning">Lightning: i canali in parole povere</a></li>
+        <li><a href="#swap">Swap con un fornitore</a></li>
+        <li><a href="#privacy">Privacy: cosa esce dal telefono</a></li>
+        <li><a href="#errori">Gli 8 errori da principiante</a></li>
+        <li><a href="#problemi">Quando qualcosa sembra non funzionare</a></li>
+        <li><a href="#glossario">Glossario</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="wallet">1. Cos'è davvero un wallet</h2>
+    <p>Un wallet <strong>non</strong> contiene monete. Contiene <strong>chiavi</strong>. Le monete sono voci su un registro pubblico — la blockchain — di cui ogni nodo della rete conserva una copia.</p>
+    <p>Il wallet fa due cose:</p>
+    <ul>
+      <li>deriva gli indirizzi dalle tue chiavi, così gli altri possono pagarti;</li>
+      <li>firma le transazioni con le tue chiavi, così la rete accetta un pagamento da te.</li>
+    </ul>
+    <p>E allora cos'è il "saldo"? Non è un numero salvato da qualche parte: è la somma delle monete che i tuoi indirizzi hanno ricevuto e che non hai ancora speso, calcolata da chi legge la catena — in questa app, dall'API pubblica compatibile Esplora che viene interrogata.</p>
+    <div class="notice"><strong>Conseguenza</strong> — Perdere l'app, il telefono o la password è recuperabile <em>se</em> hai la frase di recupero. Perdere la frase di recupero non è recuperabile affatto. È tutto qui il modello di sicurezza, in una frase.</div>
+
+    <h2 id="custodia">2. L'autocustodia, in pratica</h2>
+    <p>Con una banca o un exchange qualcun altro tiene le chiavi e tu tieni una promessa. Con l'autocustodia tieni le chiavi, quindi tieni i soldi — e la responsabilità.</p>
+    <p>Lo scambio, detto onestamente:</p>
+    <ul>
+      <li><strong>Guadagni</strong>: nessuno può congelare il tuo saldo, chiudere il tuo conto, chiederti documenti o sparire con i tuoi fondi.</li>
+      <li><strong>Perdi</strong>: non esiste "password dimenticata", né assistenza, né storno. Nessuno può annullare un pagamento che hai firmato, nemmeno tu.</li>
+      <li><strong>Devi</strong>: custodire un backup della frase, verificare l'indirizzo prima di inviare e trattare il telefono come un portafoglio, non come un giocattolo.</li>
+    </ul>
+
+    <h2 id="seed">3. La frase di 12 parole</h2>
+    <p>La frase di recupero (detta anche seed) è la tua chiave privata scritta in forma leggibile: dodici parole scelte da una lista fissa di 2048. Da quelle parole l'app deriva <strong>tutti</strong> gli indirizzi che userai — quelli che vedi e quelli che creerà in futuro.</p>
+    <p>Per questo la frase non è "la password dell'app": la frase <em>è</em> il wallet. Chi la legge può ricostruire il tuo wallet su un altro dispositivo e spendere le tue monete, senza il tuo telefono e senza la tua password.</p>
+    <h3>Come custodirla bene</h3>
+    <ul>
+      <li>scrivila su carta (o incidila sul metallo) e tienila offline, in un posto che controlli;</li>
+      <li>prepara una seconda copia in un luogo fisico diverso, così un incendio o un allagamento non distruggono entrambe;</li>
+      <li>non fotografarla, non digitarla in chat, email, note sul cloud, password manager o "assistenti AI";</li>
+      <li>non digitarla mai su un sito che ti chiede di "ripristinare il wallet per controllare qualcosa": è il furto più comune in questo ambiente;</li>
+      <li>verifica il backup una volta, mentre il wallet è ancora vuoto: ripristinalo su un secondo dispositivo (o reinstalla) e controlla che compaiano gli stessi indirizzi.</li>
+    </ul>
+    <div class="notice"><strong>L'app non chiede mai la frase</strong> — tranne durante il backup, dove si limita a <em>mostrartela</em>, e quando importi un wallet di tua iniziativa. Qualsiasi altra richiesta di quelle parole è un attacco.</div>
+
+    <h2 id="password">4. Password, cifratura e biometria</h2>
+    <p>Sul tuo dispositivo la frase è salvata cifrata con <strong>AES-GCM</strong>. La chiave di cifratura si ricava dalla tua password; la password non viene mai salvata in chiaro e non viene mai inviata da nessuna parte.</p>
+    <ul>
+      <li>Senza la password (o senza lo sblocco biometrico che hai attivato) la seed cifrata è solo rumore.</li>
+      <li>La biometria non sostituisce la password: sblocca l'accesso alla chiave custodita dallo storage sicuro del sistema operativo.</li>
+      <li>Se dimentichi la password non c'è alcun reset. L'unica via di ritorno è la frase di recupero — ecco perché esiste il capitolo 3.</li>
+    </ul>
+    <p>Nella variante web/PWA la seed cifrata vive nel <code>localStorage</code> del browser: è il massimo che un browser può offrire, ma è più debole del keyring di un telefono — uno script che gira nella pagina mentre il vault è sbloccato può leggere le chiavi in memoria. Per fondi veri usa l'app mobile.</p>
+
+    <h2 id="rete">5. La rete: bitcoin-blake2b</h2>
+    <p>Questo wallet è costruito per <strong>bitcoin-blake2b</strong>, una rete che condivide il design e gli strumenti di Bitcoin ma ha regole proprie: una funzione di hash diversa (BLAKE2b), il suo blocco genesi e la sua community.</p>
+    <p>È una rete <strong>sperimentale</strong>. Trattala come tale:</p>
+    <ul>
+      <li><em>non</em> è Bitcoin, e le due catene non condividono monete né saldi;</li>
+      <li>la rete <em>non</em> ha protezione replay a livello di consenso: l'app usa SIGHASH_UNIFIED per ridurre il rischio, ma verifica sempre gli indirizzi;</li>
+      <li>liquidità, exchange e strumenti sono giovani: non parcheggiarci i risparmi di una vita;</li>
+      <li>l'app non mostra un controvalore in euro, perché questa rete non ha un prezzo di mercato.</li>
+    </ul>
+
+    <h2 id="utxo">6. Come nasce un pagamento (UTXO)</h2>
+    <p>Non esistono "conti" con un numero. Le monete esistono come <strong>UTXO</strong> — output di transazione non spesi — che si comportano come banconote in tasca: ognuna ha il suo valore e non vengono unite finché non le spendi.</p>
+    <p>Una transazione è una macchina che mangia alcuni UTXO e ne produce di nuovi:</p>
+    <ol>
+      <li><strong>input</strong>: gli UTXO che stai spendendo, ognuno firmato con la tua chiave;</li>
+      <li><strong>output</strong>: uno per il destinatario, più (di solito) uno che torna a te — il <strong>resto</strong>.</li>
+    </ol>
+    <p>Due conseguenze pratiche:</p>
+    <ul>
+      <li>inviare a te stesso non cambia il saldo: rimodella i tuoi UTXO e costa una commissione;</li>
+      <li>se spendi un UTXO da 100 000 sat per pagarne 30 000, i ~70 000 sat di differenza devono tornare a te come resto — altrimenti li staresti regalando ai miner.</li>
+    </ul>
+    <p>Nell'app puoi scegliere quali UTXO spendere (<em>coin control</em>) e puoi pagare più destinatari in una sola transazione (batch, fino a 20 output) per risparmiare commissioni.</p>
+
+    <h2 id="commissioni">7. Le commissioni senza mal di testa</h2>
+    <p>La commissione non è una percentuale e non va a questa app: è il compenso per chi estrae il blocco che include la tua transazione. Paghi lo <strong>spazio</strong>, misurato in byte virtuali (vB), a un prezzo espresso in <strong>sat/vB</strong>.</p>
+    <p>Quindi la commissione dipende da:</p>
+    <ul>
+      <li>quanti input consuma la transazione (più UTXO = transazione più grande);</li>
+      <li>quanti output crea;</li>
+      <li>quanto è congestionata la rete in quel momento (la <em>mempool</em>): quando molti vogliono entrare, il prezzo dello spazio sale.</li>
+    </ul>
+    <p>Inviare 1 000 sat o 1 000 000 sat costa più o meno lo stesso: conta la dimensione, non l'importo.</p>
+    <h3>Scegliere il tasso</h3>
+    <ul>
+      <li><strong>Bassa</strong>: economica, può attendere ore o giorni e rischia di essere scartata se la mempool si svuota;</li>
+      <li><strong>Normale</strong>: il default ragionevole;</li>
+      <li><strong>Alta</strong>: per quando ti serve in fretta;</li>
+      <li><strong>Personalizzata</strong>: per quando conosci il prezzo attuale del mercato — impostala consapevolmente.</li>
+    </ul>
+    <p>Hai pagato poco e ora stai aspettando? L'app supporta <strong>RBF</strong> (Replace-By-Fee): la transazione in attesa viene sostituita da una che paga di più, se l'originale lo aveva segnalato.</p>
+
+    <h2 id="conferme">8. Conferme e attese</h2>
+    <p>Quando invii una transazione finisce nella mempool: è valida e visibile, ma nessun blocco la contiene ancora. È lo stato <strong>in attesa</strong>: i soldi sono usciti, il destinatario vede "0 conferme".</p>
+    <p>Ogni blocco che la include aggiunge una conferma:</p>
+    <ul>
+      <li><strong>0</strong>: in attesa, sostituibile, annullabile solo via RBF;</li>
+      <li><strong>1</strong>: dentro un blocco — sufficiente per piccoli importi tra persone che si fidano;</li>
+      <li><strong>3+</strong>: ragionevolmente stabile;</li>
+      <li><strong>6+</strong>: lo standard tradizionale per importi importanti.</li>
+    </ul>
+    <p>Un UTXO in attesa può apparire come "non disponibile" nel saldo: non è sparito, è in coda. Il tempo di attesa lo decide la commissione che hai pagato, non l'app.</p>
+
+    <h2 id="indirizzi">9. Indirizzi: sempre nuovi, sempre tuoi</h2>
+    <p>Un indirizzo non è un conto: è un'etichetta monodirezionale derivata dalla tua chiave. Il tuo wallet può generarne praticamente infiniti, e dovrebbe: uno nuovo per ogni pagamento che ricevi.</p>
+    <p>Perché: ogni indirizzo riusato collega i pagamenti tra loro, in pubblico e per sempre. Riusare un indirizzo è come usare lo stesso numero di estratto conto per lo stipendio e per le donazioni.</p>
+    <ul>
+      <li><strong>Indirizzi di ricezione</strong> (ramo esterno): quelli che mostri agli altri.</li>
+      <li><strong>Indirizzi di resto</strong> (ramo interno): dove torna il tuo resto. Vederli è normale e non significa che hai il doppio dei fondi.</li>
+      <li><strong>Tipi di indirizzo</strong>: l'app supporta segwit nativo (BIP84), segwit annidato (BIP49) e legacy (BIP44). Usa il più recente che i tuoi altri strumenti supportano; le regole della rete decidono quali sono validi qui.</li>
+    </ul>
+
+    <h2 id="watchonly">10. Sola lettura con la xpub</h2>
+    <p>La <strong>xpub</strong> del tuo account è la chiave pubblica che genera tutti i tuoi indirizzi. Con essa chiunque può vedere saldo e storico — e nessuno può spendere un solo satoshi.</p>
+    <p>Usi tipici: controllare un wallet da un secondo dispositivo, dare accesso in lettura a un commercialista, o tenere offline il dispositivo che spende.</p>
+    <div class="notice"><strong>Attenzione</strong> — La xpub non è una chiave segreta, ma è una chiave di privacy: pubblicarla rivela ogni indirizzo e ogni pagamento di quel wallet. Condividila solo con chi faresti vedere il tuo estratto conto.</div>
+
+    <h2 id="lightning">11. Lightning: i canali in parole povere</h2>
+    <p>I pagamenti on-chain sono pubblici, definitivi e lenti: ogni movimento è una transazione, ogni transazione paga una commissione. Lightning sposta i pagamenti <em>fuori</em> dalla catena, dentro i <strong>canali</strong>.</p>
+    <p>Un canale è un deposito condiviso tra te e un altro nodo:</p>
+    <ol>
+      <li>lo apri con una transazione on-chain, che blocca i fondi in un contratto 2-di-2;</li>
+      <li>da quel momento tu e il tuo peer potete spostare valore avanti e indietro istantaneamente, senza toccare la catena;</li>
+      <li>quando lo chiudi, il saldo finale torna on-chain come una normale transazione.</li>
+    </ol>
+    <p>I termini che incontrerai nell'app:</p>
+    <ul>
+      <li><strong>capacità</strong>: il totale bloccato nel canale, diviso tra la tua parte e quella del peer;</li>
+      <li><strong>liquidità in entrata</strong>: quanto il peer può mandare <em>a te</em> — serve per ricevere, e non si ottiene gratis;</li>
+      <li><strong>riserva</strong>: una piccola parte della tua quota che deve restare bloccata come margine di sicurezza;</li>
+      <li><strong>chiusura forzata</strong>: trasmette on-chain l'ultimo stato noto del canale; irreversibile, più lenta e più costosa di una chiusura cooperativa;</li>
+      <li><strong>commissioni di routing</strong>: ciò che altri nodi guadagnano instradando pagamenti sul tuo canale — sono un ricavo, non un costo.</li>
+    </ul>
+    <p>Per usare Lightning in questo wallet puoi gestire un tuo nodo e collegarlo, oppure usare il flusso di swap descritto dopo. Per ricevere ti serve liquidità in entrata: un canale appena aperto non ne ha.</p>
+
+    <h2 id="swap">12. Swap con un fornitore</h2>
+    <p>Se non gestisci un nodo, l'app può pagare una fattura Lightning con uno <strong>swap atomico</strong>: un fornitore paga subito la fattura e tu lo rimborsi on-chain, con un contratto di deposito che garantisce che o succedono entrambe le cose o nessuna.</p>
+    <p>Questo flusso è sperimentale e dipende dalla liquidità del fornitore. Se il fornitore sparisce a metà, i tuoi fondi tornano indietro seguendo il timelock — dopo un'attesa. Non fare swap per importi che non sei disposto a tenere bloccati per un po'.</p>
+
+    <h2 id="privacy">13. Privacy: cosa esce dal telefono</h2>
+    <ul>
+      <li>L'app <strong>non ha account, analytics o telemetria</strong>. Le tue chiavi non lasciano mai il dispositivo.</li>
+      <li>Per leggere saldi e storico interroga un'API pubblica (<code>mempool.guide</code>), che per forza di cose vede il tuo indirizzo IP e gli indirizzi che consulti.</li>
+      <li>I mirror comunitari opzionali si possono disattivare da Impostazioni → Strumenti, così viene usata una sola fonte.</li>
+      <li>Se attivi il prezzo automatico nelle Impostazioni, l'app legge l'ultimo trade XBT/USDC da <code>neoxa.exchange</code> (NeoXEX) su richiesta; con una valuta diversa da USD legge anche i cambi USDT da <code>api.coinbase.com</code>. Mai in polling, disattivabile dalle Impostazioni.</li>
+      <li>Per una privacy più forte: usa una VPN, oppure punta l'app al tuo nodo, e non pubblicare mai la xpub.</li>
+      <li>Riusare gli indirizzi è l'errore di privacy più comune: un indirizzo nuovo per ogni pagamento non costa nulla.</li>
+    </ul>
+
+    <h2 id="errori">14. Gli 8 errori da principiante</h2>
+    <ol>
+      <li><strong>Nessun backup.</strong> "Le parole le scrivo dopo" è il modo in cui si perdono i wallet.</li>
+      <li><strong>Backup digitale.</strong> Foto, note e file sul cloud vengono copiati, sincronizzati e violati.</li>
+      <li><strong>Digitare la frase in un sito.</strong> Nessun servizio legittimo ne ha bisogno.</li>
+      <li><strong>Riusare un solo indirizzo</strong> per tutto, collegando i pagamenti per sempre.</li>
+      <li><strong>Non verificare i primi caratteri e gli ultimi</strong> dell'indirizzo di destinazione.</li>
+      <li><strong>Inviare un importo minuscolo con una commissione minuscola</strong> e poi spaventarsi: è solo in coda.</li>
+      <li><strong>Aprire un canale con tutti i fondi</strong>, lasciando nulla per le commissioni o per le operazioni on-chain.</li>
+      <li><strong>Fidarsi di una copia del sito</strong>: controlla che la barra degli indirizzi dica <code>btcblake2b.org</code>.</li>
+    </ol>
+
+    <h2 id="problemi">15. Quando qualcosa sembra non funzionare</h2>
+    <ul>
+      <li><strong>Il pagamento non arriva</strong>: guarda le conferme — 0 significa in attesa, e la commissione decide quando si muove.</li>
+      <li><strong>Il saldo è calato senza un pagamento</strong>: è probabilmente il tuo resto più la commissione, o un UTXO ancora in attesa. Apri il dettaglio della transazione.</li>
+      <li><strong>Fondi "non disponibili"</strong>: quegli UTXO stanno aspettando le conferme.</li>
+      <li><strong>L'app non mostra alcun saldo</strong>: l'API pubblica può essere limitata o giù; l'app ti dice quale dei due casi è.</li>
+      <li><strong>Temi che la frase sia trapelata</strong>: crea un nuovo wallet e sposta i fondi. Non esiste modo di "cambiare" la frase di un wallet esistente.</li>
+    </ul>
+
+    <h2 id="glossario">16. Glossario</h2>
+    <dl class="glossary">
+      <dt>Indirizzo</dt>
+      <dd>Una stringa che dice agli altri dove mandare monete. I tuoi derivano dalle tue chiavi; pubblicane uno nuovo per ogni pagamento.</dd>
+      <dt>Blockchain</dt>
+      <dd>Il registro pubblico: una catena di blocchi in sola aggiunta, ognuno con le sue transazioni.</dd>
+      <dt>Resto (change)</dt>
+      <dd>La parte dei tuoi UTXO che torna a te su un indirizzo nuovo dopo un pagamento.</dd>
+      <dt>Conferma</dt>
+      <dd>Un blocco aggiunto sopra quello che contiene la tua transazione.</dd>
+      <dt>Dust</dt>
+      <dd>Un output troppo piccolo per valere la pena di spenderlo (qui sotto i 546 sat): la rete lo rifiuta.</dd>
+      <dt>Mempool</dt>
+      <dd>La sala d'attesa delle transazioni non confermate: la sua congestione determina il mercato delle commissioni.</dd>
+      <dt>sat</dt>
+      <dd>L'unità più piccola (1 BTC = 100 000 000 sat).</dd>
+      <dt>Seed / frase di recupero</dt>
+      <dd>12 o 24 parole che rigenerano tutte le tue chiavi. Il wallet vero e proprio.</dd>
+      <dt>UTXO</dt>
+      <dd>Un output non speso: una "banconota" del tuo saldo.</dd>
+      <dt>xpub</dt>
+      <dd>La chiave pubblica che genera tutti i tuoi indirizzi. Vede, non spende.</dd>
+    </dl>
+
+    <div class="notice">
+      <strong>⚠️ Rete sperimentale</strong> — bitcoin-blake2b è giovane e questo wallet è software libero senza garanzia. Capisci i rischi prima di metterci importi significativi.
+    </div>
+
+    <p class="small"><a href="/it/download.html">Scarica l'app</a> · <a href="/learn.html" lang="en">Corso completo (inglese)</a> · <a href="/learn.html" lang="en">Read in English</a> · Domande: <a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">licenza MIT</a>.</p>
+        <p>Sito statico: nessun analytics né cookie di profilazione. Ospitato da Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/it/">Home</a></li>
+        <li><a href="/it/learn.html">Guida</a></li>
+        <li><a href="/it/privacy.html">Informativa privacy</a></li>
+        <li><a href="/it/legal.html">Note legali</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

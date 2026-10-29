@@ -74,16 +74,34 @@ void main() {
   final clientPriv = NostrCrypto.randomHex32();
   late final String clientPub = NostrCrypto.derivePublicKey(clientPriv);
 
-  SwapConfig buildConfig({List<String> allowed = const []}) => SwapConfig(
+  SwapConfig buildConfig({
+    List<String> allowed = const [],
+    bool allowAny = false,
+    bool autoAdmit = false,
+    int autoAdmitMaxPerDay = 20,
+    int autoAdmitMaxTotal = 500,
+    String? clientsFile,
+  }) =>
+      SwapConfig(
         relays: const ['wss://relay.test'],
         clnUrl: 'http://127.0.0.1:3001',
         providerKeyFile: 'unused.key',
         storeFile: '${tmp.path}${Platform.pathSeparator}swap-store.json',
         chain: const SwapChainConfig(esploraUrl: 'https://esplora.test'),
         allowedClientPubkeys: allowed,
+        allowAnyClient: allowAny,
+        autoAdmit: autoAdmit,
+        autoAdmitMaxPerDay: autoAdmitMaxPerDay,
+        autoAdmitMaxTotal: autoAdmitMaxTotal,
+        clientsFile: clientsFile ??
+            '${tmp.path}${Platform.pathSeparator}allowed-clients.json',
       );
 
-  SwapDaemon buildDaemon(SwapConfig config, SwapStore swapStore) {
+  SwapDaemon buildDaemon(
+    SwapConfig config,
+    SwapStore swapStore, {
+    FakeDaemonTransport? bus,
+  }) {
     final service = SwapService(
       cln: cln,
       chain: chain,
@@ -103,7 +121,7 @@ void main() {
       logger: Logger(minLevel: LogLevel.error),
     );
     return SwapDaemon(
-      transport: transport,
+      transport: bus ?? transport,
       service: service,
       handlers: handlers,
       store: swapStore,
@@ -121,7 +139,9 @@ void main() {
     chain = FakeChain();
     store = SwapStore('${tmp.path}${Platform.pathSeparator}swap-store.json');
     transport = FakeDaemonTransport();
-    daemon = buildDaemon(buildConfig(), store);
+    // // PERCHÉ (B1): con la allowlist fail-closed il client di test deve essere
+    // // autorizzato, altrimenti il daemon — correttamente — non risponde.
+    daemon = buildDaemon(buildConfig(allowed: [clientPub]), store);
     await daemon.start();
   });
 
@@ -331,5 +351,113 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     expect(isolatedTransport.published, isEmpty);
     await isolatedDaemon.stop();
+  });
+
+  test('allowlist vuota + allowAnyClient false: nessuno accettato (B1)', () async {
+    // // PERCHÉ: fino al 05/10 la lista vuota valeva "tutti" (fail-open):
+    // // chiunque conoscesse la URI poteva far nascere sessioni sul provider.
+    final closedTransport = FakeDaemonTransport();
+    final closedDaemon = buildDaemon(
+      buildConfig(),
+      store,
+      bus: closedTransport,
+    );
+    await closedDaemon.start();
+    closedTransport.emit(
+      requestEvent(
+        method: 'swap_quote',
+        params: {
+          'invoice': SwapFixtures.bolt11,
+          'refund_pubkey': SwapFixtures.refundPubkeyHex,
+        },
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(closedTransport.published, isEmpty);
+    await closedDaemon.stop();
+  });
+
+  test('allowAnyClient true: client senza allowlist accettato (B1)', () async {
+    final openTransport = FakeDaemonTransport();
+    final openDaemon = buildDaemon(
+      buildConfig(allowAny: true),
+      store,
+      bus: openTransport,
+    );
+    await openDaemon.start();
+    openTransport.emit(
+      requestEvent(
+        method: 'swap_quote',
+        params: {
+          'invoice': SwapFixtures.bolt11,
+          'refund_pubkey': SwapFixtures.refundPubkeyHex,
+        },
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(openTransport.published, isNotEmpty);
+    await openDaemon.stop();
+  });
+
+  test('auto-admit: il primo contatto viene servito e registrato', () async {
+    // // PERCHÉ (07/10/2026): in produzione la lista non va mantenuta a mano —
+    // // il primo contatto si registra da sé (con tetti) e resta ammesso.
+    final admitTransport = FakeDaemonTransport();
+    final admitDaemon = buildDaemon(
+      buildConfig(autoAdmit: true),
+      store,
+      bus: admitTransport,
+    );
+    await admitDaemon.start();
+    admitTransport.emit(
+      requestEvent(
+        method: 'swap_quote',
+        params: {
+          'invoice': SwapFixtures.bolt11,
+          'refund_pubkey': SwapFixtures.refundPubkeyHex,
+        },
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(admitTransport.published, isNotEmpty);
+
+    final clientsFile = File(
+      '${tmp.path}${Platform.pathSeparator}allowed-clients.json',
+    );
+    expect(clientsFile.existsSync(), isTrue);
+    final raw = jsonDecode(clientsFile.readAsStringSync()) as Map;
+    expect((raw['admitted'] as Map).keys, contains(clientPub));
+    await admitDaemon.stop();
+  });
+
+  test('auto-admit saturo: il client sconosciuto resta ignorato', () async {
+    // Un client è già stato ammesso (lista piena) → il nuovo contatto non
+    // deve ricevere risposta (fail-closed sui tetti).
+    File('${tmp.path}${Platform.pathSeparator}allowed-clients.json')
+        .writeAsStringSync(
+      jsonEncode({
+        'version': 1,
+        'admitted': {'ab' * 32: 1000},
+      }),
+    );
+    final cappedTransport = FakeDaemonTransport();
+    final cappedDaemon = buildDaemon(
+      buildConfig(autoAdmit: true, autoAdmitMaxPerDay: 1, autoAdmitMaxTotal: 1),
+      store,
+      bus: cappedTransport,
+    );
+    await cappedDaemon.start();
+    cappedTransport.emit(
+      requestEvent(
+        method: 'swap_quote',
+        params: {
+          'invoice': SwapFixtures.bolt11,
+          'refund_pubkey': SwapFixtures.refundPubkeyHex,
+        },
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(cappedTransport.published, isEmpty);
+    await cappedDaemon.stop();
   });
 }

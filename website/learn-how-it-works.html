@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module 2 — How bitcoin works | Learn</title>
+  <meta name="description" content="Keys, addresses, transactions, UTXOs, fees, confirmations and mining explained with analogies: how a payment is actually built and confirmed.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/learn-how-it-works.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/download.html">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/node.html">Node</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
+        <li><a href="/it/learn.html" lang="it" aria-label="Switch to Italian">IT</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <p class="crumbs"><a href="/learn.html">Learn</a> › Module 2 of 6</p>
+    <h1>How it works</h1>
+    <p class="lead">Six objects explain everything: a key, an address, a transaction, a UTXO, a fee and a confirmation.</p>
+
+    <nav class="toc" aria-label="In this module">
+      <strong>In this module</strong>
+      <ol>
+        <li><a href="#keys">Keys and addresses</a></li>
+        <li><a href="#tx">What a transaction is</a></li>
+        <li><a href="#utxo">UTXOs: your balance is a pocket of notes</a></li>
+        <li><a href="#change">Change: the part that comes back</a></li>
+        <li><a href="#fees">Fees: paying for space</a></li>
+        <li><a href="#confirm">Confirmations and mining</a></li>
+        <li><a href="#xpub">Watch-only with an xpub</a></li>
+        <li><a href="#check">Check yourself</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="keys">1. Keys and addresses</h2>
+    <p>A <strong>private key</strong> is a very large random number. Whoever knows it can spend what it controls. A <strong>public key</strong> is derived from it, and an <strong>address</strong> is a short, readable form derived from the public key.</p>
+    <p>The direction matters:</p>
+    <ul>
+      <li>key → address: always possible, and the app does it for you;</li>
+      <li>address → key: computationally impossible.</li>
+    </ul>
+    <p>So an address is safe to publish — it is a one-way label — and a key is never shared with anyone, ever.</p>
+    <p>Modern wallets do not handle one key: they handle a <strong>seed</strong>, from which a whole tree of keys (and therefore addresses) is derived deterministically. That is the trick that makes a 12-word backup enough for unlimited addresses (module 3).</p>
+
+    <h2 id="tx">2. What a transaction is</h2>
+    <p>A transaction is a signed statement with two halves:</p>
+    <ol>
+      <li><strong>inputs</strong>: which previously received amounts you are spending;</li>
+      <li><strong>outputs</strong>: who receives what, including (usually) one output back to you.</li>
+    </ol>
+    <p>Each input carries a signature made with your private key. The network checks three things: the signature is valid, the inputs exist and are unspent, and the outputs do not create money out of nothing.</p>
+    <p>Then the transaction is <strong>broadcast</strong>: it is sent to nodes, which relay it to each other. It is now <em>in the mempool</em> — valid, visible, not yet in a block.</p>
+
+    <h2 id="utxo">3. UTXOs: your balance is a pocket of notes</h2>
+    <p>There are no accounts with a number. Coins exist as <strong>UTXOs</strong> — unspent transaction outputs. Each one has an amount and a condition (roughly: "spendable by whoever holds this address's key").</p>
+    <p>They behave like banknotes in a pocket:</p>
+    <ul>
+      <li>you cannot split one without spending it;</li>
+      <li>to pay 30 you may need to hand over a 100 note and get 70 back;</li>
+      <li>the sum of the notes is your "balance", computed by the wallet every time it looks at the chain.</li>
+    </ul>
+    <p>Each UTXO also has an <strong>age</strong> (how many confirmations it has) and a <strong>cost to spend</strong> (the space it occupies in a future transaction). That is why wallets show you individual UTXOs, and why "coin control" exists (module 6).</p>
+    <p>Two consequences that surprise everyone:</p>
+    <ul>
+      <li><strong>sending to yourself</strong> changes nothing except your UTXO shape, and costs a fee;</li>
+      <li><strong>many small UTXOs are expensive</strong> to spend later, because each one adds bytes to the transaction.</li>
+    </ul>
+
+    <h2 id="change">4. Change: the part that comes back</h2>
+    <p>If you spend a 100 000 sat UTXO to pay 30 000 sat, the transaction must declare where the remaining ~70 000 sat go. Leaving them unassigned would donate them to whoever mines the block.</p>
+    <p>So the wallet adds a second output: the <strong>change</strong>, paid to a <em>new</em> address of your own wallet. Seeing a transaction with two outputs is normal and does not mean you paid twice.</p>
+
+    <h2 id="fees">5. Fees: paying for space</h2>
+    <p>A fee is not a percentage of the amount. It is the price of the <strong>space</strong> your transaction occupies in a block, measured in virtual bytes (vB), at a rate in <strong>sat/vB</strong>.</p>
+    <p>Total fee ≈ size × rate. Size depends mainly on the number of inputs: 1 input is small, 10 inputs are large. Amount is irrelevant to size.</p>
+    <ul>
+      <li><strong>Why pay at all</strong>: the fee is the reward for the miner who includes your transaction. It is not an app commission — none of it goes to this wallet's author.</li>
+      <li><strong>Why it varies</strong>: when the mempool is crowded, blocks are scarce and the price of space rises; when it empties, it falls.</li>
+      <li><strong>Choosing a rate</strong>: low = cheap and slow (may be dropped if the mempool empties); normal = the sane default; high = when time matters; custom = when you know the current market rate.</li>
+      <li><strong>Paying too little</strong>: the transaction waits. If it signalled replaceability, the app can <strong>bump the fee</strong> (RBF) by replacing it with a version that pays more.</li>
+      <li><strong>Dust</strong>: outputs below 546 sat are rejected by the network — they would cost more to spend than they are worth.</li>
+    </ul>
+
+    <h2 id="confirm">6. Confirmations and mining</h2>
+    <p>Miners collect transactions from the mempool and try to assemble a valid <strong>block</strong>. Producing a block requires solving a computational puzzle, which is what makes the history expensive to rewrite.</p>
+    <p>When a block containing your transaction is mined, you get <strong>1 confirmation</strong>. Every further block adds one. Rough guide:</p>
+    <ul>
+      <li><strong>0</strong> — pending: valid, replaceable, not yet final;</li>
+      <li><strong>1</strong> — in a block: fine for small amounts between people who trust each other;</li>
+      <li><strong>3+</strong> — reasonably settled;</li>
+      <li><strong>6+</strong> — the traditional bar for large amounts.</li>
+    </ul>
+    <p>While a received UTXO has 0 confirmations it may appear as "not available": it is not missing, it is queued. The app tells you how many blocks it is waiting for.</p>
+
+    <h2 id="xpub">7. Watch-only with an xpub</h2>
+    <p>Your account's <strong>xpub</strong> is the public key from which all your addresses are generated. With it, software can watch your balance and history and still be unable to spend a single satoshi.</p>
+    <p>It is useful (a second device, an accountant, a spending device kept offline) and dangerous in one specific way: it is a <em>privacy</em> key. Publishing it exposes every address and every payment of that wallet (module 4).</p>
+    <div class="takeaway">
+      <strong>Takeaway</strong> — A wallet holds keys, not coins. A payment spends whole UTXOs and creates new ones, one of which is your change. You pay for bytes, not for amount, and a payment is only final when blocks pile up on top of it.
+    </div>
+
+    <h2 id="check">8. Check yourself</h2>
+    <ol>
+      <li>Can you receive money on the same address twice? Should you?</li>
+      <li>Why does a transaction with 10 inputs cost more than one with 1 input?</li>
+      <li>You paid 20 000 sat from a 100 000 sat UTXO with a 500 sat fee. How many outputs does the transaction have, and who owns them?</li>
+    </ol>
+
+    <nav class="chapter-nav" aria-label="Course navigation">
+      <a class="btn btn-ghost" href="/learn-bitcoin.html">← Module 1: What bitcoin is</a>
+      <a class="btn btn-primary" href="/learn-security.html">Module 3: Keys, backups and security →</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/privacy.html">Privacy policy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

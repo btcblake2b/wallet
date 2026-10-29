@@ -58,4 +58,23 @@ void main() {
 
     expect(find.text('No open channels'), findsOneWidget);
   });
+
+  testWidgets('canali senza inbound → avviso con CTA al LSP', (tester) async {
+    service = LightningServiceMock(channelCount: 2, inboundOverrideMsat: 0);
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pumpAndSettle();
+
+    expect(find.text('You cannot receive yet'), findsOneWidget);
+    expect(find.text('Get inbound liquidity'), findsOneWidget);
+  });
+
+  testWidgets('canali con inbound → nessun avviso', (tester) async {
+    service = LightningServiceMock(channelCount: 2);
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pumpAndSettle();
+
+    expect(find.text('You cannot receive yet'), findsNothing);
+  });
 }

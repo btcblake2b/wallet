@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module 6 — The app, screen by screen | Learn</title>
+  <meta name="description" content="A guided tour of the wallet: first ten minutes, sending, receiving, addresses, coin control, batch send, fee bump, watch-only, PSBT, Lightning, settings, troubleshooting and glossary.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/learn-app.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/download.html">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/node.html">Node</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
+        <li><a href="/it/learn.html" lang="it" aria-label="Switch to Italian">IT</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <p class="crumbs"><a href="/learn.html">Learn</a> › Module 6 of 6</p>
+    <h1>The app, screen by screen</h1>
+    <p class="lead">Everything in the previous modules, applied. Read this with the app open in your hand: each section tells you what you are looking at and what to do with it.</p>
+
+    <nav class="toc" aria-label="In this module">
+      <strong>In this module</strong>
+      <ol>
+        <li><a href="#install">Install and choose the build</a></li>
+        <li><a href="#first">Your first ten minutes</a></li>
+        <li><a href="#home">Home</a></li>
+        <li><a href="#detail">Wallet detail</a></li>
+        <li><a href="#send">Sending</a></li>
+        <li><a href="#receive">Receiving and addresses</a></li>
+        <li><a href="#advanced">Watch-only, PSBT, sign &amp; verify</a></li>
+        <li><a href="#lightning">The Lightning tab</a></li>
+        <li><a href="#settings">Settings and the in-app guide</a></li>
+        <li><a href="#trouble">Troubleshooting</a></li>
+        <li><a href="#glossary">Glossary</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="install">1. Install and choose the build</h2>
+    <ul>
+      <li><strong>Android APK</strong> — from the <a href="/download.html">download page</a> or the official GitHub releases. Verify the SHA-256 published there before installing anything.</li>
+      <li><strong>Zapstore</strong> — for users who prefer a store with signature verification. The link is on the download page.</li>
+      <li><strong>Web / PWA</strong> — <code>app.btcblake2b.org</code> works in a browser, and there the encrypted seed lives in <code>localStorage</code>. Fine for trying the interface, not recommended for real funds (module 3, §4).</li>
+    </ul>
+    <p class="small">The app has no accounts: nothing to sign up for, nothing to log into. The first screen asks for the minimum legal information (country, age, terms) and then offers to create or import a wallet.</p>
+
+    <h2 id="first">2. Your first ten minutes</h2>
+    <ol>
+      <li><strong>Create a wallet</strong>, choose the account type (native segwit is the default and the best choice unless you have a reason), give it a name.</li>
+      <li><strong>Write down the twelve words</strong> on paper, then complete the verification step. Do not skip it: a backup you have not tested is a hope, not a backup.</li>
+      <li><strong>Enable app lock</strong> (Settings → Security) if your device supports biometrics.</li>
+      <li><strong>Receive a small amount</strong> to the address the app proposes. Watch it arrive as <em>pending</em>, then as confirmed.</li>
+      <li><strong>Send a part of it back out</strong> (to yourself on another wallet, if you have one). Look at the fee summary, the change output and the confirmation count.</li>
+      <li><strong>Open the in-app guide</strong> (Settings → About &amp; info → How it works) and read the chapters that match what you just did.</li>
+    </ol>
+    <div class="notice"><strong>Test with the minimum</strong> — every flow in this app is learned faster with the smallest possible amount. Do not put a meaningful balance in until you have received and sent once.</div>
+
+    <h2 id="home">3. Home</h2>
+    <figure class="shot">
+      <img src="/screenshots/01-home.png" alt="Home screen: wallet list with balances and the on-chain / Lightning switch" loading="lazy" width="921" height="2048">
+      <figcaption>The home screen: your wallets, their balances, and the switch between the on-chain and Lightning layers.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Wallet cards</strong> — one per wallet, with its balance. A tap opens the detail; a long press starts selection mode (rename, hide from the total, delete).</li>
+      <li><strong>Total balance</strong> — the sum of the wallets you chose to display. While it loads you see a placeholder, never a fake zero.</li>
+      <li><strong>On-chain / Lightning switch</strong> — the app has two layers. On-chain is the wallet described in modules 2–4; Lightning is module 5. They are separate balances connected by channels or swaps.</li>
+      <li><strong>Empty state</strong> — with no wallets yet you get three actions: create, import, and <em>How it works</em>, which opens the same guide that lives in Settings.</li>
+      <li><strong>Top-right icons</strong> — Settings and donations. Everything else lives inside Settings (no hidden menus).</li>
+    </ul>
+
+    <h2 id="detail">4. Wallet detail</h2>
+    <figure class="shot">
+      <img src="/screenshots/02-wallet-detail.png" alt="Wallet detail: balance card with receive and send actions, and the transaction history" loading="lazy" width="921" height="2048">
+      <figcaption>Wallet detail: balance, receive/send, and history with per-transaction status.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Balance card</strong> — refresh pulls the current state from the API. Pending amounts are shown separately: they are not missing, they are waiting.</li>
+      <li><strong>Receive / Send</strong> — the two primary actions. Both go through a review step.</li>
+      <li><strong>History</strong> — each transaction shows direction, amount, fee, confirmations and block height. A tap opens the details, notes and the fee-bump action when the transaction is replaceable.</li>
+      <li><strong>Addresses</strong> — the full list of derived addresses with their derivation path, branch (receive/change) and on-chain state. This is where you see that a wallet is not "one address".</li>
+      <li><strong>UTXOs / coin control</strong> — the individual pieces of your balance (module 2). You can label them and choose which ones to spend.</li>
+      <li><strong>Advanced</strong> — xpub, master fingerprint, derivation path, sign/verify message, export of the history (CSV/JSON).</li>
+    </ul>
+
+    <h2 id="send">5. Sending</h2>
+    <p>The send screen is a wizard in one page. Read it top to bottom:</p>
+    <ol>
+      <li><strong>Destination address</strong> — paste it or scan a QR. Always compare the first and last characters with the source you copied from.</li>
+      <li><strong>Amount</strong> — with a "max" helper that keeps enough for the fee. Amounts below 546 sat cannot be sent (dust).</li>
+      <li><strong>Fee</strong> — choose low, normal, high or custom. The summary below shows the estimated fee in sat and the rate in sat/vB, the amount, and the total. The fee is paid for bytes, not for amount (module 2).</li>
+      <li><strong>Coin control</strong> (optional) — pick which UTXOs to spend. Use it to avoid merging UTXOs you would rather keep separate, or to spend a small piece without touching the rest.</li>
+      <li><strong>Batch send</strong> (optional) — up to 20 recipients in a single transaction, sharing the fee instead of paying it once per transfer. Every recipient is listed in the confirmation.</li>
+      <li><strong>Review and confirm</strong> — the app shows a final sheet: address, amount, fee, total. This is your last chance; a signed transaction is irreversible.</li>
+    </ol>
+    <p>If you underpay, the transaction sits in the mempool. Open it from the history and use <strong>bump fee (RBF)</strong> to replace it with a version that pays more — the recipient and amount stay the same.</p>
+
+    <h2 id="receive">6. Receiving and addresses</h2>
+    <ul>
+      <li><strong>Receive</strong> always proposes a <em>fresh</em> address, with a QR code and a copy button. Take the fresh one: it is the cheapest privacy measure you will ever apply (module 4).</li>
+      <li><strong>Addresses</strong> lists the <em>receive</em> branch (what you show to others) and the <em>change</em> branch (where your own change returns). Both belong to the same wallet; seeing the change branch does not mean you have extra funds.</li>
+      <li><strong>Address types</strong> — native segwit (BIP84), nested segwit (BIP49) and legacy (BIP44). Pick native unless a counterparty only understands an older format; the app shows the prefix it expects for the current network.</li>
+      <li><strong>Waiting funds</strong> — a received UTXO appears as unavailable until it has confirmations. The app tells you how many blocks are missing.</li>
+    </ul>
+
+    <h2 id="advanced">7. Watch-only, PSBT, sign &amp; verify</h2>
+    <ul>
+      <li><strong>Watch-only</strong> — import an xpub to see a wallet without being able to spend from it (module 2, §7). Ideal for monitoring a device you keep offline. Remember: the xpub is a privacy key (module 4).</li>
+      <li><strong>PSBT</strong> — Partially Signed Bitcoin Transactions. Another device or person builds a transaction, you sign it here (or vice versa) without ever exposing your seed. The app supports scanning the PSBT as a QR, signing it, and exporting the result.</li>
+      <li><strong>Sign / verify message</strong> — prove that an address is yours, or check that a message really came from a given address, without moving any funds. Useful for support claims and provenance.</li>
+      <li><strong>Export history</strong> — CSV or JSON of the transactions of a wallet, for your own records or for a tax advisor.</li>
+    </ul>
+
+    <h2 id="lightning">8. The Lightning tab</h2>
+    <figure class="shot">
+      <img src="/screenshots/03-lightning.png" alt="Lightning tab: node balance, channels and the on-chain deposit action" loading="lazy" width="921" height="2048">
+      <figcaption>The Lightning layer: node balance, channels, and the on-chain actions that feed them.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Connect a node</strong> — paste the connection string produced by your node installer (see the <a href="/node.html">node page</a>). The app becomes a remote control: keys and funds stay on your machine.</li>
+      <li><strong>Balances</strong> — on-chain funds of the node vs Lightning funds inside channels. They are different things (module 5).</li>
+      <li><strong>Channels</strong> — list with capacity, your side, the peer's side, reserve and status. Open, close (cooperative) and force close live here, with explanations attached to each term.</li>
+      <li><strong>Receive / Send</strong> — invoices and keysend. Receiving needs inbound liquidity: a fresh channel has none.</li>
+      <li><strong>Deposit / Withdraw</strong> — move funds between the node's on-chain wallet and its channels.</li>
+      <li><strong>Swaps</strong> — pay a Lightning invoice without a node, via a provider (module 5, §6). Experimental: read the warnings in the flow.</li>
+    </ul>
+
+    <h2 id="settings">9. Settings and the in-app guide</h2>
+    <ul>
+      <li><strong>Security</strong> — app lock with biometrics. The switch is disabled if no biometric is enrolled, and explains why.</li>
+      <li><strong>Appearance</strong> — theme and language (8 languages).</li>
+      <li><strong>Interface</strong> — <em>Info hints</em>: the little ⓘ dots next to the technical fields. Turn them off once you know the app; turn them back on when you need a reminder.</li>
+      <li><strong>Tools</strong> — the block explorer view, and <em>Explorer mirrors</em>: keeping the fallback on means three possible providers instead of one (module 4, §4).</li>
+      <li><strong>About &amp; info</strong> — <strong>How it works</strong> opens the in-app guide (the five-chapter version of this course), followed by legal information and the open-source licenses.</li>
+    </ul>
+
+    <h2 id="trouble">10. Troubleshooting</h2>
+    <ul>
+      <li><strong>The balance is empty or shows an error.</strong> The public API may be rate-limited or down; the app distinguishes the two. Retry in a minute; if the mirrors are off, turning them on can help.</li>
+      <li><strong>A payment is not arriving.</strong> Check its confirmations: 0 means pending. The fee you paid decides when it moves; if it signalled replaceability, bump it.</li>
+      <li><strong>The balance dropped without a payment.</strong> Look at the transaction: it is your change plus the fee, or a UTXO still waiting.</li>
+      <li><strong>"Funds unavailable".</strong> Those UTXOs are waiting for confirmations — they are not lost.</li>
+      <li><strong>The app refuses an amount.</strong> It is probably below the dust threshold (546 sat) or above the selected UTXOs' value.</li>
+      <li><strong>A received Lightning payment fails.</strong> Inbound liquidity: the channel cannot receive more than the peer's side can send (module 5).</li>
+      <li><strong>I think my phrase leaked.</strong> Create a new wallet and move the funds. There is no way to change the phrase of an existing wallet.</li>
+    </ul>
+
+    <h2 id="glossary">11. Glossary</h2>
+    <dl class="glossary">
+      <dt>Address</dt>
+      <dd>A one-way label derived from your keys. Publish a fresh one for every payment you receive.</dd>
+      <dt>Blockchain</dt>
+      <dd>The public ledger: an append-only chain of blocks, each recording transactions.</dd>
+      <dt>Change</dt>
+      <dd>The part of your UTXOs that returns to you on a new address after a payment.</dd>
+      <dt>Confirmation</dt>
+      <dd>One block added on top of the block containing your transaction.</dd>
+      <dt>Dust</dt>
+      <dd>An output too small to be worth spending (below 546 sat here): the network rejects it.</dd>
+      <dt>Mempool</dt>
+      <dd>The waiting room of unconfirmed transactions; its congestion sets the fee market.</dd>
+      <dt>PSBT</dt>
+      <dd>A transaction that is built but not yet signed, portable between devices.</dd>
+      <dt>RBF</dt>
+      <dd>Replace-By-Fee: replacing a pending transaction with one that pays a higher fee.</dd>
+      <dt>sat</dt>
+      <dd>The smallest unit (1 coin = 100 000 000 sat).</dd>
+      <dt>Seed / recovery phrase</dt>
+      <dd>Twelve words that regenerate all your keys. The real wallet.</dd>
+      <dt>UTXO</dt>
+      <dd>An unspent output: one "banknote" of your balance.</dd>
+      <dt>xpub</dt>
+      <dd>The public key that generates all your addresses. See-only, never spend.</dd>
+    </dl>
+
+    <div class="takeaway">
+      <strong>Takeaway</strong> — The app is one screen per concept: home for the overview, detail for the wallet, send/receive for the two actions, addresses and UTXOs for what a balance really is, Lightning for channels. Learn with small amounts, keep the recovery phrase offline, and use the ⓘ dots until the words feel normal.
+    </div>
+
+    <nav class="chapter-nav" aria-label="Course navigation">
+      <a class="btn btn-ghost" href="/learn-lightning.html">← Module 5: Lightning and swaps</a>
+      <a class="btn btn-primary" href="/download.html">Download the app →</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/privacy.html">Privacy policy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

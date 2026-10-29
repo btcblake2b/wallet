@@ -38,6 +38,7 @@
   "homeBackupNotVerified": "Backup not verified",
   "homeLockVault": "Lock vault",
   "homeVaultLocked": "Vault locked",
+  "homeVaultLockedBody": "The keys were removed from memory after inactivity. Enter your password to see balances and sign again. Your wallets are safe: nothing was deleted.",
   "settingsTitle": "Settings",
   "settingsSectionSecurity": "Security",
   "settingsSectionAppearance": "Appearance",
@@ -55,6 +56,41 @@
   "settingsSectionInterface": "Interface",
   "settingsInfoDots": "Info hints",
   "settingsInfoDotsDesc": "Show the small info buttons that explain each feature",
+  "guideTitle": "How it works",
+  "guideEntryDesc": "Plain-language explanations: wallet, seed, fees, Lightning.",
+  "guideIntro": "This guide explains in plain words what the app does and why. You do not need to read it all: open only the chapter you need. Every explanation is also reachable from the ⓘ dot next to the matching field.",
+  "guideOpenFailed": "Could not open the browser.",
+  "guideHintsNote": "You can hide the ⓘ dots in Settings → Interface.",
+  "guideSectionBasics": "Basics",
+  "guideSectionSecurity": "Security and backup",
+  "guideSectionTransactions": "Sending and receiving",
+  "guideSectionLightning": "Lightning",
+  "guideSectionAdvanced": "Going deeper",
+  "guideFullGuideTitle": "Full guide online",
+  "guideFullGuideDesc": "The website has the long version, with examples and FAQ.",
+  "guideFullGuideOpen": "Open the guide",
+  "infoWhatIsWalletTitle": "What a wallet is (and is not)",
+  "infoWhatIsWalletBody": "A wallet does not ''contain'' coins: it holds the private keys that let you spend coins recorded on the blockchain. Nodes calculate the balance by reading the chain, and the app rebuilds it from your addresses. That is why losing the keys means losing the funds, while losing the phone can be recovered with the 12-word phrase.",
+  "infoSelfCustodyTitle": "Self-custody: nobody can freeze your funds",
+  "infoSelfCustodyBody": "Here you are the bank: no account, no login, no company holding your money. The upside: nobody can freeze your balance. The risk: nobody can recover your password or your recovery phrase. That is the price of sovereignty — accept it knowingly.",
+  "infoSeedPhraseTitle": "Recovery phrase (12 words)",
+  "infoSeedPhraseBody": "It is the human-readable form of your private key: those words rebuild ALL your addresses, and therefore your funds. Write it on paper, never as a photo, in chats, in the cloud or in a password manager. Whoever reads it can empty the wallet; whoever loses it has lost everything.",
+  "infoAppEncryptionTitle": "Local encryption and password",
+  "infoAppEncryptionBody": "The phrase stays on your device encrypted with AES-GCM: the key is derived from your password (or from your fingerprint, which unlocks the system keystore). No server ever receives the password. If you forget it there is no ''reset'': the recovery phrase is the only way back.",
+  "infoNetworkBlake2bTitle": "The network: bitcoin-blake2b",
+  "infoNetworkBlake2bBody": "You are using bitcoin-blake2b, an EXPERIMENTAL network with its own rules (BLAKE2b hashing, no consensus-level replay protection): it is not Bitcoin and the two chains do not share coins. Treat this wallet as a test environment, not as your final savings vault.",
+  "infoBalanceUtxoTitle": "How the balance is built",
+  "infoBalanceUtxoBody": "There is no ''account'' with a number: the balance is the sum of UTXOs, the coins you received and have not spent yet — like banknotes in a pocket. A transaction consumes some UTXOs and creates new ones (payment + change). Sending to yourself leaves the balance unchanged.",
+  "infoConfirmationsTitle": "Confirmations",
+  "infoConfirmationsBody": "A new payment is ''pending'' (mempool): it exists, but no block has recorded it yet. Every later block adds a confirmation; from 3 confirmations on a payment is reasonably stable. While pending, the amount may show as unavailable: it has not vanished, it is waiting.",
+  "infoFeeConceptTitle": "Why you pay a fee",
+  "infoFeeConceptBody": "The fee is the reward for whoever includes your transaction in a block. You pay per size (sat/vB), not per amount: sending 1,000 or 1,000,000 sat costs the same. When the mempool is busy prices rise; the fee is NOT an app fee — it goes to the miners.",
+  "infoChangeAddressTitle": "Change",
+  "infoChangeAddressBody": "Like at the shop: if the UTXOs you spend are worth more than the amount, the difference comes back to you on a NEW address of the same wallet (the ''change''). Seeing a transaction with two outputs is normal: the payment to the recipient and the change to you.",
+  "infoLightningVsOnchainTitle": "On-chain and Lightning",
+  "infoLightningVsOnchainBody": "On-chain means every movement is a public transaction on the chain: safe and verifiable, but slower and with a fee per transaction. Lightning means instant, almost free payments inside ''channels'' opened with one on-chain transaction. Opening a channel moves on-chain funds into the channel; closing it moves them back on-chain.",
+  "infoPrivacyBasicsTitle": "Privacy: who sees what",
+  "infoPrivacyBasicsBody": "Every ''Receive'' creates a new address: reusing one links your payments together. The app has no account and no telemetry, and asks a public API (mempool.guide) for on-chain data — that API sees your IP. For maximum privacy use a VPN or your own node, and never publish your xpub.",
   "infoCoinControlTitle": "Coin control (UTXO selection)",
   "infoCoinControlBody": "Your balance is made of UTXOs, the pieces you received. Here you can pick which ones to spend: the transaction will use only those, letting you keep small or inactive pieces aside.",
   "infoDustLimitTitle": "Minimum amount (dust)",
@@ -62,7 +98,7 @@
   "infoFeeRateTitle": "Transaction fee",
   "infoFeeRateBody": "The fee is paid per unit of transaction size (sat/vB): the faster you want the confirmation, the more you pay. 'Economical' can take hours, 'Priority' a few minutes. 'Custom' is for when you know the current mempool rate.",
   "infoBatchSendTitle": "Multiple recipients (batch)",
-  "infoBatchSendBody": "In a single transaction you can pay up to 5 addresses, sharing the fee instead of paying it once per transfer. All recipients are shown in the confirmation before signing.",
+  "infoBatchSendBody": "In a single transaction you can pay up to 20 addresses, sharing the fee instead of paying it once per transfer. All recipients are shown in the confirmation before signing.",
   "infoBumpFeeTitle": "Increase fee (RBF)",
   "infoBumpFeeBody": "A pending transaction can be replaced by a new one paying a higher fee (BIP125). The original is cancelled and only the replacement can confirm — the destination address and amount stay the same.",
   "infoXpubTitle": "Account public key (xpub)",
@@ -207,6 +243,28 @@
   "walletDetailUtxoSelected": "{count} selected · {sats} sat",
   "walletDetailUtxoSendSelected": "Send selected",
   "walletDetailUtxoClearSelection": "Clear selection",
+  "walletUtxoWaitingBadge": "Waiting period",
+  "@walletUtxoWaitingBadge": {
+    "description": "Badge for a mining payout (coinbase) the network does not relay yet"
+  },
+  "@walletUtxoWaitingBlocks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "walletUtxoWaitingBlocks": "{count} blocks to unlock",
+  "@walletUtxoWaitingHint": {
+    "placeholders": {
+      "blocks": {"type": "int"}
+    }
+  },
+  "walletUtxoWaitingHint": "Mining payouts (coinbase) are relayed by the network only after {blocks} blocks: they cannot be spent yet.",
+  "@walletBalanceWaiting": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "walletBalanceWaiting": "Waiting period: {amount}",
   "walletDetailPasswordSeedReason": "Confirm password to view the seed phrase",
   "walletDetailBiometricSeedReason": "Biometric confirmation to view the seed phrase",
   "walletDetailPasswordBumpReason": "Confirm password to increase the fee",
@@ -290,7 +348,7 @@
       "email": {"type": "String"}
     }
   },
-  "legalPrivacyContent": "This Privacy Policy is provisional and will be replaced by the final version published on the official website when available.\n\n1) DATA ON YOUR DEVICE. The app does not require an account and does not store personal data on servers operated by the author. The encrypted seed (AES-256-GCM), preferences and consents remain ONLY on your device.\n\n2) DATA SENT TO THIRD PARTIES FOR OPERATION. To display balance and fees the app queries public third-party APIs:\n• mempool.guide (blockchain explorer).\n• If mempool.guide is unavailable, the app may query two community Esplora-compatible mirrors (mempool.kilombino.com, mempool.maveth.ca). This can be turned off in Settings.\nEach request transmits your IP address and the public address of the queried wallet. Private keys and the seed are NEVER transmitted.\n\n3) NO TRACKERS. No analytics, no advertising, no cookies inside the app.\n\n4) RIGHTS (GDPR arts. 13-14). You have the right of access, rectification, erasure and objection by writing to the data controller: {holder} — {email}. Since we do not store personal data, these rights are already largely guaranteed by the fact that the data stays on your device.",
+  "legalPrivacyContent": "This Privacy Policy is provisional and will be replaced by the final version published on the official website when available.\n\n1) DATA ON YOUR DEVICE. The app does not require an account and does not store personal data on servers operated by the author. The encrypted seed (AES-256-GCM), preferences and consents remain ONLY on your device.\n\n2) DATA SENT TO THIRD PARTIES FOR OPERATION. To display balance and fees the app queries public third-party APIs:\n• mempool.guide (blockchain explorer).\n• If mempool.guide is unavailable, the app may query two community Esplora-compatible mirrors (mempool.kilombino.com, mempool.maveth.ca). This can be turned off in Settings.\n• If you enable the automatic price in Settings, the app reads the last XBT/USDC trade from neoxa.exchange (NeoXEX) on demand. If your value currency is not USD, the app also reads the USDT exchange rates from api.coinbase.com. Both can be turned off in Settings.\nEach request transmits your IP address and the public address of the queried wallet. Private keys and the seed are NEVER transmitted.\n\n3) NO TRACKERS. No analytics, no advertising, no cookies inside the app.\n\n4) RIGHTS (GDPR arts. 13-14). You have the right of access, rectification, erasure and objection by writing to the data controller: {holder} — {email}. Since we do not store personal data, these rights are already largely guaranteed by the fact that the data stays on your device.",
   "@legalSecurityContact": {
     "placeholders": {
       "email": {"type": "String"}
@@ -313,6 +371,7 @@
   "scanQrError": "Unable to access the camera. Grant the camera permission and try again.",
   "scanQrInvalid": "The scanned code is not a valid Bitcoin address.",
   "scanQrInvalidInvoice": "The scanned code is not a valid Lightning invoice.",
+  "scanQrInvalidMnemonic": "The scanned code is not a valid BIP39 recovery phrase.",
   "scanQrTorch": "Toggle flashlight",
   "sendConfirmTitle": "Confirm transaction",
   "sendConfirmWarning": "This transaction is irreversible. Verify the details before confirming.",
@@ -333,6 +392,7 @@
     }
   },
   "importScreenHint": "word1 word2 word3 ...",
+  "importScreenScanSeed": "Scan seed QR code",
   "importScreenValidateEmpty": "Enter the mnemonic phrase.",
   "importScreenValidateCount": "The phrase must contain 12, 15, 18, 21 or 24 words (detected: {count}).",
   "importScreenValidateInvalid": "Invalid mnemonic phrase. Check the spelling of the words.",
@@ -507,6 +567,12 @@
   "lightningChannelRemote": "Remote",
   "lightningOpenChannel": "Open channel",
   "lightningOpenChannelNodeId": "Node ID (pubkey)",
+  "lightningCoinControlTitle": "Coin control (optional)",
+  "lightningCoinControlHint": "Pick which of the node''s on-chain outputs fund the channel. Without a selection the node chooses on its own.",
+  "lightningCoinControlNoneSelected": "No selection: the node chooses automatically.",
+  "lightningCoinControlSelectedTotal": "Selected total",
+  "lightningCoinControlUnconfirmed": "unconfirmed",
+  "lightningCoinControlUnavailable": "Output list unavailable: the node will choose automatically.",
   "lightningOpenChannelHost": "Host (optional, ip:port)",
   "lightningOpenChannelAmount": "Amount (sat)",
   "lightningOpenChannelPrivate": "Private channel",
@@ -577,6 +643,117 @@
   "lightningChannelReceivable": "Receivable",
   "lightningChannelHtlcs": "HTLCs",
   "lightningChannelFundingTxid": "Funding txid",
+  "lightningSplice": "Resize channel",
+  "lightningSpliceTitle": "Resize channel without closing it",
+  "lightningSpliceIn": "Add funds",
+  "lightningSpliceOut": "Withdraw funds",
+  "lightningSpliceAmountLabel": "Amount (sat)",
+  "lightningSpliceEstimate": "Estimate on-chain fee",
+  "lightningSpliceFee": "On-chain fee: about {fee} sat",
+  "@lightningSpliceFee": {
+    "placeholders": {
+      "fee": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "lightningSpliceFeeUnavailable": "The node did not return a fee estimate",
+  "lightningSpliceConfirm": "Resize the channel now? The channel stays online and one on-chain transaction is broadcast.",
+  "lightningSpliceDone": "Channel resized",
+  "lightningSpliceInvalidAmount": "Enter an amount greater than zero",
+  "lightningSpliceUnavailable": "Resizing is available only on usable channels with the peer online.",
+  "lightningSpliceChannelFailed": "The node refused the splice: the peer may not support it (it needs CLN with unified signatures). The channel is unchanged.",
+  "lightningSpliceBridgeOutdated": "The bridge of this node does not expose channel resizing yet: update the bridge on the server.",
+  "lightningSpliceOnchainAvailable": "Node on-chain funds: {sats} sat",
+  "@lightningSpliceOnchainAvailable": {
+    "placeholders": {
+      "sats": {
+        "type": "String"
+      }
+    }
+  },
+  "lightningSpliceInsufficientOnchain": "Not enough on-chain funds on the node for this amount: top up the node wallet first (Deposit), then try again.",
+  "lightningReceiveModeInvoice": "One-time invoice",
+  "lightningReceiveModeOffer": "Reusable code",
+  "lightningOfferTitle": "Reusable payment code",
+  "lightningOfferReusableHint": "Share this code: anyone can pay it, choosing the amount if you left it open. It does not expire like an invoice.",
+  "lightningOfferAmountOptional": "Amount (sat) — optional",
+  "lightningOfferAmountLabel": "Amount (sat)",
+  "lightningOfferAmountRequired": "Enter the amount to pay this offer",
+  "lightningOfferFixedAmount": "Offer amount: {sats} sat",
+  "@lightningOfferFixedAmount": {
+    "placeholders": {
+      "sats": {
+        "type": "String"
+      }
+    }
+  },
+  "lightningOfferDefaultDescription": "Payment",
+  "lightningPayOffer": "Pay offer",
+  "lightningCrossChainEntry": "Pay a BTC (SHA-256) invoice",
+  "lightningCrossChainTitle": "Cross-chain payment",
+  "lightningCrossChainHint": "Pays a Lightning invoice of the SHA-256 chain using your BLAKE2b funds, through an external non-custodial bridge. The bridge can only collect once it has paid the invoice; otherwise the payment returns to you.",
+  "lightningCrossChainCheck": "Check cost",
+  "lightningCrossChainCost": "You pay: {sats} sat",
+  "@lightningCrossChainCost": {
+    "placeholders": {
+      "sats": {
+        "type": "String"
+      }
+    }
+  },
+  "lightningCrossChainInvoiceAmount": "Invoice amount: {sats} sat",
+  "@lightningCrossChainInvoiceAmount": {
+    "placeholders": {
+      "sats": {
+        "type": "String"
+      }
+    }
+  },
+  "lightningCrossChainRate": "Exchange rate: 1 XBT = {rate} BTC",
+  "@lightningCrossChainRate": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "lightningCrossChainSpread": "Bridge spread: {percent}%",
+  "@lightningCrossChainSpread": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "lightningCrossChainWait": "Estimated wait: about {seconds} s",
+  "@lightningCrossChainWait": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "lightningCrossChainPay": "Pay via bridge",
+  "lightningCrossChainConfirmTitle": "Pay through the bridge?",
+  "lightningCrossChainConfirmBody": "You will pay {sats} sat on this chain. The funds stay held until the bridge pays the destination invoice; if it cannot, the payment returns to you.",
+  "@lightningCrossChainConfirmBody": {
+    "placeholders": {
+      "sats": {
+        "type": "String"
+      }
+    }
+  },
+  "lightningCrossChainDone": "Payment completed",
+  "lightningCrossChainState": "Bridge state: {state}",
+  "@lightningCrossChainState": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
   "lightningNodeManagement": "Node management",
   "lightningNodeManagementSubtitle": "{peers} peers · {channels} channels",
   "@lightningNodeManagementSubtitle": {
@@ -756,6 +933,8 @@
   "lightningPeeringGateTitle": "Peering restricted to bit 68 releases",
   "lightningPeeringGateBody": "This node requires option_blake2b (bit 68) during the connection handshake, so nodes on older releases cannot connect. It is a choice of the node, not a problem of the app or of the bridge. Use peers running release .4 or later, or wait for the community to make the bit optional.",
   "lightningPeeringGateLink": "Compatibility matrix",
+  "lightningPeeringGateNewTitle": "Peering limited to the new protocol releases",
+  "lightningPeeringGateNewBody": "This node uses the final feature bits (option_blake2b 512, option_unified_sigs 514): nodes that have not updated — release .4 and earlier — cannot connect. It is a decision of the network, not a problem of the app or of the bridge. Peers must update to release .5 or later.",
   "@lightningPeersRegisteredOnly": {
     "placeholders": {
       "count": {"type": "int"}
@@ -776,6 +955,31 @@
   },
   "lightningSwapProviderConnected": "Provider connected: {pubkey}",
   "lightningSwapProviderDisconnect": "Disconnect",
+  "lightningSwapProviderDefaultLabel": "btcblake2b node (recommended)",
+  "lightningSwapProviderChecking": "Checking the default node...",
+  "lightningSwapProviderReachable": "Default node reachable",
+  "lightningSwapProviderDown": "The default node is not responding right now.",
+  "@lightningSwapProviderSendLimit": {
+    "placeholders": {
+      "min": {"type": "String"},
+      "max": {"type": "String"}
+    }
+  },
+  "lightningSwapProviderSendLimit": "Right now you can send between {min} and {max} sat",
+  "@lightningSwapProviderLiquidity": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "lightningSwapProviderLiquidity": "Liquidity available now: {amount} sat",
+  "lightningSwapPeerCheck": "Check recipient",
+  "@lightningSwapPeerReachable": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "lightningSwapPeerReachable": "Recipient reachable: {amount} sat to pay",
+  "lightningSwapErrorPeerUnreachable": "The recipient is not reachable from the provider: no route to their node. Check the invoice or try again later.",
   "lightningSwapInvoiceHint": "Lightning invoice (lnbc...)",
   "lightningSwapStart": "Continue",
   "lightningSwapAmount": "Invoice amount",
@@ -812,6 +1016,24 @@
   "lightningSwapRefundNotYet": "Refund not available yet: it opens from block {height}",
   "lightningSwapCopyBlob": "Copy recovery blob",
   "lightningSwapBlobCopied": "Recovery blob copied",
+  "lightningSwapHistoryTitle": "Swap history",
+  "lightningSwapHistoryEmpty": "No swaps yet: payments made via a provider will show up here.",
+  "lightningSwapDetailTitle": "Swap details",
+  "lightningSwapDetailCreated": "Created",
+  "lightningSwapDetailSummary": "Summary",
+  "lightningSwapDetailProtocol": "Protocol data",
+  "lightningSwapDetailSwapId": "Swap ID",
+  "lightningSwapDetailInvoice": "Invoice",
+  "lightningSwapDetailPaymentHash": "Payment hash",
+  "lightningSwapDetailProvider": "Provider",
+  "lightningSwapDetailFundingTx": "Funding transaction",
+  "lightningSwapOpenInExplorer": "Open in explorer",
+  "@lightningSwapRefundSent": {
+    "placeholders": {
+      "txid": {"type": "String"}
+    }
+  },
+  "lightningSwapRefundSent": "Refund sent: {txid}",
   "lightningSwapClaimTxid": "Claim txid",
   "lightningSwapClaimHint": "The claim is an on-chain transaction: it is confirmed with the next block (~12 min). Tap the link to verify it.",
   "lightningSwapInvalidInvoice": "That does not look like a Lightning invoice",
@@ -838,11 +1060,30 @@
     }
   },
   "lightningSwapInsufficientFunds": "Insufficient funds: {needed} sat needed, {available} sat available",
+  "@lightningSwapInsufficientFundsWaiting": {
+    "placeholders": {
+      "needed": {"type": "String"},
+      "available": {"type": "String"},
+      "waiting": {"type": "String"}
+    }
+  },
+  "lightningSwapInsufficientFundsWaiting": "Insufficient funds: {needed} sat needed, {available} sat available ({waiting} sat in the waiting period)",
   "lightningSwapCancel": "Cancel swap",
   "lightningSwapErrorConnectFailed": "Could not reach the provider. Check your connection and try again.",
   "lightningSwapErrorDisconnected": "Connection to the provider was lost. Try connecting again.",
   "lightningSwapErrorNotConnected": "Provider not connected.",
   "lightningSwapErrorRelayNotAllowed": "This provider uses a relay that the web version cannot reach. Open the app on your phone to pay with this provider.",
+  "lightningSwapErrorPaymentFailed": "The provider could not pay this invoice. Your funds are still locked in the HTLC: you can recover them with the refund (see the block below).",
+  "lightningSwapErrorProviderUnavailable": "The provider cannot pay right now (no route or not enough liquidity). Try again later.",
+  "lightningSwapErrorRateLimited": "The provider is temporarily at full capacity. Try again later.",
+  "lightningSwapErrorDuplicateSwap": "This invoice was already used in another swap.",
+  "lightningSwapErrorQuoteExpired": "The quote expired. Start the swap again.",
+  "lightningSwapErrorInvoiceInvalid": "The provider rejected this invoice: it is not valid.",
+  "lightningSwapErrorInvoiceExpired": "This invoice has expired. Ask for a new one.",
+  "lightningSwapErrorAmountOutOfRange": "The provider does not accept this amount (outside the allowed range).",
+  "lightningSwapErrorFundingTimeout": "The funding was not confirmed in time: the swap expired without any payment.",
+  "lightningSwapErrorTooLate": "The payment was cancelled because it was too close to the time lock. Your funds can be recovered.",
+  "lightningSwapRefundHint": "These funds are still yours: the refund unlocks automatically at the time lock, even if the provider disappears.",
   "lightningSwapCancelTitle": "Cancel this swap?",
   "lightningSwapCancelBody": "The app will forget this swap. The provider drops it by itself before the deadline and no funds are locked. To retry with the same invoice you need a new session only after it expires — otherwise generate a new invoice.",
   "lightningSwapCancelConfirm": "Yes, cancel",
@@ -858,5 +1099,107 @@
   "lightningInvoiceDeleteBody": "The invoice will be removed from the node. If it is unpaid it can no longer be paid.",
   "lightningInvoiceDeleteConfirm": "Yes, delete",
   "lightningInvoiceDeleted": "Invoice deleted",
-  "lightningChannelPeerAddress": "Peer address"
+  "lightningChannelPeerAddress": "Peer address",
+  "lightningSpliceNodeTooOld": "Resizing a channel needs a node on release .6 or later (we recommend .9). This node is older, so the action is hidden. Update the node to enable it.",
+  "lightningSpliceNodeOutdated": "This node is on a release before .9: the updates from .8 close a splice vulnerability that can make a node lose channel funds. Resizing still works, but update to .9 as soon as you can.",
+  "lightningDiscoveryTitle": "Find peers and liquidity",
+  "lightningDiscoveryBody": "There is no central catalogue on this network. These are the live reference points where the community lists nodes, channels and inbound liquidity.",
+  "lightningDiscoveryNetworkTitle": "Network explorer (Paperclip)",
+  "lightningDiscoveryNetworkBody": "Public nodes, channels and advertised capacity.",
+  "lightningDiscoveryLspTitle": "Inbound liquidity (Paperclip LSP)",
+  "lightningDiscoveryLspBody": "A channel to your node, paid on-chain in XBT.",
+  "lightningDiscoveryNodexTitle": "Nodex - channels and fees",
+  "lightningDiscoveryNodexBody": "Channel explorer with fees both ways and uptime.",
+  "lightningDiscoverySwapTitle": "Lightning Fork Swap",
+  "lightningDiscoverySwapBody": "Non-custodial swap between Lightning and on-chain to move liquidity.",
+  "lightningDiscoveryWatchtowerTitle": "Watchtowers (lnd nodes only)",
+  "lightningDiscoveryWatchtowerBody": "A watchtower watches the chain while your node is offline and punishes a peer that publishes an old state. Use more than one: lnd needs wtclient.active=true and Tor. CLN nodes speak BOLT 13 (TEOS) instead, which the app does not configure yet. Add them with lncli wtclient add <uri>.",
+  "lightningDiscoveryOpenFailed": "The browser did not open this link.",
+  "lightningInboundMissingTitle": "You cannot receive yet",
+  "lightningInboundMissingBody": "This node has no inbound liquidity: another node must open a channel towards it before anyone can pay you. Until then, the invoices you share cannot be paid.",
+  "lightningInboundMissingCta": "Get inbound liquidity",
+  "lightningInboundMissingRefresh": "Check again",
+  "webVaultNoticeTitle": "You are using the browser version",
+  "webVaultNoticeBody": "Here the encrypted seed is stored in the browser (localStorage, with an IndexedDB backup) and the key is wrapped by your password. The vault locks after 10 minutes of inactivity and when the page is hidden, but code running on the page while the vault is unlocked could read the keys: the browser cannot protect against that. For real amounts use the Android app, where the keys stay in the system keyring.",
+  "webVaultNoticeDownload": "Get the Android app",
+  "splashStartupError": "Unable to start the app",
+  "splashRetry": "Retry",
+  "webVaultOriginOfficial": "Verified domain: {origin}",
+  "webVaultOriginDev": "Local test environment: {origin}",
+  "webVaultOriginUnofficial": "WARNING: this is not the official domain. You are on {origin} — the real one is app.btcblake2b.org. Do not enter your seed or password here.",
+  "receiveNeedsBackupTitle": "Back up the seed first",
+  "receiveNeedsBackupBody": "In the browser the encrypted seed is stored on this site: a PWA update or clearing site data deletes it, and an address shared now would receive funds you could never spend. Confirm the seed backup (or move the wallet to the app) before receiving.",
+  "receiveNeedsBackupAction": "Back up now",
+  "merchantChargeTitle": "Charge",
+  "merchantChargeAmount": "Amount",
+  "merchantChargeAmountInvalid": "Enter an amount greater than zero.",
+  "merchantChargeLabel": "Description (optional)",
+  "merchantChargeModeLightning": "Lightning",
+  "merchantChargeModeOnchain": "On-chain",
+  "merchantChargeLightningHint": "The customer pays the Lightning invoice: credited as soon as the node receives it.",
+  "merchantChargeOnchainHint": "The customer scans the QR: the amount is already inside, they only confirm.",
+  "merchantChargeLightningUnavailable": "No Lightning node connected: for now you can charge on-chain. Connect your node from the Lightning tab to also accept Lightning payments.",
+  "merchantChargeCreate": "Create payment request",
+  "merchantChargeInvoiceTitle": "Lightning invoice",
+  "merchantChargeUriTitle": "Bitcoin URI (BIP21)",
+  "merchantChargeWaiting": "Waiting for payment…",
+  "merchantChargePaid": "Payment received",
+  "merchantChargeNew": "New request",
+  "merchantConvertTitle": "Convert to BTC",
+  "merchantConvertIntro": "XBT lives on the bitcoin-blake2b network, a separate chain from Bitcoin: converting XBT into BTC (or the other way round) is a cross-chain swap. This app does not do it and cannot do it: no exchange, no custody. The conversion happens on third-party non-custodial services you choose.",
+  "merchantConvertAddressTitle": "Your XBT address",
+  "merchantConvertAddressBody": "Copy the address of the wallet you want to use there, or receive XBT here first and convert later. Never send funds to a service that asks for your seed phrase.",
+  "merchantConvertUnnamedWallet": "Wallet",
+  "merchantConvertPaperclipTitle": "Paperclip Bridge (beta)",
+  "merchantConvertPaperclipBody": "Non-custodial bridge from the community: it collects only when the invoice is actually paid. Beta, not independently audited.",
+  "merchantConvertForkTitle": "Lightning Fork Swap",
+  "merchantConvertForkBody": "Community swap with on-chain donations used only for its own liquidity. Check fees and limits before sending.",
+  "merchantConvertWarningTitle": "Before you convert",
+  "merchantConvertWarningBody": "1) Compare the amount you receive with the amount you send: fees on small sums can eat the difference. 2) A swap is not reversible: check the address and the chain. 3) We do not receive, hold or guarantee anything: if a service freezes, only that service can answer. 4) For real amounts, prefer small tests first.",
+  "merchantConvertOpen": "Convert",
+  "fiatPriceShow": "Show value in dollars",
+  "fiatPriceNotSet": "No price set: add one to see the value",
+  "fiatPriceCurrent": "1 XBT = {cents}",
+  "fiatPriceSet": "Set the XBT price",
+  "fiatPriceSetDesc": "The price used for the value: enter it yourself or let the app read it from NeoXEX.",
+  "fiatPriceDialogBody": "Enter the price of 1 XBT in USD. If you prefer, turn on the automatic price in Settings: the app then reads the latest XBT/USDC trade from NeoXEX on demand (and the USDT exchange rate for the currency you pick). The value shown is indicative, not a quote.",
+  "fiatPriceFieldLabel": "Price of 1 XBT",
+  "fiatPriceSave": "Save",
+  "fiatPriceInvalid": "Not a valid price: use a number greater than zero, at most 2 decimals.",
+  "fiatPriceManualNote": "your price, not a market quote",
+  "fiatPriceMarketNote": "market price, latest NeoXEX trade",
+  "fiatPriceCurrency": "Value currency",
+  "fiatPriceCurrencyDesc": "Converted with the USDT exchange rate",
+  "fiatPriceFxFailed": "Exchange rate unavailable: connect to the internet and try again.",
+  "fiatPriceAuto": "Fetch the price from NeoXEX",
+  "fiatPriceAutoDesc": "Reads the last XBT/USDC trade on demand. No polling, no background requests.",
+  "fiatPriceAutoUpdated": "Price updated from NeoXEX",
+  "fiatPriceAutoFailed": "NeoXEX is unreachable: the previous price is kept.",
+  "balanceChangeUnitHint": "Tap to switch the balance between XBT, sats and dollars",
+  "psbtSpendTitle": "Spend with PSBT",
+  "psbtSpendIntro": "A watch-only wallet cannot sign. Create the PSBT here, sign it on a device that holds the seed, then broadcast it from there.",
+  "psbtCreate": "Create PSBT",
+  "psbtCreating": "Creating the PSBT…",
+  "psbtDraftReady": "PSBT ready · fee {fee} sat · change {change} sat",
+  "psbtQrTitle": "Scan this PSBT",
+  "psbtQrFrames": "{count} frames — keep the camera pointed while the QR rotates",
+  "psbtCopyBase64": "Copy PSBT (base64)",
+  "psbtSignTitle": "Sign a PSBT",
+  "psbtSignIntro": "Paste or scan a PSBT created on another device. Check recipients and fee before signing.",
+  "psbtPasteLabel": "PSBT (base64)",
+  "psbtScan": "Scan QR",
+  "psbtReviewTitle": "Review",
+  "psbtReviewFee": "Fee: {fee} sat",
+  "psbtReviewInputs": "Inputs: {count}",
+  "psbtReviewOutputs": "Recipients: {count}",
+  "psbtSign": "Sign",
+  "psbtSignedTitle": "Signed PSBT",
+  "psbtBroadcast": "Broadcast",
+  "psbtBroadcasting": "Broadcasting…",
+  "psbtBroadcastDone": "Sent: {txid}",
+  "psbtInvalid": "Not a valid PSBT",
+  "psbtNoFrames": "No PSBT frame recognised",
+  "psbtScanProgress": "Frames read: {received}/{total}",
+  "psbtSigning": "Signing…",
+  "psbtNeedsSeed": "This wallet has no seed: sign on the device that holds it."
 }

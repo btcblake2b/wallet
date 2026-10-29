@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module 4 — Privacy | Learn</title>
+  <meta name="description" content="What the public ledger reveals, why address reuse is the real problem, what change addresses are, which data this app sends and to whom, and how to reduce exposure.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/learn-privacy.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/download.html">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/node.html">Node</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
+        <li><a href="/it/learn.html" lang="it" aria-label="Switch to Italian">IT</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <p class="crumbs"><a href="/learn.html">Learn</a> › Module 4 of 6</p>
+    <h1>Privacy</h1>
+    <p class="lead">The ledger is public. Privacy is not a feature you switch on: it is a set of habits, plus knowing exactly what leaves your phone.</p>
+
+    <nav class="toc" aria-label="In this module">
+      <strong>In this module</strong>
+      <ol>
+        <li><a href="#public">What the ledger reveals</a></li>
+        <li><a href="#reuse">Address reuse: the real problem</a></li>
+        <li><a href="#change">Change addresses</a></li>
+        <li><a href="#app">What this app sends, and to whom</a></li>
+        <li><a href="#xpub">The xpub is a privacy key</a></li>
+        <li><a href="#harden">Raising the bar</a></li>
+        <li><a href="#check">Check yourself</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="public">1. What the ledger reveals</h2>
+    <p>Every transaction is public and permanent: amounts, addresses, timing, and the graph of which address paid which. What is <em>not</em> in the ledger is your identity — addresses are pseudonyms, not names.</p>
+    <p>The practical consequence: privacy is broken by <strong>linking</strong>, not by the ledger itself. The moment an address is tied to you (an exchange withdrawal, a public donation page, a payment to a merchant who knows you, a message where you pasted it), everything connected to it becomes linkable too.</p>
+
+    <h2 id="reuse">2. Address reuse: the real problem</h2>
+    <p>Your wallet can generate practically unlimited addresses. It should: one fresh address per payment received.</p>
+    <p>Reusing one address is like using the same statement number for your salary, your rent and your donations:</p>
+    <ul>
+      <li>anyone who learns that address can see your whole income and spending history with it;</li>
+      <li>a merchant, a client or a fundraiser can total up everything you ever received there;</li>
+      <li>the link survives forever — there is no "clean up" transaction.</li>
+    </ul>
+    <p>In this app, "Receive" always proposes a fresh address. Accept that proposal: it costs nothing.</p>
+
+    <h2 id="change">3. Change addresses</h2>
+    <p>When you pay, your change returns to a <strong>new address of your own wallet</strong> (module 2). That is a privacy feature: if change went back to the address you were paid on, every payment would chain your balance together in public.</p>
+    <p>Seeing "receive" and "change" branches in the address list is therefore normal. The change branch is not a second wallet and does not mean you have double funds.</p>
+
+    <h2 id="app">4. What this app sends, and to whom</h2>
+    <p>The app has <strong>no accounts, no analytics, no tracking SDKs and no telemetry</strong>. Your keys never leave the device. But to show a balance it must ask somebody about the chain:</p>
+    <ul>
+      <li><strong>Primary source</strong>: <code>mempool.guide</code>, a public Esplora-compatible API. Requests include the addresses or transaction IDs the app is looking up; the provider necessarily sees your IP address and the timing.</li>
+      <li><strong>Optional community mirrors</strong>: if the primary is unavailable, the app may fall back to two community Esplora-compatible mirrors (<code>mempool.kilombino.com</code>, <code>mempool.maveth.ca</code>).</li>
+      <li><strong>Broadcast</strong>: sending a transaction means handing it to one of those nodes so it reaches the network.</li>
+            <li><strong>Optional automatic price</strong>: if you enable it in Settings, the app reads the last XBT/USDC trade from <code>neoxa.exchange</code> (NeoXEX) on demand. When the value currency is not USD it also reads the USDT exchange rates from <code>api.coinbase.com</code>. It never polls and can be turned off in Settings.</li>
+          </ul>
+    <p>In <strong>Settings → Tools → Explorer mirrors</strong> you can turn the fallback <strong>off</strong>: then only the primary source is used, and no address or transaction data goes to a third-party mirror. On the web/PWA build the mirrors are mandatory (the primary API blocks browser requests), which is one more reason to use the mobile app for real funds.</p>
+    <p>What is never sent: your recovery phrase, your password, your private keys, your xpub (unless you explicitly export or share it), a device identifier, or usage statistics.</p>
+
+    <h2 id="xpub">5. The xpub is a privacy key</h2>
+    <p>An xpub cannot spend — and that is exactly what makes people careless with it. With the xpub, anyone can derive <em>all</em> your addresses, watch your balance live, and link every payment you will ever receive in that account.</p>
+    <p>Share it only with software or people you would show your full bank statement to.</p>
+
+    <h2 id="harden">6. Raising the bar</h2>
+    <ul>
+      <li><strong>A fresh address per payment</strong> — the single highest-value habit.</li>
+      <li><strong>Turn off the mirrors</strong> if you prefer one provider instead of three.</li>
+      <li><strong>Use a VPN</strong> so the API provider does not learn your home IP.</li>
+      <li><strong>Run your own node</strong> if you want to stop asking anyone at all (see the <a href="/node.html">node page</a>).</li>
+      <li><strong>Use coin control</strong> to avoid accidentally merging UTXOs from different contexts in one transaction — merging is a public statement that they belong to the same person.</li>
+      <li><strong>Do not post addresses or transaction IDs</strong> in public chats, and never post your xpub.</li>
+    </ul>
+    <div class="takeaway">
+      <strong>Takeaway</strong> — The ledger is public, so privacy comes from not linking your addresses. Use a fresh address per payment, let change go to the internal branch, and know the exact list of servers the app talks to (one primary API, plus two optional mirrors you can disable).
+    </div>
+
+    <h2 id="check">7. Check yourself</h2>
+    <ol>
+      <li>You published one address on your website. What does a stranger learn from it over a year?</li>
+      <li>Which switch in the app reduces the number of servers that see your addresses?</li>
+      <li>Why is giving someone your xpub a privacy decision rather than a spending risk?</li>
+    </ol>
+
+    <nav class="chapter-nav" aria-label="Course navigation">
+      <a class="btn btn-ghost" href="/learn-security.html">← Module 3: Keys and security</a>
+      <a class="btn btn-primary" href="/learn-lightning.html">Module 5: Lightning and swaps →</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/privacy.html">Privacy policy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

@@ -6,6 +6,7 @@ import 'package:nwc_cln_bridge/src/bridge_service.dart';
 import 'package:nwc_cln_bridge/src/cln/cln_api.dart';
 import 'package:nwc_cln_bridge/src/cln/reloadable_cln.dart';
 import 'package:nwc_cln_bridge/src/config.dart';
+import 'package:nwc_cln_bridge/src/cross/kilobridge_client.dart';
 import 'package:nwc_cln_bridge/src/handlers.dart';
 import 'package:nwc_cln_bridge/src/logger.dart';
 import 'package:nwc_cln_bridge/src/nostr/nostr_crypto.dart';
@@ -91,9 +92,23 @@ Future<void> main(List<String> args) async {
     logger: logger,
   );
   final transport = WebSocketTransport(logger: logger);
+  // PERCHÉ (P9): il bridge cross-chain si abilita solo con un URL configurato:
+  // senza, i metodi `cross_chain_*` rispondono NOT_IMPLEMENTED e non vengono
+  // annunciati come disponibili.
+  final crossChainUrl = opts['cross-chain-url'] ?? config.crossChainUrl;
+  final crossChain = (crossChainUrl == null || crossChainUrl.isEmpty)
+      ? null
+      : KilobridgeClient(
+          baseUrl: crossChainUrl,
+          logger: logger,
+        );
   final service = BridgeService(
     transport: transport,
-    handlers: NwcHandlers(cln: cln, logger: logger),
+    handlers: NwcHandlers(
+      cln: cln,
+      logger: logger,
+      crossChain: crossChain,
+    ),
     config: config,
     logger: logger,
   );

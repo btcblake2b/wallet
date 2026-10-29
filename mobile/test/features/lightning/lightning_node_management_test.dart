@@ -187,4 +187,24 @@ void main() {
     expect(find.text('On-chain balance'), findsOneWidget);
     expect(find.text('Node addresses'), findsOneWidget);
   });
+
+  testWidgets('nessuna liquidità in entrata → CTA al LSP, non un vicolo cieco',
+      (tester) async {
+    service = LightningServiceMock(inboundOverrideMsat: 0);
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Get inbound liquidity'), 300);
+    expect(find.text('Get inbound liquidity'), findsOneWidget);
+  });
+
+  testWidgets('liquidità in entrata presente → nessuna CTA', (tester) async {
+    service = LightningServiceMock();
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Get inbound liquidity'), findsNothing);
+  });
 }

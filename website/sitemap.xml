@@ -20,6 +20,18 @@
     <changefreq>monthly</changefreq><priority>0.8</priority>
   </url>
   <url>
+    <loc>https://btcblake2b.org/learn.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://btcblake2b.org/learn.html" />
+    <xhtml:link rel="alternate" hreflang="it" href="https://btcblake2b.org/it/learn.html" />
+    <changefreq>monthly</changefreq><priority>0.9</priority>
+  </url>
+  <url><loc>https://btcblake2b.org/learn-bitcoin.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://btcblake2b.org/learn-how-it-works.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://btcblake2b.org/learn-security.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://btcblake2b.org/learn-privacy.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://btcblake2b.org/learn-lightning.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://btcblake2b.org/learn-app.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url>
     <loc>https://btcblake2b.org/privacy.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://btcblake2b.org/privacy.html" />
     <xhtml:link rel="alternate" hreflang="it" href="https://btcblake2b.org/it/privacy.html" />
@@ -32,6 +44,7 @@
     <changefreq>yearly</changefreq><priority>0.4</priority>
   </url>
   <url><loc>https://btcblake2b.org/it/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://btcblake2b.org/it/learn.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://btcblake2b.org/it/download.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://btcblake2b.org/it/node.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://btcblake2b.org/it/privacy.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>

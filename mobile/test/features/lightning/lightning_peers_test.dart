@@ -128,6 +128,47 @@ void main() {
     );
   });
 
+  testWidgets('card scoperta peer: servizi esterni e torri', (tester) async {
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(
+      wrap(LightningPeersScreen(lightningService: service)),
+    );
+    await tester.pumpAndSettle();
+
+    // La card è in coda alla lista → va portata in vista.
+    await tester.drag(find.byType(ListView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Find peers and liquidity'), findsOneWidget);
+    expect(find.text('Network explorer (Paperclip)'), findsOneWidget);
+    expect(find.text('Inbound liquidity (Paperclip LSP)'), findsOneWidget);
+    expect(find.text('Nodex - channels and fees'), findsOneWidget);
+    expect(find.text('Lightning Fork Swap'), findsOneWidget);
+    expect(find.text('Watchtowers (lnd nodes only)'), findsOneWidget);
+  });
+
+  testWidgets('dettaglio canale: nodo < .6 → splice nascosto e spiegato',
+      (tester) async {
+    // Il mock dichiara `v26.06.7-blake2b.2`: lo splice non esiste in quella
+    // release, quindi il pulsante non deve comparire e va detto cosa serve.
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(
+      wrap(
+        LightningChannelDetailScreen(
+          channel: channel,
+          lightningService: service,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Resize channel'), findsNothing);
+    expect(find.textContaining('release .6 or later'), findsOneWidget);
+  });
+
   testWidgets('dettaglio canale: sat, fee, HTLC e chiusura cooperativa',
       (tester) async {
     await tester.runAsync(() => service.connect(connection));

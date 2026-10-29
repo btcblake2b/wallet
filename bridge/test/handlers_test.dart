@@ -47,6 +47,39 @@ class ThrowingCln implements ClnApi {
   }
 }
 
+/// FakeCln che finalizza lo splice solo dopo [securitiesNeeded] `splice_update`.
+///
+/// // PERCHÉ: CLN restituisce `commitments_secured` false finché il peer non ha
+/// // risposto — firmare prima è rifiutato dal nodo.
+class SlowSpliceCln implements ClnApi {
+  SlowSpliceCln(this.responses, {this.securitiesNeeded = 2});
+
+  final Map<String, Map<String, dynamic>> responses;
+  final int securitiesNeeded;
+  final List<String> calls = [];
+  int updates = 0;
+
+  @override
+  Future<Map<String, dynamic>> call(
+    String method, [
+    Map<String, dynamic> params = const {},
+  ]) async {
+    calls.add(method);
+    if (method == 'splice_update') {
+      updates++;
+      return {
+        'psbt': 'cHNidP8UPD$updates',
+        'commitments_secured': updates >= securitiesNeeded,
+      };
+    }
+    final r = responses[method];
+    if (r == null) {
+      throw RpcError('OTHER', 'comando non simulato: $method');
+    }
+    return r;
+  }
+}
+
 void main() {
   group('NwcHandlers', () {
     late FakeCln cln;
@@ -234,9 +267,31 @@ void main() {
             'amount_sent_msat': 1001000,
             'amount_msat': 1000000,
           },
+          'offer': {
+            'offer_id': 'oid1',
+            'active': true,
+            'single_use': false,
+            'bolt12': 'lno1offer',
+          },
+          // PERCHÉ (26/10): un'offerta non si paga: va prima convertita in
+          // fattura BOLT12 (`lni1…`) e solo quella si passa a `pay`.
+          'fetchinvoice': {'invoice': 'lni1fetched'},
           'connect': {},
           'fundchannel': {'txid': 'ftx', 'channel_id': 'fid'},
           'close': {'tx': 'ctx'},
+          // SPLICE: flusso PSBT di CLN (init → update → sign → signed).
+          'fundpsbt': {
+            'psbt': 'cHNidP8FUND',
+            'feerate_per_kw': 2000,
+            'estimated_final_weight': 1410,
+          },
+          'splice_init': {'psbt': 'cHNidP8INIT'},
+          'splice_update': {
+            'psbt': 'cHNidP8UPD',
+            'commitments_secured': true,
+          },
+          'signpsbt': {'signed_psbt': 'cHNidP8SIGNED'},
+          'splice_signed': {'psbt': 'cHNidP8DONE', 'txid': 'stx1'},
           'newaddr': {'bech32': 'bc1qtestaddress000000000000000000000'},
           'withdraw': {'txid': 'wtx1'},
           'feerates': {
@@ -305,6 +360,80 @@ void main() {
       expect(r['fees_paid'], 1000);
     });
 
+    // ── BOLT12 (offers) ─────────────────────────────────────────────────────
+
+    test('pay_invoice con offerta lno1 → fetchinvoice e poi pay della invoice',
+        () async {
+      final r = await handlers.handle('pay_invoice', {
+        'invoice':
+            'lno1qgsqvgnwgcg35z6ee2h3yczraddm72xrfua9uve2rlrm9deu7xyfzrc',
+      });
+      // 1) prima il fetch della fattura dall'offerta (importo libero: nessuno)
+      final fetch = cln.callParams.firstWhere(
+        (p) => p.containsKey('offer'),
+        orElse: () => const <String, dynamic>{},
+      );
+      expect(
+        fetch['offer'],
+        'lno1qgsqvgnwgcg35z6ee2h3yczraddm72xrfua9uve2rlrm9deu7xyfzrc',
+      );
+      expect(fetch.containsKey('amount_msat'), isFalse);
+      // 2) poi il pagamento della FATTURA: `pay` non conosce `bolt12`
+      final pay = cln.callParams.last;
+      expect(pay['bolt11'], 'lni1fetched');
+      expect(pay.containsKey('bolt12'), isFalse);
+      expect(r['preimage'], 'pre');
+    });
+
+    test('pay_invoice con offerta e amount_msat → importo al fetchinvoice',
+        () async {
+      await handlers
+          .handle('pay_invoice', {'invoice': 'lno1abc', 'amount_msat': 21000});
+      final fetch = cln.callParams.firstWhere(
+        (p) => p.containsKey('offer'),
+        orElse: () => const <String, dynamic>{},
+      );
+      expect(fetch['offer'], 'lno1abc');
+      expect(fetch['amount_msat'], '21000');
+      // La invoice risultante è già con importo: `pay` non riceve amount_msat.
+      final pay = cln.callParams.last;
+      expect(pay['bolt11'], 'lni1fetched');
+      expect(pay.containsKey('amount_msat'), isFalse);
+    });
+
+    test('make_offer crea un codice riutilizzabile', () async {
+      final r = await handlers.handle('make_offer', {
+        'description': 'Caffè',
+        'amount_msat': 5000000,
+      });
+      final params = cln.callParams.last;
+      expect(params['description'], 'Caffè');
+      expect(params['amount'], '5000000msat');
+      expect(params['single_use'], false);
+      expect(r['bolt12'], 'lno1offer');
+      expect(r['offer_id'], 'oid1');
+      expect(r['amount_msat'], 5000000);
+    });
+
+    test('make_offer senza importo → offerta a importo libero (`any`)', () async {
+      // PERCHÉ `any` e non "campo assente": CLN rifiuta `offer` senza amount
+      // (`missing required parameter: amount`) — è così che «codice
+      // riutilizzabile» senza importo falliva in app.
+      await handlers.handle('make_offer', {'description': 'Offerta libera'});
+      expect(cln.callParams.last['amount'], 'any');
+      expect(cln.callParams.last.containsKey('amount'), isTrue);
+    });
+
+    test('make_offer senza description → BAD_REQUEST', () async {
+      await expectLater(
+        handlers.handle('make_offer', {'amount_msat': 1000}),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'BAD_REQUEST'),
+        ),
+      );
+      expect(cln.calls, isEmpty);
+    });
+
     test('list_channels mappa stato, saldi (msat) e privacy', () async {
       final r = await handlers.handle('list_channels', {});
       final channels = (r['channels'] as List).cast<Map<String, dynamic>>();
@@ -352,6 +481,43 @@ void main() {
       expect(cln.callParams.last['announce'], false);
     });
 
+    test('open_channel con utxos → fundchannel riceve gli output scelti (A8)',
+        () async {
+      const txid =
+          'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6';
+      await handlers.handle('open_channel', {
+        'pubkey': '02bf',
+        'amount': 20000,
+        'utxos': [
+          '$txid:0',
+          {'txid': txid, 'vout': 1},
+        ],
+      });
+      final fc = cln.callParams.last;
+      expect(fc['utxos'], ['$txid:0', '$txid:1']);
+    });
+
+    test('open_channel senza utxos → parametro assente (auto)', () async {
+      await handlers
+          .handle('open_channel', {'pubkey': '02bf', 'amount': 20000});
+      expect(cln.callParams.last.containsKey('utxos'), isFalse);
+    });
+
+    test('open_channel con utxo malformato → BAD_REQUEST, nodo non chiamato',
+        () async {
+      await expectLater(
+        handlers.handle('open_channel', {
+          'pubkey': '02bf',
+          'amount': 20000,
+          'utxos': ['non-un-txid:0'],
+        }),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'BAD_REQUEST'),
+        ),
+      );
+      expect(cln.calls, isEmpty);
+    });
+
     test('close_channel force → unilateraltimeout 0', () async {
       await handlers.handle('close_channel', {'id': 'fx1', 'force': true});
       expect(cln.callParams.last['unilateraltimeout'], 0);
@@ -360,6 +526,214 @@ void main() {
     test('close_channel normale → nessun timeout forzato', () async {
       await handlers.handle('close_channel', {'id': 'fx1'});
       expect(cln.callParams.last.containsKey('unilateraltimeout'), isFalse);
+    });
+
+    // ── SPLICE: ridimensiona un canale senza chiuderlo ──────────────────────
+
+    test('splice_channel splice-in segue il flusso PSBT di CLN', () async {
+      final r = await handlers.handle('splice_channel', {
+        'id': 'fx1',
+        'amount_sats': 100000,
+      });
+      expect(cln.calls, [
+        'fundpsbt',
+        'splice_init',
+        'splice_update',
+        'signpsbt',
+        'splice_signed',
+      ]);
+      expect(cln.callParams[0]['satoshi'], '100000sat');
+      expect(cln.callParams[0]['feerate'], 'normal');
+      expect(cln.callParams[1]['channel_id'], 'fx1');
+      expect(cln.callParams[1]['relative_amount'], 100000);
+      expect(cln.callParams[1]['initialpsbt'], 'cHNidP8FUND');
+      expect(cln.callParams[2]['psbt'], 'cHNidP8INIT');
+      expect(cln.callParams[3]['psbt'], 'cHNidP8UPD');
+      expect(cln.callParams[4]['psbt'], 'cHNidP8SIGNED');
+      expect(r['txid'], 'stx1');
+      expect(r['amount_sats'], 100000);
+    });
+
+    test('splice_channel con utxos → fundpsbt riceve gli output scelti',
+        () async {
+      const txid =
+          'b34ada856e581d18a5f6ef2718767b159aaa88f2e32abf34f97d89f037b10cd6';
+      await handlers.handle('splice_channel', {
+        'id': 'fx1',
+        'amount_sats': 50000,
+        'utxos': ['$txid:2'],
+      });
+      expect(cln.callParams.first['utxos'], ['$txid:2']);
+    });
+
+    test('splice_channel splice-out → niente fundpsbt, amount negativo',
+        () async {
+      await handlers.handle('splice_channel', {
+        'id': 'fx1',
+        'amount_sats': -40000,
+      });
+      expect(cln.calls, [
+        'splice_init',
+        'splice_update',
+        'signpsbt',
+        'splice_signed',
+      ]);
+      expect(cln.callParams.first['relative_amount'], -40000);
+      expect(cln.callParams.first.containsKey('initialpsbt'), isFalse);
+    });
+
+    test('splice_channel rifiuta utxos su splice-out', () async {
+      await expectLater(
+        handlers.handle('splice_channel', {
+          'id': 'fx1',
+          'amount_sats': -1000,
+          'utxos': ['aa:0'],
+        }),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'BAD_REQUEST'),
+        ),
+      );
+      expect(cln.calls, isEmpty);
+    });
+
+    test('splice_channel senza amount → BAD_REQUEST', () async {
+      await expectLater(
+        handlers.handle('splice_channel', {'id': 'fx1'}),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'BAD_REQUEST'),
+        ),
+      );
+    });
+
+    test('splice_channel con feerate non valida → BAD_REQUEST', () async {
+      await expectLater(
+        handlers.handle('splice_channel', {
+          'id': 'fx1',
+          'amount_sats': 1000,
+          'feerate': 'normal; rm -rf /',
+        }),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'BAD_REQUEST'),
+        ),
+      );
+      expect(cln.calls, isEmpty);
+    });
+
+    test('splice_channel mappa il fallimento del nodo su CHANNEL_FAILED',
+        () async {
+      final failing = NwcHandlers(
+        cln: ThrowingCln({
+          'splice_init': 'Peer does not support splicing',
+        }),
+      );
+      await expectLater(
+        failing.handle('splice_channel', {'id': 'fx1', 'amount_sats': -1000}),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'CHANNEL_FAILED'),
+        ),
+      );
+    });
+
+    test('splice_channel: fondi on-chain insufficienti → INSUFFICIENT_BALANCE',
+        () async {
+      // Messaggio reale di `fundpsbt` quando il wallet on-chain non basta.
+      final failing = NwcHandlers(
+        cln: ThrowingCln({
+          'fundpsbt':
+              'Could not afford 30000sat using all 1 available UTXOS: '
+                  '25298sat short',
+        }),
+      );
+      await expectLater(
+        failing.handle('splice_channel', {'id': 'fx1', 'amount_sats': 30000}),
+        throwsA(
+          isA<RpcError>()
+              .having((e) => e.code, 'code', 'INSUFFICIENT_BALANCE'),
+        ),
+      );
+    });
+
+    test('splice_channel fallito dopo il funding → libera gli input', () async {
+      // `fundpsbt` riserva 72 blocchi: se lo splice si ferma dopo, senza
+      // `unreserveinputs` l'on-chain del nodo resterebbe bloccato ~12 h.
+      final fake = FakeCln(baseResponses())
+        ..responses['unreserveinputs'] = {
+          'reservations': <Map<String, dynamic>>[],
+        };
+      fake.responses.remove('splice_init');
+      final h = NwcHandlers(cln: fake);
+
+      await expectLater(
+        h.handle('splice_channel', {'id': 'fx1', 'amount_sats': 100000}),
+        throwsA(isA<RpcError>()),
+      );
+
+      expect(fake.calls, contains('unreserveinputs'));
+      final index = fake.calls.indexOf('unreserveinputs');
+      expect(fake.callParams[index]['psbt'], 'cHNidP8FUND');
+    });
+
+    test('splice_channel attende commitments_secured prima di firmare',
+        () async {
+      // CLN: "Can't sign a splice until the splice is finalized using
+      // splice_update" — serve ripetere l'update finché il peer risponde.
+      final cln = SlowSpliceCln(baseResponses());
+      final h = NwcHandlers(
+        cln: cln,
+        spliceUpdatePollInterval: Duration.zero,
+      );
+
+      final r = await h.handle('splice_channel', {
+        'id': 'fx1',
+        'amount_sats': 100000,
+      });
+
+      expect(cln.calls.where((c) => c == 'splice_update').length, 2);
+      expect(cln.calls, contains('signpsbt'));
+      expect(cln.calls.last, 'splice_signed');
+      expect(r['txid'], 'stx1');
+    });
+
+    test('splice non finalizzato entro il timeout → CHANNEL_FAILED', () async {
+      final cln = SlowSpliceCln(baseResponses(), securitiesNeeded: 99);
+      final h = NwcHandlers(
+        cln: cln,
+        spliceUpdatePollInterval: Duration.zero,
+        spliceFinalizeTimeout: Duration.zero,
+      );
+
+      await expectLater(
+        h.handle('splice_channel', {'id': 'fx1', 'amount_sats': 100000}),
+        throwsA(
+          isA<RpcError>()
+              .having((e) => e.code, 'code', 'CHANNEL_FAILED')
+              .having((e) => e.message, 'message', contains('finalizzato')),
+        ),
+      );
+      expect(cln.calls, isNot(contains('signpsbt')));
+    });
+
+    test('estimate_splice ricava la fee da feerate e peso', () async {
+      final r = await handlers.handle('estimate_splice', {
+        'amount_sats': 100000,
+      });
+      expect(cln.calls, ['fundpsbt']);
+      // La stima NON deve riservare input (72 blocchi di default = ~12 h).
+      expect(cln.callParams.single['reserve'], 0);
+      // 2000 perkw * 1410 WU / 1000 = 2820 sat
+      expect(r['fee_sats'], 2820);
+      expect(r['amount_sats'], 100000);
+      expect(r['feerate'], 'normal');
+    });
+
+    test('estimate_splice rifiuta importi non positivi', () async {
+      await expectLater(
+        handlers.handle('estimate_splice', {'amount_sats': -1}),
+        throwsA(
+          isA<RpcError>().having((e) => e.code, 'code', 'BAD_REQUEST'),
+        ),
+      );
+      expect(cln.calls, isEmpty);
     });
 
     test('metodo sconosciuto → NOT_IMPLEMENTED', () async {
@@ -786,6 +1160,48 @@ void main() {
       };
       final n = await h.pollNotifications();
       expect(n.where((e) => e.type == 'channel_closed'), isNotEmpty);
+    });
+
+    test('pollNotifications: channel_resized quando cambia la capacità',
+        () async {
+      final fake = FakeCln(baseResponses());
+      final h = NwcHandlers(cln: fake);
+      await h.pollNotifications();
+
+      // Stesso channel id, capacità cresciuta: è il segnale di splice-in.
+      fake.responses['listpeerchannels'] = {
+        'channels': [
+          {
+            'channel_id': 'fx1',
+            'peer_id': '02bb',
+            'state': 'CHANNELD_NORMAL',
+            'total_msat': 25000000,
+          },
+          // Il secondo canale resta invariato: nessuna notifica per lui.
+          {
+            'channel_id': 'fx2',
+            'peer_id': '02cc',
+            'state': 'CHANNELD_AWAITING_LOCKIN',
+            'total_msat': 20000000,
+          },
+        ],
+      };
+      final n = await h.pollNotifications();
+
+      expect(n, hasLength(1));
+      expect(n.single.type, 'channel_resized');
+      expect(n.single.isNcc, isTrue);
+      expect(n.single.payload['channel_id'], 'fx1');
+      expect(n.single.payload['capacity_msat'], 25000000);
+      expect(n.single.payload['previous_capacity_msat'], 16000000);
+      expect(n.single.payload['delta_msat'], 9000000);
+    });
+
+    test('pollNotifications: capacità invariata → nessuna notifica', () async {
+      final fake = FakeCln(baseResponses());
+      final h = NwcHandlers(cln: fake);
+      await h.pollNotifications();
+      expect(await h.pollNotifications(), isEmpty);
     });
 
     test('get_info espone identità estesa e list_transactions', () async {

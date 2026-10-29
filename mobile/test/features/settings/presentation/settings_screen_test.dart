@@ -6,6 +6,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:btc_blake2b_wallet/core/services/app_lock_service.dart';
 import 'package:btc_blake2b_wallet/core/services/biometric_service.dart';
 import 'package:btc_blake2b_wallet/core/services/explorer_mirrors.dart';
+import 'package:btc_blake2b_wallet/core/services/fiat_price.dart';
+import 'package:btc_blake2b_wallet/core/services/fx_rates.dart';
 import 'package:btc_blake2b_wallet/core/services/locale_provider.dart';
 import 'package:btc_blake2b_wallet/core/services/theme_provider.dart';
 import 'package:btc_blake2b_wallet/core/services/wallet_repository.dart';
@@ -24,6 +26,7 @@ Widget _wrap({
   required AppLockService appLockService,
   required BiometricService biometricService,
   ThemeProvider? themeProvider,
+  bool hideExplorerMirrors = false,
 }) {
   return MaterialApp(
     locale: const Locale('en'),
@@ -43,6 +46,7 @@ Widget _wrap({
               appLockService: appLockService,
               biometricService: biometricService,
               walletRepository: MockWalletRepository(),
+              hideExplorerMirrors: hideExplorerMirrors,
             ),
           ),
         ),
@@ -158,13 +162,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // PERCHÉ: la nuova sezione "Interfaccia" spinge il contenuto oltre i 600px;
-      // uso Scrollable.ensureVisible per far scorrre automaticamente ogni elemento.
+      // PERCHÉ: la sezione "Interfaccia" (con il controvalore, leva 5) spinge
+      // il contenuto oltre i 600px e oltre la cache del ListView: `ensureVisible`
+      // richiede un element già costruito, quindi si scorre davvero.
       expect(find.text('Appearance'), findsOneWidget);
-      await tester.ensureVisible(find.text('Tools'));
+      await tester.scrollUntilVisible(
+        find.text('Tools'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       expect(find.text('Information'), findsOneWidget);
-      await tester.ensureVisible(find.text('Explorer'));
+      await tester.scrollUntilVisible(
+        find.text('Explorer'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       expect(find.text('Legal Info'), findsOneWidget);
     });
@@ -219,6 +232,116 @@ void main() {
         ExplorerMirrors.instance.readHosts,
         equals(['https://mempool.guide/api']),
       );
+    });
+
+    testWidgets('web: interruttore mirror nascosto, sezione Strumenti intatta',
+        (tester) async {
+      final biometricService = MockBiometricService();
+      when(() => biometricService.hasEnrolledBiometrics())
+          .thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        _wrap(
+          appLockService: AppLockService.test(),
+          biometricService: biometricService,
+          hideExplorerMirrors: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // PERCHÉ: si nasconde la voce, non la sezione (l'Explorer resta).
+      // PERCHÉ scrollUntilVisible: con il controvalore (leva 5) la sezione
+      // "Strumenti" esce dalla cache del ListView.
+      await tester.scrollUntilVisible(
+        find.text('Tools'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Tools'), findsOneWidget);
+      expect(find.text('Backup explorers'), findsNothing);
+      expect(find.byIcon(Icons.hub_outlined), findsNothing);
+      expect(find.text('Explorer'), findsOneWidget);
+    });
+
+    testWidgets('toggle prezzo automatico NeoXEX: presente e attivabile',
+        (tester) async {
+      // PERCHÉ: la preferenza è di processo → ogni test parte dal default OFF.
+      FiatPrice.resetForTest();
+      addTearDown(FiatPrice.resetForTest);
+      final storage = MockStorage();
+      when(
+        () => storage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
+      FiatPrice.instance = FiatPrice(storage: storage);
+
+      final biometricService = MockBiometricService();
+      when(() => biometricService.hasEnrolledBiometrics())
+          .thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        _wrap(
+          appLockService: AppLockService.test(),
+          biometricService: biometricService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // PERCHÉ: la sezione Interfaccia è sotto la piega → scorri.
+      await tester.drag(
+        find.byType(ListView),
+        const Offset(0, -500),
+      );
+      await tester.pumpAndSettle();
+
+      final switchFinder = find.widgetWithText(
+        SwitchListTile,
+        'Fetch the price from NeoXEX',
+      );
+      expect(tester.widget<SwitchListTile>(switchFinder).value, isFalse);
+
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+
+      expect(FiatPrice.instance.auto, isTrue);
+      expect(tester.widget<SwitchListTile>(switchFinder).value, isTrue);
+    });
+
+    testWidgets('riga valuta del controvalore: presente, default USD',
+        (tester) async {
+      FiatPrice.resetForTest();
+      FxRates.resetForTest();
+      addTearDown(FiatPrice.resetForTest);
+      addTearDown(FxRates.resetForTest);
+      final storage = MockStorage();
+      when(
+        () => storage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
+      FiatPrice.instance = FiatPrice(storage: storage);
+
+      final biometricService = MockBiometricService();
+      when(() => biometricService.hasEnrolledBiometrics())
+          .thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        _wrap(
+          appLockService: AppLockService.test(),
+          biometricService: biometricService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Value currency'), findsOneWidget);
+      expect(find.text(r'USD $'), findsOneWidget);
     });
   });
 }

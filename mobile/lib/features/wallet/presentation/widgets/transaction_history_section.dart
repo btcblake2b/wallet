@@ -392,7 +392,12 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
               ),
               _detailRow(ctx, loc.walletDetailTxDate, date),
               if (tx.feeSats != null)
-                _detailRow(ctx, loc.walletDetailTxFee, '${tx.feeSats} sat'),
+                _detailRow(
+                  ctx,
+                  loc.walletDetailTxFee,
+                  '${tx.feeSats} sat',
+                  hint: InfoHintId.feeConcept,
+                ),
               _detailRow(
                 ctx,
                 loc.walletDetailTxConfirmations,
@@ -403,6 +408,10 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
                         : tx.isPending
                             ? loc.walletDetailTxPending
                             : '${tx.confirmations}',
+                // PERCHÉ (26/10): "0 / 1 / 6" senza spiegazione è il primo
+                // punto in cui un principiante pensa che il pagamento sia
+                // perso.
+                hint: InfoHintId.confirmations,
               ),
               if (tx.blockHeight != null)
                 _detailRow(
@@ -494,7 +503,12 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
     await widget.onSetNote?.call(tx, value);
   }
 
-  Widget _detailRow(BuildContext context, String label, String value) {
+  Widget _detailRow(
+    BuildContext context,
+    String label,
+    String value, {
+    InfoHintId? hint,
+  }) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -502,13 +516,20 @@ class _TransactionHistorySectionState extends State<TransactionHistorySection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (hint != null) InfoDot(id: hint, size: 14),
+              ],
             ),
           ),
           const SizedBox(width: 12),

@@ -5,11 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/models/lightning_invoice.dart';
+import '../../../core/models/lightning_offer.dart';
 import '../../../core/services/lightning/lightning_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../l10n/app_localizations.dart';
+import 'widgets/inbound_liquidity_card.dart';
 
 /// Ricezione Lightning: crea un invoice e lo mostra come QR + testo.
 class LightningReceiveScreen extends StatefulWidget {
@@ -84,21 +86,49 @@ class _LightningReceiveScreenState extends State<LightningReceiveScreen> {
     }
   }
 
+  /// Offerta BOLT12 creata (modalità "codice riutilizzabile").
+  LightningOffer? _offer;
+
+  /// True = crea un'offerta BOLT12 invece di una fattura monouso.
+  ///
+  /// // PERCHÉ (BOLT12): la fattura va rigenerata per ogni pagamento; un
+  /// // codice offerta resta valido e chi paga sceglie l'importo. Nessun
+  /// // polling: un'offerta non è un singolo pagamento.
+  bool _reusable = false;
+
   Future<void> _create() async {
+    final loc = AppLocalizations.of(context);
     final sats = int.tryParse(_amountController.text.trim());
-    if (sats == null || sats <= 0) return;
+    if (!_reusable && (sats == null || sats <= 0)) return;
+    final description = _descriptionController.text.trim();
     setState(() => _creating = true);
     try {
+      if (_reusable) {
+        final offer = await widget.lightningService.makeOffer(
+          description: description.isEmpty
+              ? loc.lightningOfferDefaultDescription
+              : description,
+          amountMsat: (sats != null && sats > 0) ? sats * 1000 : null,
+        );
+        if (!mounted) return;
+        setState(() {
+          _offer = offer;
+          _invoice = null;
+        });
+        return;
+      }
       final invoice = await widget.lightningService.makeInvoice(
-        amountMsat: sats * 1000,
-        description: _descriptionController.text.trim(),
+        amountMsat: sats! * 1000,
+        description: description,
       );
       if (!mounted) return;
-      setState(() => _invoice = invoice);
+      setState(() {
+        _invoice = invoice;
+        _offer = null;
+      });
       _startPolling(invoice.paymentHash);
     } on LightningException catch (e) {
       if (!mounted) return;
-      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -115,8 +145,9 @@ class _LightningReceiveScreenState extends State<LightningReceiveScreen> {
 
   Future<void> _copy() async {
     final invoice = _invoice;
-    if (invoice == null) return;
-    await Clipboard.setData(ClipboardData(text: invoice.bolt11));
+    final code = _offer?.bolt12 ?? invoice?.bolt11;
+    if (code == null) return;
+    await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(AppLocalizations.of(context).lightningCopied)),
@@ -127,6 +158,7 @@ class _LightningReceiveScreenState extends State<LightningReceiveScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final invoice = _invoice;
+    final offer = _offer;
     return AppBackground(
       accent: AppTheme.lightningAccent,
       child: Scaffold(
@@ -134,13 +166,41 @@ class _LightningReceiveScreenState extends State<LightningReceiveScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // PERCHÉ (BOLT12): due modi di ricevere — fattura monouso (BOLT11)
+            // o codice riutilizzabile (offerta). La scelta è esplicita perché
+            // cambia cosa si condivide: un codice stabile contro un QR che scade.
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  label: Text(loc.lightningReceiveModeInvoice),
+                  icon: const Icon(Icons.receipt_long, size: 16),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text(loc.lightningReceiveModeOffer),
+                  icon: const Icon(Icons.qr_code_2, size: 16),
+                ),
+              ],
+              selected: {_reusable},
+              onSelectionChanged: (selection) => setState(() {
+                _reusable = selection.first;
+                _invoice = null;
+                _offer = null;
+                _paid = false;
+                _pollTimer?.cancel();
+              }),
+            ),
+            const SizedBox(height: 16),
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
-                labelText: loc.lightningInvoiceAmount,
+                labelText: _reusable
+                    ? loc.lightningOfferAmountOptional
+                    : loc.lightningInvoiceAmount,
               ),
             ),
             const SizedBox(height: 12),
@@ -152,6 +212,10 @@ class _LightningReceiveScreenState extends State<LightningReceiveScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            // PERCHÉ (adozione, 26/10): l'avviso sta PRIMA del pulsante che
+            // genera il QR — è l'ultimo punto utile per dirlo, perché subito
+            // dopo l'utente condivide un codice che nessuno potrà pagare.
+            InboundLiquidityCard(lightningService: widget.lightningService),
             FilledButton.icon(
               onPressed: _creating ? null : _create,
               icon: _creating
@@ -162,6 +226,52 @@ class _LightningReceiveScreenState extends State<LightningReceiveScreen> {
                   : const Icon(Icons.qr_code),
               label: Text(loc.lightningInvoiceCreate),
             ),
+            if (offer != null) ...[
+              const SizedBox(height: 24),
+              GlassContainer(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      loc.lightningOfferTitle,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      loc.lightningOfferReusableHint,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      // PERCHÉ: il QR deve restare leggibile in dark mode.
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                      child: QrImageView(
+                        data: offer.bolt12,
+                        version: QrVersions.auto,
+                        size: 220,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SelectableText(
+                      offer.bolt12,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _copy,
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: Text(loc.lightningCopied),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (invoice != null) ...[
               const SizedBox(height: 24),
               GlassContainer(

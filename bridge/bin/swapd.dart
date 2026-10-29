@@ -7,6 +7,7 @@ import 'package:nwc_cln_bridge/src/logger.dart';
 import 'package:nwc_cln_bridge/src/nostr/nostr_crypto.dart';
 import 'package:nwc_cln_bridge/src/nostr/websocket_transport.dart';
 import 'package:nwc_cln_bridge/src/swap/chain_api.dart';
+import 'package:nwc_cln_bridge/src/swap/swap_client_admission.dart';
 import 'package:nwc_cln_bridge/src/swap/swap_config.dart';
 import 'package:nwc_cln_bridge/src/swap/swap_consts.dart';
 import 'package:nwc_cln_bridge/src/swap/swap_daemon.dart';
@@ -24,6 +25,9 @@ import 'package:nwc_cln_bridge/src/swap/swap_store.dart';
 ///   dart run bin/swapd.dart --genuri [--config=swap-config.json]
 ///       → stampa la URI per l'app (`nostr+swap://…`) e la salva in
 ///         swap-uri.txt (permessi 600)
+///   dart run bin/swapd.dart --check [--config=swap-config.json]
+///       → valida config, chiave provider e lista client SENZA avviare il
+///         daemon: da usare prima di un deploy (exit 0 = ok, 78 = config ko)
 ///   dart run bin/swapd.dart [--config=swap-config.json]
 ///       → avvia il daemon (ascolta il relay, tick di riconciliazione)
 Future<void> main(List<String> args) async {
@@ -53,6 +57,32 @@ Future<void> main(List<String> args) async {
   } on FormatException catch (e) {
     stderr.writeln('CHIAVE PROVIDER NON LEGGIBILE: ${e.message}');
     exit(78);
+  }
+
+  // PERCHÉ: verifica pre-deploy — valida config + chiave + politica client
+  // senza aprire relay né toccare la chain (exit 0/78 come gli altri comandi).
+  if (opts.containsKey('check')) {
+    final admission = SwapClientAdmission(config: config);
+    await admission.load();
+    stdout.writeln('config OK: $configPath');
+    stdout.writeln('relay(s): ${config.relays.join(', ')}');
+    stdout.writeln(
+      'pubkey provider: ${NostrCrypto.derivePublicKey(providerKeyHex)}',
+    );
+    stdout.writeln(
+      'client: allowlist=${config.allowedClientPubkeys.length}, '
+      'auto-ammessi=${admission.admittedCount}, '
+      'autoAdmit=${config.autoAdmit}, '
+      'allowAnyClient=${config.allowAnyClient}, '
+      'denied=${config.deniedClientPubkeys.length}',
+    );
+    stdout.writeln(
+      'limiti: min=${config.limits.minSats} sat, '
+      'max=${config.limits.maxSats} sat, '
+      'maxConcurrent=${config.limits.maxConcurrent}, '
+      'riserva=${config.limits.liquidityReservePpm ~/ 10000}%',
+    );
+    return;
   }
 
   if (opts.containsKey('genuri')) {

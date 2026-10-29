@@ -231,5 +231,38 @@ void main() {
         );
       });
     });
+
+    group('scan QR della seed', () {
+      Future<void> pumpScreen(WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ImportWalletScreen(
+              walletRepository: MockWalletRepository(),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('mostra il pulsante di scansione accanto al campo seed',
+          (tester) async {
+        await pumpScreen(tester);
+
+        expect(find.byKey(const Key('import_seed_scan_qr')), findsOneWidget);
+        expect(find.byIcon(Icons.qr_code_scanner), findsOneWidget);
+      });
+
+      testWidgets('nasconde il pulsante in modalità watch-only',
+          (tester) async {
+        await pumpScreen(tester);
+
+        await tester.tap(find.text('Watch-only (xpub)'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('import_seed_scan_qr')), findsNothing);
+      });
+    });
   });
 }

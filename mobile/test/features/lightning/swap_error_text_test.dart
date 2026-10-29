@@ -21,6 +21,17 @@ void main() {
         'CONNECT_FAILED',
         'DISCONNECTED',
         'NOT_CONNECTED',
+        'PAYMENT_FAILED',
+        'PROVIDER_UNAVAILABLE',
+        'RATE_LIMITED',
+        'DUPLICATE_SWAP',
+        'QUOTE_EXPIRED',
+        'INVOICE_INVALID',
+        'INVOICE_EXPIRED',
+        'AMOUNT_TOO_SMALL',
+        'AMOUNT_TOO_LARGE',
+        'FUNDING_TIMEOUT',
+        'TOO_LATE',
       ];
 
       for (final code in knownCodes) {
@@ -28,6 +39,16 @@ void main() {
         expect(reason, isNotNull, reason: 'codice $code non mappato');
         expect(reason!.trim(), isNotEmpty, reason: 'stringa vuota per $code');
       }
+    });
+
+    test('PAYMENT_FAILED spiega che i fondi restano nell HTLC', () {
+      // PERCHÉ (incidente 18/09/2026): senza questa spiegazione l'utente non
+      // capiva se il pagamento fosse avvenuto — il testo deve dire che i fondi
+      // sono ancora suoi e recuperabili.
+      final reason = swapErrorReason(loc, 'PAYMENT_FAILED')!;
+
+      expect(reason, contains('HTLC'));
+      expect(reason.toLowerCase(), contains('recover'));
     });
 
     test('il messaggio del relay non consentito spiega la variante web', () {

@@ -8,6 +8,7 @@ import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pointycastle/digests/ripemd160.dart';
 
+import '../utils/coinbase_maturity.dart';
 import '../utils/crypto_utils.dart';
 import '../utils/watch_only_derivation.dart';
 import '../config/bitcoin_network_config.dart';
@@ -230,7 +231,11 @@ String? _resolveScriptType(UtxoInfo u) {
 /// PERCHÉ (audit MED-2): primo indice NON usato della catena change `/1/N`.
 /// Se tra gli UTXO passati c'è già `/1/3`, il prossimo change va su `/1/4`
 /// (niente riuso dell'indirizzo di change).
-int _nextChangeIndex(Iterable<UtxoInfo> utxos, String accountPath) {
+///
+/// // PERCHÉ pubblico (P4, 26/10): anche il percorso PSBT deve scegliere lo
+/// // STESSO indice di change dell'invio diretto — se le due economie
+/// // divergessero, la PSBT firmata non sarebbe equivalente alla tx normale.
+int nextChangeIndex(Iterable<UtxoInfo> utxos, String accountPath) {
   final prefix = '$accountPath/1/';
   var next = 0;
   for (final u in utxos) {
@@ -373,6 +378,24 @@ Uint8List _hexToBytes(String hex) {
   return result;
 }
 
+// PERCHÉ (A3): separa gli UTXO non ancora propagabili (coinbase immaturi) dal
+// resto, così il coin selection non costruisce tx che nessun peer accetta.
+// La regola vive in `coinbase_maturity.dart` e alimenta anche il saldo.
+// Ritorna la somma esclusa per poterla citare nel messaggio d'errore.
+({List<UtxoInfo> utxos, int blockedCoinbaseSats}) _splitByCoinbaseMaturity(
+  List<UtxoInfo> utxos,
+) {
+  final split = splitRelayableUtxos(utxos);
+  if (kDebugMode && split.blocked.isNotEmpty) {
+    // DEBUG: quanti sat restano fuori dal coin selection (mai txid in release).
+    debugPrint(
+      '[A3] coinbase in periodo di attesa esclusi dal coin selection: '
+      '${split.blocked.length} UTXO, ${sumUtxoSats(split.blocked)} sat',
+    );
+  }
+  return (utxos: split.spendable, blockedCoinbaseSats: sumUtxoSats(split.blocked));
+}
+
 // Top-level isolate function for sweep (send max)
 String _buildAndSignTxSweep(BuildTxSweepData data) {
   final seed = bip39.mnemonicToSeed(data.mnemonic);
@@ -384,8 +407,11 @@ String _buildAndSignTxSweep(BuildTxSweepData data) {
     network: BitcoinNetworkConfig.bitcoinBaseNetwork,
   ).baseAddress;
 
+  // PERCHÉ (A3): anche un "send max" deve escludere i coinbase immaturi —
+  // altrimenti l'intero saldo finirebbe in una tx non propagabile.
+  final split = _splitByCoinbaseMaturity(data.utxos);
   final selectedUtxos = <({UtxoInfo utxo, _InputKey key})>[];
-  for (final u in data.utxos) {
+  for (final u in split.utxos) {
     final inputKey = _deriveInputKey(root, data.derivationPath, u);
     if (_isSpendableByKey(u, inputKey.publicKey)) {
       selectedUtxos.add((utxo: u, key: inputKey));
@@ -393,7 +419,12 @@ String _buildAndSignTxSweep(BuildTxSweepData data) {
   }
 
   if (selectedUtxos.isEmpty) {
-    throw Exception('Nessun UTXO spendibile trovato per sweep.');
+    throw Exception(
+      split.blockedCoinbaseSats > 0
+          ? 'Nessun UTXO spendibile per sweep: ${split.blockedCoinbaseSats} sat '
+                'provengono da payout di mining (coinbase) non ancora propagabili.'
+          : 'Nessun UTXO spendibile trovato per sweep.',
+    );
   }
 
   final totalIn = selectedUtxos.fold<int>(0, (p, e) => p + e.utxo.valueSat);
@@ -460,7 +491,7 @@ String _buildAndSignTx(BuildTxData data) {
   // PERCHÉ (audit MED-2): il change va sulla catena INTERNA /1/N (BIP44),
   // mai sull'indirizzo esterno /0/0 (address reuse totale). Si usa il primo
   // indice /1 non ancora presente tra gli UTXO spendibili passati.
-  final changeIndex = _nextChangeIndex(data.utxos, data.derivationPath);
+  final changeIndex = nextChangeIndex(data.utxos, data.derivationPath);
   final changeKey = _deriveInputKey(
     root,
     data.derivationPath,
@@ -504,7 +535,12 @@ String _buildAndSignTx(BuildTxData data) {
     }
   }
 
-  for (final u in data.utxos) {
+  // PERCHÉ (A3): un payout di mining (coinbase) non è propagabile prima della
+  // maturity di relay della rete: includerlo produrrebbe una tx che i peer
+  // rifiutano. Lo si esclude e lo si cita nell'errore se è la causa del buco.
+  final split = _splitByCoinbaseMaturity(data.utxos);
+
+  for (final u in split.utxos) {
     final inputKey = _deriveInputKey(root, data.derivationPath, u);
     if (!_isSpendableByKey(u, inputKey.publicKey)) continue;
 
@@ -573,6 +609,15 @@ String _buildAndSignTx(BuildTxData data) {
     if (kDebugMode) {
       debugPrint(
         '[DEBUG _buildAndSignTx] ERROR: Fondi insufficienti (incluse fee)',
+      );
+    }
+    // PERCHÉ (A3): se i sat mancanti sono bloccati da payout di mining non
+    // ancora propagabili, dirlo esplicitamente — altrimenti l'utente vede un
+    // saldo più alto di quello spendibile senza capirne il motivo.
+    if (split.blockedCoinbaseSats > 0) {
+      throw Exception(
+        'Fondi insufficienti: ${split.blockedCoinbaseSats} sat provengono da '
+        'payout di mining (coinbase) e non sono ancora propagabili dalla rete.',
       );
     }
     throw Exception('Fondi insufficienti (incluse fee).');
@@ -992,7 +1037,12 @@ class BitcoinService {
     return found;
   }
 
-  Future<List<UtxoInfo>> fetchSpendableWalletUtxos(
+  /// UTXO del wallet separati in SPENDIBILI e in ATTESA (coinbase immature).
+  ///
+  /// // PERCHÉ (A3 + saldo): una sola regola di propagabilità per saldo, coin
+  /// control e coin selection. I bloccati non vanno MAI sommati al
+  /// disponibile: la UI li segnala a parte (badge + blocchi mancanti).
+  Future<UtxoSplit> fetchWalletUtxos(
     String mnemonic, {
     String? derivationPath,
     int gapLimit = 20,
@@ -1004,9 +1054,26 @@ class BitcoinService {
       gapLimit: gapLimit,
       maxAddresses: maxAddresses,
     );
-    final utxos = found.values.expand((items) => items).toList();
-    utxos.sort((a, b) => b.valueSat.compareTo(a.valueSat));
-    return utxos;
+    final all = found.values.expand((items) => items).toList()
+      ..sort((a, b) => b.valueSat.compareTo(a.valueSat));
+    return splitRelayableUtxos(all);
+  }
+
+  /// UTXO SPENDIBILI del wallet (esclude i coinbase in periodo di attesa:
+  /// vedi [fetchWalletUtxos] per l'elenco completo con i bloccati).
+  Future<List<UtxoInfo>> fetchSpendableWalletUtxos(
+    String mnemonic, {
+    String? derivationPath,
+    int gapLimit = 20,
+    int maxAddresses = 100,
+  }) async {
+    final split = await fetchWalletUtxos(
+      mnemonic,
+      derivationPath: derivationPath,
+      gapLimit: gapLimit,
+      maxAddresses: maxAddresses,
+    );
+    return split.spendable;
   }
 
   /// Elenco degli indirizzi del wallet (ricezione `/0` e resto `/1`) con stato
@@ -1126,10 +1193,11 @@ class BitcoinService {
     });
   }
 
-  /// Saldo totale del wallet: Σ UTXO spendibili su ENTRAMBE le catene
+  /// Saldo SPENDIBILE del wallet: Σ UTXO propagabili su ENTRAMBE le catene
   /// (external + change) con gap-limit — come calcola BlueWallet.
   /// PERCHÉ: fetchAddressInfo guarda solo il primo indirizzo; qui si sommano
-  /// TUTTI gli UTXO del wallet (fix saldo home/detail vs BlueWallet).
+  /// TUTTI gli UTXO spendibili del wallet (fix saldo home/detail vs BlueWallet).
+  /// I coinbase in periodo di attesa restano fuori (vedi [fetchWalletUtxos]).
   Future<WalletBalance> fetchWalletBalance(
     String mnemonic, {
     String? derivationPath,
@@ -1142,26 +1210,22 @@ class BitcoinService {
       gapLimit: gapLimit,
       maxAddresses: maxAddresses,
     );
-    var total = 0;
-    var txCount = 0;
-    for (final utxos in found.values) {
-      txCount += utxos.length;
-      for (final u in utxos) {
-        total += u.valueSat;
-      }
-    }
+    final all = found.values.expand((items) => items).toList();
+    final txCount = all.length;
+    final total = sumUtxoSats(splitRelayableUtxos(all).spendable);
     return WalletBalance(balanceSats: total, txCount: txCount);
   }
 
   /// Snapshot del wallet (saldo + UTXO [+ storico]) — fonte unica per Home e
   /// Detail.
   ///
-  /// PERCHÉ: compone lo scan UTXO (saldo autorevole, esclude coinbase orfane)
-  /// e, solo se richiesto, lo storico. `includeHistory: false` è usato dalla
-  /// Home all'avvio: lo storico (seconda derivazione BIP32 + fetch per
-  /// indirizzo) è pesante e farebbe "frizzare" l'UI all'apertura dell'app —
-  /// viene caricato lazy al primo ingresso nel Detail. Uno snapshot senza
-  /// storico ha `transactions == null` (isComplete false) e il Detail lo
+  /// PERCHÉ: compone lo scan UTXO (saldo autorevole: esclude le coinbase orfane
+  /// e i payout di mining in periodo di attesa, che finiscono in
+  /// `blockedUtxos`) e, solo se richiesto, lo storico. `includeHistory: false`
+  /// è usato dalla Home all'avvio: lo storico (seconda derivazione BIP32 +
+  /// fetch per indirizzo) è pesante e farebbe "frizzare" l'UI all'apertura
+  /// dell'app — viene caricato lazy al primo ingresso nel Detail. Uno snapshot
+  /// senza storico ha `transactions == null` (isComplete false) e il Detail lo
   /// completa in background.
   Future<WalletSnapshot> fetchWalletSnapshot(
     String mnemonic, {
@@ -1185,16 +1249,13 @@ class BitcoinService {
       gapLimit: gapLimit,
     );
 
-    var total = 0;
-    var utxoCount = 0;
-    for (final utxos in found.values) {
-      utxoCount += utxos.length;
-      for (final u in utxos) {
-        total += u.valueSat;
-      }
-    }
+    // PERCHÉ (A3 + saldo): gli UTXO si separano in spendibili e in attesa una
+    // sola volta qui — il saldo somma SOLO gli spendibili, mentre i bloccati
+    // viaggiano nello snapshot per essere segnalati dalla UI.
     final allUtxos = found.values.expand((items) => items).toList()
       ..sort((a, b) => b.valueSat.compareTo(a.valueSat));
+    final split = splitRelayableUtxos(allUtxos);
+    final total = sumUtxoSats(split.spendable);
 
     List<TransactionRecord>? transactions;
     if (includeHistory) {
@@ -1207,8 +1268,9 @@ class BitcoinService {
 
     return WalletSnapshot(
       balanceSats: total,
-      txCount: transactions?.length ?? utxoCount,
-      utxos: allUtxos,
+      txCount: transactions?.length ?? allUtxos.length,
+      utxos: split.spendable,
+      blockedUtxos: split.blocked,
       transactions: transactions,
       fetchedAt: DateTime.now(),
     );
@@ -1249,16 +1311,12 @@ class BitcoinService {
       gapLimit: gapLimit,
     );
 
-    var total = 0;
-    var utxoCount = 0;
-    for (final utxos in found.values) {
-      utxoCount += utxos.length;
-      for (final u in utxos) {
-        total += u.valueSat;
-      }
-    }
+    // STEP: 2b — separazione spendibili/in attesa (stessa regola del percorso
+    // hot: il saldo somma solo gli spendibili).
     final allUtxos = found.values.expand((items) => items).toList()
       ..sort((a, b) => b.valueSat.compareTo(a.valueSat));
+    final split = splitRelayableUtxos(allUtxos);
+    final total = sumUtxoSats(split.spendable);
 
     List<TransactionRecord>? transactions;
     if (includeHistory) {
@@ -1279,8 +1337,9 @@ class BitcoinService {
 
     return WalletSnapshot(
       balanceSats: total,
-      txCount: transactions?.length ?? utxoCount,
-      utxos: allUtxos,
+      txCount: transactions?.length ?? allUtxos.length,
+      utxos: split.spendable,
+      blockedUtxos: split.blocked,
       transactions: transactions,
       fetchedAt: DateTime.now(),
     );
@@ -1468,6 +1527,16 @@ class BitcoinService {
             confirmations = 1;
           }
 
+          // PERCHÉ (A3): stesso predicato di TransactionRecord.fromExplorerJson
+          // — l'API Esplora non espone un flag sull'UTXO, ma la tx sì: i payout
+          // di mining sono coinbase e la rete non ne propaga la spesa prima
+          // della maturity di relay. Serve al coin selection (guardia A3).
+          final vins = txJson['vin'] as List<dynamic>? ?? const <dynamic>[];
+          final isCoinbase = vins.any((rawVin) {
+            final vin = rawVin as Map<String, dynamic>;
+            return vin['is_coinbase'] == true || vin['prevout'] == null;
+          });
+
           return UtxoInfo(
             txid: txid,
             vout: vout,
@@ -1477,6 +1546,7 @@ class BitcoinService {
             scriptPubKeyAddress: scriptAddr,
             ownerAddress: address,
             confirmations: confirmations,
+            isCoinbase: isCoinbase,
           );
         }
       }

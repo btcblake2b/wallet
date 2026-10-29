@@ -5,8 +5,10 @@ import 'package:btc_blake2b_wallet/core/services/app_lock_service.dart';
 import 'package:btc_blake2b_wallet/core/services/biometric_service.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/balance_cache.dart';
+import 'package:btc_blake2b_wallet/core/services/balance_display.dart';
 import 'package:btc_blake2b_wallet/core/services/crypto_service.dart';
 import 'package:btc_blake2b_wallet/core/services/device_service.dart';
+import 'package:btc_blake2b_wallet/core/services/fiat_price.dart';
 import 'package:btc_blake2b_wallet/core/services/locale_provider.dart';
 import 'package:btc_blake2b_wallet/core/services/theme_provider.dart';
 import 'package:btc_blake2b_wallet/core/services/wallet_repository.dart';
@@ -14,6 +16,7 @@ import 'package:btc_blake2b_wallet/features/wallet/presentation/home_screen.dart
 import 'package:btc_blake2b_wallet/l10n/app_localizations.dart';
 import 'package:btc_blake2b_wallet/core/models/wallet_record.dart';
 import 'package:btc_blake2b_wallet/core/models/wallet_snapshot.dart';
+import 'package:btc_blake2b_wallet/core/config/bitcoin_network_config.dart';
 
 class MockWalletRepository extends Mock implements WalletRepository {}
 
@@ -28,6 +31,21 @@ class MockDeviceService extends Mock implements DeviceService {}
 class MockThemeProvider extends Mock implements ThemeProvider {}
 
 void main() {
+  // PERCHÉ: mocktail richiede un fallback per gli argomenti enum usati con
+  // any() — `scriptType` è comparso nei matcher con il percorso xpub (26/10).
+  setUpAll(() {
+    registerFallbackValue(WalletScriptType.p2wpkh);
+    registerFallbackValue(
+      WalletRecord(
+        walletId: 'fallback',
+        encryptedSeed: '',
+        publicAddress: '',
+        deviceId: '',
+        createdAt: DateTime(2024, 1, 1),
+      ),
+    );
+  });
+
   group('HomeScreen', () {
     testWidgets('should render', (tester) async {
       final walletRepository = MockWalletRepository();
@@ -599,5 +617,170 @@ void main() {
         expect(find.text('0.00000000 BTC'), findsNothing);
       },
     );
+
+    testWidgets(
+      'unità per wallet: tocco sulla card cambia solo quel wallet',
+      (tester) async {
+        BalanceCache.resetForTest();
+        FiatPrice.instance = FiatPrice.inMemory(
+          enabled: true,
+          usdCentsPerXbt: 30000,
+        );
+        BalanceDisplay.instance = BalanceDisplay.inMemory();
+        addTearDown(FiatPrice.resetForTest);
+        addTearDown(BalanceDisplay.resetForTest);
+
+        final walletRepository = MockWalletRepository();
+        final biometricService = MockBiometricService();
+        final bitcoinService = MockBitcoinService();
+        final cryptoService = MockCryptoService();
+        final deviceService = MockDeviceService();
+        final localeProvider = LocaleProvider();
+
+        final walletA = WalletRecord(
+          walletId: 'wA',
+          encryptedSeed: 'enc',
+          publicAddress: 'bc1qa',
+          deviceId: 'dev',
+          createdAt: DateTime(2024, 1, 1),
+          displayInHomeScreen: true,
+        );
+        final walletB = WalletRecord(
+          walletId: 'wB',
+          encryptedSeed: 'enc',
+          publicAddress: 'bc1qb',
+          deviceId: 'dev',
+          createdAt: DateTime(2024, 1, 2),
+          displayInHomeScreen: true,
+        );
+        when(() => walletRepository.loadWallets())
+            .thenAnswer((_) async => [walletA, walletB]);
+        when(() => walletRepository.decryptSeed(any()))
+            .thenAnswer((_) async => 'mnemonic seed phrase');
+        when(
+          () => bitcoinService.fetchWalletSnapshot(
+            any(),
+            derivationPath: any(named: 'derivationPath'),
+            includeHistory: any(named: 'includeHistory'),
+          ),
+        ).thenAnswer(
+          (_) async => WalletSnapshot(
+            balanceSats: 100000,
+            txCount: 1,
+            utxos: const [],
+            transactions: const [],
+            fetchedAt: DateTime.now(),
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HomeScreen(
+              walletRepository: walletRepository,
+              biometricService: biometricService,
+              bitcoinService: bitcoinService,
+              cryptoService: cryptoService,
+              deviceService: deviceService,
+              localeProvider: localeProvider,
+              appLockService: AppLockService.test(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Totale 0,002 BTC + due card da 0,001 BTC ciascuna.
+        expect(find.text('0.00200000 BTC'), findsOneWidget);
+        expect(find.text('0.00100000 BTC'), findsNWidgets(2));
+
+        // Tocco sulla PRIMA card: passa a sats solo quella.
+        await tester.tap(find.text('0.00100000 BTC').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('100 000 sats'), findsOneWidget);
+        // L'altra card e il totale restano in BTC.
+        expect(find.text('0.00100000 BTC'), findsOneWidget);
+        expect(find.text('0.00200000 BTC'), findsOneWidget);
+        expect(BalanceDisplay.instance.unitFor('wA'), BalanceUnit.sats);
+        expect(BalanceDisplay.instance.unitFor('wB'), BalanceUnit.xbt);
+        expect(
+          BalanceDisplay.instance.unitFor(BalanceDisplay.totalKey),
+          BalanceUnit.xbt,
+        );
+      },
+    );
+
+    testWidgets('wallet hot CON xpub: saldo letto senza decifrare la seed',
+        (tester) async {
+      // PERCHÉ (26/10): è il cuore del cambiamento — con l'xpub salvato la home
+      // non deve toccare le chiavi private. Se qualcuno reintroduce un
+      // decryptSeed nel percorso di lettura, questo test lo blocca.
+      BalanceCache.resetForTest();
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+
+      final wallet = WalletRecord(
+        walletId: 'hot-xpub',
+        encryptedSeed: 'enc',
+        publicAddress: 'bc1qxpubread',
+        deviceId: 'dev',
+        createdAt: DateTime(2024, 1, 1),
+        displayInHomeScreen: true,
+        derivationPath: "m/84'/0'/0'",
+        accountXpub: 'xpub_salvato',
+      );
+      when(() => walletRepository.loadWallets())
+          .thenAnswer((_) async => [wallet]);
+      when(
+        () => bitcoinService.fetchWatchOnlySnapshot(
+          accountXpub: any(named: 'accountXpub'),
+          scriptType: any(named: 'scriptType'),
+          includeHistory: any(named: 'includeHistory'),
+        ),
+      ).thenAnswer(
+        (_) async => WalletSnapshot(
+          balanceSats: 150000,
+          txCount: 1,
+          utxos: const [],
+          transactions: const [],
+          fetchedAt: DateTime.now(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(
+            walletRepository: walletRepository,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoinService,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+            localeProvider: LocaleProvider(),
+            appLockService: AppLockService.test(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => bitcoinService.fetchWatchOnlySnapshot(
+          accountXpub: 'xpub_salvato',
+          scriptType: any(named: 'scriptType'),
+          includeHistory: false,
+        ),
+      ).called(1);
+      verifyNever(() => walletRepository.decryptSeed(any()));
+      verifyNever(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+          includeHistory: any(named: 'includeHistory'),
+        ),
+      );
+    });
   });
 }

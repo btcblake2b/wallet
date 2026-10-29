@@ -228,13 +228,36 @@ class SwapProviderClient {
     return SwapStatus.fromJson(result);
   }
 
+  /// Limiti/liquidità del provider e — se [invoice] è valorizzata — se il
+  /// DESTINATARIO di quella fattura è raggiungibile (`swap_info`, sola lettura).
+  ///
+  /// // PERCHÉ: nessuna sessione viene aperta e nessun fondo è mosso: è il
+  /// // pre-flight che la UI mostra prima del funding.
+  Future<SwapProviderInfo> info({String? invoice, String? requestId}) async {
+    final result = await _request(
+      method: 'swap_info',
+      params: {
+        if (invoice != null && invoice.isNotEmpty) 'invoice': invoice,
+      },
+      requestId: requestId,
+    );
+    final info = SwapProviderInfo.fromJson(result);
+    if (info == null) {
+      throw const SwapException(
+        'BAD_RESPONSE',
+        'risposta swap_info priva dei limiti attesi.',
+      );
+    }
+    return info;
+  }
+
   // ── Internals ──────────────────────────────────────────────────────────────
 
   /// true per i metodi senza effetti collaterali: gli unici che possono
   /// essere ritentati dopo un timeout (create/funding sono idempotenti lato
   /// provider ma un retry cieco consuma una richiesta in più: qui si evita).
   static bool _isReadOnly(String method) =>
-      method == 'swap_quote' || method == 'swap_status';
+      method == 'swap_quote' || method == 'swap_status' || method == 'swap_info';
 
   Future<Map<String, dynamic>> _request({
     required String method,

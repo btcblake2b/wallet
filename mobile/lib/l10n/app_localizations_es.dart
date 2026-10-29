@@ -105,6 +105,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeVaultLocked => 'Bóveda bloqueada';
 
   @override
+  String get homeVaultLockedBody =>
+      'Las claves se han eliminado de la memoria por inactividad. Introduce tu contraseña para ver los saldos y volver a firmar. Tus monederos están a salvo: no se ha borrado nada.';
+
+  @override
   String get settingsTitle => 'Ajustes';
 
   @override
@@ -161,6 +165,126 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar los pequeños botones de información que explican cada función';
 
   @override
+  String get guideTitle => 'Cómo funciona';
+
+  @override
+  String get guideEntryDesc =>
+      'Explicaciones sencillas: cartera, seed, comisiones, Lightning.';
+
+  @override
+  String get guideIntro =>
+      'Esta guía explica con palabras simples qué hace la app y por qué. No hace falta leerla entera: abre solo el capítulo que te interesa. Cada explicación también está disponible desde el ⓘ junto al campo correspondiente.';
+
+  @override
+  String get guideOpenFailed => 'No se ha podido abrir el navegador.';
+
+  @override
+  String get guideHintsNote => 'Puedes ocultar los ⓘ en Ajustes → Interfaz.';
+
+  @override
+  String get guideSectionBasics => 'Lo básico';
+
+  @override
+  String get guideSectionSecurity => 'Seguridad y copia de seguridad';
+
+  @override
+  String get guideSectionTransactions => 'Enviar y recibir';
+
+  @override
+  String get guideSectionLightning => 'Lightning';
+
+  @override
+  String get guideSectionAdvanced => 'Para profundizar';
+
+  @override
+  String get guideFullGuideTitle => 'Guía completa online';
+
+  @override
+  String get guideFullGuideDesc =>
+      'En el sitio está la versión larga, con ejemplos y preguntas frecuentes.';
+
+  @override
+  String get guideFullGuideOpen => 'Abrir la guía';
+
+  @override
+  String get infoWhatIsWalletTitle => 'Qué es una cartera (y qué no)';
+
+  @override
+  String get infoWhatIsWalletBody =>
+      'Una cartera no \'contiene\' monedas: contiene las claves privadas con las que gastas monedas registradas en la blockchain. El saldo lo calculan los nodos leyendo la cadena y la app lo reconstruye desde tus direcciones. Por eso, si pierdes las claves pierdes los fondos; si pierdes el móvil, lo recuperas con la frase de 12 palabras.';
+
+  @override
+  String get infoSelfCustodyTitle =>
+      'Autocustodia: nadie puede bloquear tu dinero';
+
+  @override
+  String get infoSelfCustodyBody =>
+      'Aquí el banco eres tú: no hay cuenta, ni login, ni empresa que guarde tu dinero. Ventaja: nadie puede congelar tu saldo. Riesgo: nadie puede recuperar tu contraseña ni tu frase de recuperación. Es el precio de la soberanía: acéptalo a sabiendas.';
+
+  @override
+  String get infoSeedPhraseTitle => 'Frase de recuperación (12 palabras)';
+
+  @override
+  String get infoSeedPhraseBody =>
+      'Es la forma legible de tu clave privada: con esas palabras se reconstruyen TODAS tus direcciones y, por tanto, tus fondos. Escríbela en papel, nunca en foto, chats, nube o gestor de contraseñas. Quien la lea puede vaciar la cartera; quien la pierda lo habrá perdido todo.';
+
+  @override
+  String get infoAppEncryptionTitle => 'Cifrado local y contraseña';
+
+  @override
+  String get infoAppEncryptionBody =>
+      'La frase se queda en tu dispositivo cifrada con AES-GCM: la clave se deriva de tu contraseña (o de la huella, que desbloquea el keystore del sistema). Ningún servidor recibe la contraseña. Si la olvidas no hay \'recuperar\': solo la frase de recuperación te devuelve el acceso.';
+
+  @override
+  String get infoNetworkBlake2bTitle => 'La red: bitcoin-blake2b';
+
+  @override
+  String get infoNetworkBlake2bBody =>
+      'Estás usando bitcoin-blake2b, una red EXPERIMENTAL con reglas propias (hash BLAKE2b, sin protección replay a nivel de consenso): no es Bitcoin y las dos cadenas no comparten monedas. Trata esta cartera como un entorno de prueba, no como tu hucha definitiva.';
+
+  @override
+  String get infoBalanceUtxoTitle => 'Cómo se forma el saldo';
+
+  @override
+  String get infoBalanceUtxoBody =>
+      'No existe una \'cuenta\' con un número: el saldo es la suma de los UTXO, las monedas que recibiste y aún no gastaste, como billetes en el bolsillo. Una transacción consume UTXO y crea nuevos (pago + cambio). Si te envías a ti mismo, el saldo no cambia.';
+
+  @override
+  String get infoConfirmationsTitle => 'Confirmaciones';
+
+  @override
+  String get infoConfirmationsBody =>
+      'Un pago recién hecho está \'pendiente\' (mempool): existe, pero ningún bloque lo ha registrado aún. Cada bloque posterior añade una confirmación; desde 3 confirmaciones un pago es razonablemente estable. Mientras está pendiente el importe puede aparecer como no disponible: no ha desaparecido, está esperando.';
+
+  @override
+  String get infoFeeConceptTitle => 'Por qué se paga una comisión';
+
+  @override
+  String get infoFeeConceptBody =>
+      'La comisión es la recompensa de quien incluye tu transacción en un bloque. Se paga por tamaño (sat/vB), no por importe: enviar 1.000 o 1.000.000 sat cuesta lo mismo. Si el mempool está lleno los precios suben; la comisión NO es de la app: va a los mineros.';
+
+  @override
+  String get infoChangeAddressTitle => 'El cambio';
+
+  @override
+  String get infoChangeAddressBody =>
+      'Como en la tienda: si los UTXO que usas valen más que el importe, la diferencia vuelve a ti en una dirección NUEVA de la misma cartera (el \'cambio\'). Es normal ver dos salidas: el pago al destinatario y el cambio para ti.';
+
+  @override
+  String get infoLightningVsOnchainTitle => 'On-chain y Lightning';
+
+  @override
+  String get infoLightningVsOnchainBody =>
+      'On-chain significa que cada movimiento es una transacción pública en la cadena: seguro y verificable, pero más lento y con comisión por transacción. Lightning significa pagos instantáneos y casi gratis dentro de \'canales\' abiertos con una transacción on-chain. Abrir un canal mueve fondos on-chain al canal; cerrarlo los devuelve on-chain.';
+
+  @override
+  String get infoPrivacyBasicsTitle => 'Privacidad: quién ve qué';
+
+  @override
+  String get infoPrivacyBasicsBody =>
+      'Cada \'Recibir\' crea una dirección nueva: reutilizarla enlaza tus pagos. La app no tiene cuenta ni telemetría y pide los datos on-chain a una API pública (mempool.guide), que ve tu IP. Para máxima privacidad usa una VPN o tu nodo, y nunca publiques tu xpub.';
+
+  @override
   String get infoCoinControlTitle => 'Control de monedas (selección UTXO)';
 
   @override
@@ -186,7 +310,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get infoBatchSendBody =>
-      'En una sola transacción puedes pagar hasta 5 direcciones, compartiendo la tarifa en lugar de pagarla una vez por transferencia. Todos los destinatarios se muestran en la confirmación antes de firmar.';
+      'En una sola transacción puedes pagar hasta 20 direcciones, compartiendo la tarifa en lugar de pagarla una vez por transferencia. Todos los destinatarios se muestran en la confirmación antes de firmar.';
 
   @override
   String get infoBumpFeeTitle => 'Aumentar tarifa (RBF)';
@@ -574,6 +698,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get walletDetailUtxoClearSelection => 'Borrar selección';
 
   @override
+  String get walletUtxoWaitingBadge => 'En espera';
+
+  @override
+  String walletUtxoWaitingBlocks(int count) {
+    return '$count bloques para el desbloqueo';
+  }
+
+  @override
+  String walletUtxoWaitingHint(int blocks) {
+    return 'Los pagos de minería (coinbase) solo se propagan por la red tras $blocks bloques: aún no se pueden gastar.';
+  }
+
+  @override
+  String walletBalanceWaiting(String amount) {
+    return 'En espera: $amount';
+  }
+
+  @override
   String get walletDetailPasswordSeedReason =>
       'Confirma la contraseña para ver la frase semilla';
 
@@ -726,7 +868,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String legalPrivacyContent(String holder, String email) {
-    return 'Esta Política de Privacidad es provisional y será sustituida por la versión definitiva publicada en el sitio web oficial cuando esté disponible.\n\n1) DATOS EN EL DISPOSITIVO. La aplicación no requiere una cuenta y no guarda datos personales en servidores del autor. La semilla cifrada (AES-256-GCM), las preferencias y los consentimientos permanecen SOLO en tu dispositivo.\n\n2) DATOS TRANSMITIDOS A TERCEROS PARA EL FUNCIONAMIENTO. Para mostrar el saldo y las comisiones, la aplicación consulta API públicas de terceros:\n• mempool.guide (explorador de blockchain).\n• Si mempool.guide no está disponible, la app puede consultar dos réplicas comunitarias compatibles con Esplora (mempool.kilombino.com, mempool.maveth.ca). Esta opción se puede desactivar en Ajustes.\nEn cada solicitud se transmiten tu dirección IP y la dirección pública del monedero consultado. Las claves privadas y la semilla NUNCA se transmiten.\n\n3) SIN RASTREADORES. Ninguna analítica, ninguna publicidad, ninguna cookie dentro de la aplicación.\n\n4) DERECHOS (GDPR arts. 13-14). Tienes derecho de acceso, rectificación, supresión y oposición escribiendo al responsable del tratamiento: $holder — $email. Dado que no almacenamos datos personales, estos derechos ya están garantizados en gran parte por el hecho de que los datos permanecen en tu dispositivo.';
+    return 'Esta Política de Privacidad es provisional y será sustituida por la versión definitiva publicada en el sitio web oficial cuando esté disponible.\n\n1) DATOS EN EL DISPOSITIVO. La aplicación no requiere una cuenta y no guarda datos personales en servidores del autor. La semilla cifrada (AES-256-GCM), las preferencias y los consentimientos permanecen SOLO en tu dispositivo.\n\n2) DATOS TRANSMITIDOS A TERCEROS PARA EL FUNCIONAMIENTO. Para mostrar el saldo y las comisiones, la aplicación consulta API públicas de terceros:\n• mempool.guide (explorador de blockchain).\n• Si mempool.guide no está disponible, la app puede consultar dos réplicas comunitarias compatibles con Esplora (mempool.kilombino.com, mempool.maveth.ca). Esta opción se puede desactivar en Ajustes.\n• Si activas el precio automático en Ajustes, la app lee el último trade XBT/USDC de neoxa.exchange (NeoXEX) bajo demanda. Si tu moneda no es USD, la app también lee los cambios USDT de api.coinbase.com. Ambas opciones se pueden desactivar en Ajustes.\nEn cada solicitud se transmiten tu dirección IP y la dirección pública del monedero consultado. Las claves privadas y la semilla NUNCA se transmiten.\n\n3) SIN RASTREADORES. Ninguna analítica, ninguna publicidad, ninguna cookie dentro de la aplicación.\n\n4) DERECHOS (GDPR arts. 13-14). Tienes derecho de acceso, rectificación, supresión y oposición escribiendo al responsable del tratamiento: $holder — $email. Dado que no almacenamos datos personales, estos derechos ya están garantizados en gran parte por el hecho de que los datos permanecen en tu dispositivo.';
   }
 
   @override
@@ -796,6 +938,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'El código escaneado no es una factura Lightning válida.';
 
   @override
+  String get scanQrInvalidMnemonic =>
+      'El código escaneado no es una frase mnemónica BIP39 válida.';
+
+  @override
   String get scanQrTorch => 'Alternar linterna';
 
   @override
@@ -840,6 +986,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get importScreenHint => 'palabra1 palabra2 palabra3 ...';
+
+  @override
+  String get importScreenScanSeed => 'Escanear el QR de la semilla';
 
   @override
   String get importScreenValidateEmpty => 'Introduce la frase mnemotécnica.';
@@ -1350,6 +1499,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lightningOpenChannelNodeId => 'Node ID (pubkey)';
 
   @override
+  String get lightningCoinControlTitle => 'Control de monedas (opcional)';
+
+  @override
+  String get lightningCoinControlHint =>
+      'Elige qué salidas on-chain del nodo financian el canal. Sin selección el nodo decide por sí mismo.';
+
+  @override
+  String get lightningCoinControlNoneSelected =>
+      'Sin selección: el nodo elige automáticamente.';
+
+  @override
+  String get lightningCoinControlSelectedTotal => 'Total seleccionado';
+
+  @override
+  String get lightningCoinControlUnconfirmed => 'sin confirmar';
+
+  @override
+  String get lightningCoinControlUnavailable =>
+      'Lista de salidas no disponible: el nodo elegirá automáticamente.';
+
+  @override
   String get lightningOpenChannelHost => 'Host (opcional, ip:puerto)';
 
   @override
@@ -1548,6 +1718,160 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get lightningChannelFundingTxid => 'Txid de funding';
+
+  @override
+  String get lightningSplice => 'Redimensionar canal';
+
+  @override
+  String get lightningSpliceTitle => 'Redimensionar el canal sin cerrarlo';
+
+  @override
+  String get lightningSpliceIn => 'Añadir fondos';
+
+  @override
+  String get lightningSpliceOut => 'Retirar fondos';
+
+  @override
+  String get lightningSpliceAmountLabel => 'Importe (sat)';
+
+  @override
+  String get lightningSpliceEstimate => 'Estimar comisión on-chain';
+
+  @override
+  String lightningSpliceFee(int fee) {
+    final intl.NumberFormat feeNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String feeString = feeNumberFormat.format(fee);
+
+    return 'Comisión on-chain: unos $feeString sat';
+  }
+
+  @override
+  String get lightningSpliceFeeUnavailable =>
+      'El nodo no devolvió una estimación de la comisión';
+
+  @override
+  String get lightningSpliceConfirm =>
+      '¿Redimensionar el canal ahora? El canal sigue en línea y se difunde una transacción on-chain.';
+
+  @override
+  String get lightningSpliceDone => 'Canal redimensionado';
+
+  @override
+  String get lightningSpliceInvalidAmount =>
+      'Introduce un importe mayor que cero';
+
+  @override
+  String get lightningSpliceUnavailable =>
+      'El redimensionamiento solo está disponible en canales utilizables y con el par en línea.';
+
+  @override
+  String get lightningSpliceChannelFailed =>
+      'El nodo rechazó el splice: puede que el par no lo soporte (requiere CLN con firmas unificadas). El canal no cambia.';
+
+  @override
+  String get lightningSpliceBridgeOutdated =>
+      'El bridge de este nodo aún no expone el redimensionamiento: actualiza el bridge en el servidor.';
+
+  @override
+  String lightningSpliceOnchainAvailable(String sats) {
+    return 'Fondos on-chain del nodo: $sats sat';
+  }
+
+  @override
+  String get lightningSpliceInsufficientOnchain =>
+      'Los fondos on-chain del nodo no alcanzan para este importe: recarga la cartera on-chain del nodo (Depositar) y vuelve a intentarlo.';
+
+  @override
+  String get lightningReceiveModeInvoice => 'Factura única';
+
+  @override
+  String get lightningReceiveModeOffer => 'Código reutilizable';
+
+  @override
+  String get lightningOfferTitle => 'Código de pago reutilizable';
+
+  @override
+  String get lightningOfferReusableHint =>
+      'Comparte este código: cualquiera puede pagarlo y elegir el importe si lo dejaste libre. No caduca como una factura.';
+
+  @override
+  String get lightningOfferAmountOptional => 'Importe (sat) — opcional';
+
+  @override
+  String get lightningOfferAmountLabel => 'Importe (sat)';
+
+  @override
+  String get lightningOfferAmountRequired =>
+      'Introduce el importe para pagar esta oferta';
+
+  @override
+  String lightningOfferFixedAmount(String sats) {
+    return 'Importe de la oferta: $sats sat';
+  }
+
+  @override
+  String get lightningOfferDefaultDescription => 'Pago';
+
+  @override
+  String get lightningPayOffer => 'Pagar oferta';
+
+  @override
+  String get lightningCrossChainEntry => 'Pagar una factura BTC (SHA-256)';
+
+  @override
+  String get lightningCrossChainTitle => 'Pago entre cadenas';
+
+  @override
+  String get lightningCrossChainHint =>
+      'Paga una factura Lightning de la cadena SHA-256 con tus fondos BLAKE2b, mediante un puente externo no custodial. El puente solo cobra después de pagar la factura; si no puede, el pago vuelve a ti.';
+
+  @override
+  String get lightningCrossChainCheck => 'Comprobar coste';
+
+  @override
+  String lightningCrossChainCost(String sats) {
+    return 'Pagas: $sats sat';
+  }
+
+  @override
+  String lightningCrossChainInvoiceAmount(String sats) {
+    return 'Importe de la factura: $sats sat';
+  }
+
+  @override
+  String lightningCrossChainRate(String rate) {
+    return 'Tipo de cambio: 1 XBT = $rate BTC';
+  }
+
+  @override
+  String lightningCrossChainSpread(String percent) {
+    return 'Margen del bridge: $percent %';
+  }
+
+  @override
+  String lightningCrossChainWait(int seconds) {
+    return 'Espera estimada: unos $seconds s';
+  }
+
+  @override
+  String get lightningCrossChainPay => 'Pagar mediante el puente';
+
+  @override
+  String get lightningCrossChainConfirmTitle => '¿Pagar mediante el puente?';
+
+  @override
+  String lightningCrossChainConfirmBody(String sats) {
+    return 'Pagarás $sats sat en esta cadena. Los fondos quedan retenidos hasta que el puente pague la factura de destino; si no puede, el pago vuelve a ti.';
+  }
+
+  @override
+  String get lightningCrossChainDone => 'Pago completado';
+
+  @override
+  String lightningCrossChainState(String state) {
+    return 'Estado del puente: $state';
+  }
 
   @override
   String get lightningNodeManagement => 'Gestión del nodo';
@@ -1951,6 +2275,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lightningPeeringGateLink => 'Matriz de compatibilidad';
 
   @override
+  String get lightningPeeringGateNewTitle =>
+      'Peering limitado a las versiones del nuevo protocolo';
+
+  @override
+  String get lightningPeeringGateNewBody =>
+      'Este nodo usa los bits de característica definitivos (option_blake2b 512, option_unified_sigs 514): los nodos que no se han actualizado — versión .4 y anteriores — no pueden conectarse. Es una decisión de la red, no un problema de la app ni del bridge. Los pares deben actualizar a la versión .5 o posterior.';
+
+  @override
   String lightningPeersRegisteredOnly(int count) {
     return '$count pares registrados, ninguno conectado';
   }
@@ -1983,6 +2315,43 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get lightningSwapProviderDisconnect => 'Desconectar';
+
+  @override
+  String get lightningSwapProviderDefaultLabel =>
+      'Nodo btcblake2b (recomendado)';
+
+  @override
+  String get lightningSwapProviderChecking =>
+      'Comprobando el nodo predeterminado...';
+
+  @override
+  String get lightningSwapProviderReachable => 'Nodo predeterminado accesible';
+
+  @override
+  String get lightningSwapProviderDown =>
+      'El nodo predeterminado no responde en este momento.';
+
+  @override
+  String lightningSwapProviderSendLimit(String min, String max) {
+    return 'Ahora puedes enviar entre $min y $max sat';
+  }
+
+  @override
+  String lightningSwapProviderLiquidity(String amount) {
+    return 'Liquidez disponible ahora: $amount sat';
+  }
+
+  @override
+  String get lightningSwapPeerCheck => 'Verificar destinatario';
+
+  @override
+  String lightningSwapPeerReachable(String amount) {
+    return 'Destinatario accesible: $amount sat por pagar';
+  }
+
+  @override
+  String get lightningSwapErrorPeerUnreachable =>
+      'El destinatario no es accesible desde el proveedor: no hay ruta hacia su nodo. Revisa la factura o inténtalo más tarde.';
 
   @override
   String get lightningSwapInvoiceHint => 'Factura Lightning (lnbc...)';
@@ -2069,6 +2438,48 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lightningSwapBlobCopied => 'Blob de recuperación copiado';
 
   @override
+  String get lightningSwapHistoryTitle => 'Historial de swaps';
+
+  @override
+  String get lightningSwapHistoryEmpty =>
+      'Aún no hay swaps: los pagos hechos con un proveedor aparecerán aquí.';
+
+  @override
+  String get lightningSwapDetailTitle => 'Detalle del swap';
+
+  @override
+  String get lightningSwapDetailCreated => 'Creado';
+
+  @override
+  String get lightningSwapDetailSummary => 'Resumen';
+
+  @override
+  String get lightningSwapDetailProtocol => 'Datos de protocolo';
+
+  @override
+  String get lightningSwapDetailSwapId => 'ID del swap';
+
+  @override
+  String get lightningSwapDetailInvoice => 'Factura';
+
+  @override
+  String get lightningSwapDetailPaymentHash => 'Payment hash';
+
+  @override
+  String get lightningSwapDetailProvider => 'Proveedor';
+
+  @override
+  String get lightningSwapDetailFundingTx => 'Transacción de funding';
+
+  @override
+  String get lightningSwapOpenInExplorer => 'Abrir en el explorador';
+
+  @override
+  String lightningSwapRefundSent(String txid) {
+    return 'Reembolso enviado: $txid';
+  }
+
+  @override
   String get lightningSwapClaimTxid => 'Txid del claim';
 
   @override
@@ -2108,6 +2519,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String lightningSwapInsufficientFundsWaiting(
+      String needed, String available, String waiting) {
+    return 'Fondos insuficientes: se necesitan $needed sat, disponibles $available sat ($waiting sat en espera)';
+  }
+
+  @override
   String get lightningSwapCancel => 'Cancelar swap';
 
   @override
@@ -2124,6 +2541,50 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get lightningSwapErrorRelayNotAllowed =>
       'Este proveedor usa un relé que la versión web no puede alcanzar. Usa la versión móvil en el teléfono para pagar con este proveedor.';
+
+  @override
+  String get lightningSwapErrorPaymentFailed =>
+      'El proveedor no pudo pagar esta factura. Tus fondos siguen en el HTLC: puedes recuperarlos con el reembolso (ver el bloque más abajo).';
+
+  @override
+  String get lightningSwapErrorProviderUnavailable =>
+      'El proveedor no puede pagar ahora mismo (sin ruta o liquidez insuficiente). Inténtalo más tarde.';
+
+  @override
+  String get lightningSwapErrorRateLimited =>
+      'El proveedor está temporalmente al límite de capacidad. Inténtalo más tarde.';
+
+  @override
+  String get lightningSwapErrorDuplicateSwap =>
+      'Esta factura ya se usó en otro swap.';
+
+  @override
+  String get lightningSwapErrorQuoteExpired =>
+      'La cotización caducó. Inicia el swap de nuevo.';
+
+  @override
+  String get lightningSwapErrorInvoiceInvalid =>
+      'El proveedor rechazó esta factura: no es válida.';
+
+  @override
+  String get lightningSwapErrorInvoiceExpired =>
+      'Esta factura ha caducado. Pide una nueva.';
+
+  @override
+  String get lightningSwapErrorAmountOutOfRange =>
+      'El proveedor no acepta este importe (fuera del rango permitido).';
+
+  @override
+  String get lightningSwapErrorFundingTimeout =>
+      'El funding no se confirmó a tiempo: el swap caducó sin ningún pago.';
+
+  @override
+  String get lightningSwapErrorTooLate =>
+      'El pago se canceló por estar demasiado cerca del time lock. Tus fondos se pueden recuperar.';
+
+  @override
+  String get lightningSwapRefundHint =>
+      'Estos fondos siguen siendo tuyos: el reembolso se desbloquea automáticamente en el time lock, aunque el proveedor desaparezca.';
 
   @override
   String get lightningSwapCancelTitle => '¿Cancelar este swap?';
@@ -2162,4 +2623,363 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get lightningChannelPeerAddress => 'Dirección del par';
+
+  @override
+  String get lightningSpliceNodeTooOld =>
+      'Redimensionar un canal requiere un nodo en la versión .6 o posterior (recomendada .9). Este nodo es más antiguo, así que la acción está oculta. Actualiza el nodo para activarla.';
+
+  @override
+  String get lightningSpliceNodeOutdated =>
+      'Este nodo está en una versión anterior a la .9: las actualizaciones desde la .8 cierran una vulnerabilidad de splice por la que un nodo puede perder los fondos del canal. El redimensionado sigue funcionando, pero actualiza a la .9 en cuanto puedas.';
+
+  @override
+  String get lightningDiscoveryTitle => 'Encontrar pares y liquidez';
+
+  @override
+  String get lightningDiscoveryBody =>
+      'En esta red no hay un catálogo central. Estos son los puntos de referencia activos donde la comunidad lista nodos, canales y liquidez entrante.';
+
+  @override
+  String get lightningDiscoveryNetworkTitle => 'Explorador de red (Paperclip)';
+
+  @override
+  String get lightningDiscoveryNetworkBody =>
+      'Nodos públicos, canales y capacidad anunciada.';
+
+  @override
+  String get lightningDiscoveryLspTitle => 'Liquidez entrante (LSP Paperclip)';
+
+  @override
+  String get lightningDiscoveryLspBody =>
+      'Un canal hacia tu nodo, pagado on-chain en XBT.';
+
+  @override
+  String get lightningDiscoveryNodexTitle => 'Nodex - canales y comisiones';
+
+  @override
+  String get lightningDiscoveryNodexBody =>
+      'Explorador de canales con comisiones en ambos sentidos y uptime.';
+
+  @override
+  String get lightningDiscoverySwapTitle => 'Lightning Fork Swap';
+
+  @override
+  String get lightningDiscoverySwapBody =>
+      'Swap sin custodia entre Lightning y on-chain para mover liquidez.';
+
+  @override
+  String get lightningDiscoveryWatchtowerTitle =>
+      'Watchtowers (solo nodos lnd)';
+
+  @override
+  String get lightningDiscoveryWatchtowerBody =>
+      'Un watchtower vigila la cadena mientras tu nodo está desconectado y castiga al par que publica un estado antiguo. Usa más de uno: lnd necesita wtclient.active=true y Tor. Los nodos CLN hablan BOLT 13 (TEOS), que la app aún no configura. Añádelas con lncli wtclient add <uri>.';
+
+  @override
+  String get lightningDiscoveryOpenFailed => 'El navegador no abrió el enlace.';
+
+  @override
+  String get lightningInboundMissingTitle => 'Todavía no puedes recibir';
+
+  @override
+  String get lightningInboundMissingBody =>
+      'Este nodo no tiene liquidez entrante: otro nodo debe abrir un canal hacia él antes de que alguien pueda pagarte. Hasta entonces, las facturas que compartas no se podrán pagar.';
+
+  @override
+  String get lightningInboundMissingCta => 'Obtener liquidez entrante';
+
+  @override
+  String get lightningInboundMissingRefresh => 'Comprobar de nuevo';
+
+  @override
+  String get webVaultNoticeTitle => 'Estás usando la versión de navegador';
+
+  @override
+  String get webVaultNoticeBody =>
+      'Aquí la semilla cifrada se guarda en el navegador (localStorage, con copia en IndexedDB) y la clave está envuelta por tu contraseña. La bóveda se bloquea tras 10 minutos de inactividad y cuando la página se oculta, pero el código que se ejecuta en la página mientras la bóveda está desbloqueada puede leer las claves: el navegador no puede defenderse de eso. Para importes reales usa la app Android, donde las claves quedan en el llavero del sistema.';
+
+  @override
+  String get webVaultNoticeDownload => 'Descargar la app Android';
+
+  @override
+  String get splashStartupError => 'No se pudo iniciar la aplicación';
+
+  @override
+  String get splashRetry => 'Reintentar';
+
+  @override
+  String webVaultOriginOfficial(Object origin) {
+    return 'Dominio verificado: $origin';
+  }
+
+  @override
+  String webVaultOriginDev(Object origin) {
+    return 'Entorno de prueba local: $origin';
+  }
+
+  @override
+  String webVaultOriginUnofficial(Object origin) {
+    return 'ATENCIÓN: este no es el dominio oficial. Estás en $origin — el real es app.btcblake2b.org. No introduzcas aquí tu semilla ni tu contraseña.';
+  }
+
+  @override
+  String get receiveNeedsBackupTitle => 'Primero protege la semilla';
+
+  @override
+  String get receiveNeedsBackupBody =>
+      'En el navegador la semilla cifrada está en el almacenamiento de este sitio: una actualización de la PWA o «borrar datos del sitio» la eliminan, y una dirección compartida ahora recibiría fondos que no podrías gastar. Confirma el respaldo de la semilla (o pasa la cartera a la app) antes de recibir.';
+
+  @override
+  String get receiveNeedsBackupAction => 'Hacer el respaldo';
+
+  @override
+  String get merchantChargeTitle => 'Cobrar';
+
+  @override
+  String get merchantChargeAmount => 'Importe';
+
+  @override
+  String get merchantChargeAmountInvalid =>
+      'Introduce un importe mayor que cero.';
+
+  @override
+  String get merchantChargeLabel => 'Descripción (opcional)';
+
+  @override
+  String get merchantChargeModeLightning => 'Lightning';
+
+  @override
+  String get merchantChargeModeOnchain => 'On-chain';
+
+  @override
+  String get merchantChargeLightningHint =>
+      'El cliente paga la factura Lightning: se acredita en cuanto el nodo la recibe.';
+
+  @override
+  String get merchantChargeOnchainHint =>
+      'El cliente escanea el QR: el importe ya está dentro, solo tiene que confirmar.';
+
+  @override
+  String get merchantChargeLightningUnavailable =>
+      'No hay ningún nodo Lightning conectado: por ahora puedes cobrar on-chain. Conecta tu nodo desde la pestaña Lightning para aceptar también pagos Lightning.';
+
+  @override
+  String get merchantChargeCreate => 'Crear solicitud de pago';
+
+  @override
+  String get merchantChargeInvoiceTitle => 'Factura Lightning';
+
+  @override
+  String get merchantChargeUriTitle => 'URI Bitcoin (BIP21)';
+
+  @override
+  String get merchantChargeWaiting => 'Esperando el pago…';
+
+  @override
+  String get merchantChargePaid => 'Pago recibido';
+
+  @override
+  String get merchantChargeNew => 'Nueva solicitud';
+
+  @override
+  String get merchantConvertTitle => 'Convertir a BTC';
+
+  @override
+  String get merchantConvertIntro =>
+      'XBT vive en la red bitcoin-blake2b, separada de Bitcoin: convertir XBT en BTC (o al contrario) es un swap cross-chain. Esta app no lo hace ni puede hacerlo: ningún cambio, ninguna custodia. La conversión ocurre en servicios de terceros sin custodia que elijas tú.';
+
+  @override
+  String get merchantConvertAddressTitle => 'Tu dirección XBT';
+
+  @override
+  String get merchantConvertAddressBody =>
+      'Copia la dirección de la cartera que quieras usar allí, o cobra primero XBT aquí y convierte después. Nunca envíes fondos a un servicio que te pida la semilla.';
+
+  @override
+  String get merchantConvertUnnamedWallet => 'Cartera';
+
+  @override
+  String get merchantConvertPaperclipTitle => 'Paperclip Bridge (beta)';
+
+  @override
+  String get merchantConvertPaperclipBody =>
+      'Bridge sin custodia de la comunidad: solo cobra cuando la factura se ha pagado realmente. Beta, no auditado por terceros.';
+
+  @override
+  String get merchantConvertForkTitle => 'Lightning Fork Swap';
+
+  @override
+  String get merchantConvertForkBody =>
+      'Swap de la comunidad, con donaciones on-chain usadas solo para su liquidez. Comprueba comisiones y límites antes de enviar.';
+
+  @override
+  String get merchantConvertWarningTitle => 'Antes de convertir';
+
+  @override
+  String get merchantConvertWarningBody =>
+      '1) Compara lo que recibes con lo que envías: en importes pequeños las comisiones pueden comerse la diferencia. 2) Un swap no es reversible: revisa dirección y red. 3) No cobramos, no custodiamos y no garantizamos nada: si un servicio se bloquea, solo ese servicio puede responder. 4) Para importes reales, haz primero una prueba pequeña.';
+
+  @override
+  String get merchantConvertOpen => 'Convertir';
+
+  @override
+  String get fiatPriceShow => 'Mostrar el valor en dólares';
+
+  @override
+  String get fiatPriceNotSet => 'Sin precio: añade uno para ver el valor';
+
+  @override
+  String fiatPriceCurrent(Object cents) {
+    return '1 XBT = $cents';
+  }
+
+  @override
+  String get fiatPriceSet => 'Fijar el precio de XBT';
+
+  @override
+  String get fiatPriceSetDesc =>
+      'El precio usado para el contravalor: introdúlo tú o deja que la app lo lea de NeoXEX.';
+
+  @override
+  String get fiatPriceDialogBody =>
+      'Introduce el precio de 1 XBT en USD. Si lo prefieres, activa el precio automático en Ajustes: la app lee el último trade XBT/USDC de NeoXEX bajo demanda (y el cambio USDT de la moneda elegida). El valor mostrado es indicativo, no una cotización.';
+
+  @override
+  String get fiatPriceFieldLabel => 'Precio de 1 XBT';
+
+  @override
+  String get fiatPriceSave => 'Guardar';
+
+  @override
+  String get fiatPriceInvalid =>
+      'Precio no válido: un número mayor que cero, como máximo 2 decimales.';
+
+  @override
+  String get fiatPriceManualNote => 'precio tuyo, no una cotización';
+
+  @override
+  String get fiatPriceMarketNote => 'precio de mercado, último trade de NeoXEX';
+
+  @override
+  String get fiatPriceCurrency => 'Moneda del contravalor';
+
+  @override
+  String get fiatPriceCurrencyDesc => 'Convertido con el cambio USDT';
+
+  @override
+  String get fiatPriceFxFailed =>
+      'Cambio no disponible: conéctate a internet e inténtalo de nuevo.';
+
+  @override
+  String get fiatPriceAuto => 'Obtener el precio de NeoXEX';
+
+  @override
+  String get fiatPriceAutoDesc =>
+      'Lee el último trade XBT/USDC bajo demanda. Sin polling, sin peticiones en segundo plano.';
+
+  @override
+  String get fiatPriceAutoUpdated => 'Precio actualizado desde NeoXEX';
+
+  @override
+  String get fiatPriceAutoFailed =>
+      'NeoXEX no está disponible: se mantiene el precio anterior.';
+
+  @override
+  String get balanceChangeUnitHint =>
+      'Toca para cambiar el saldo entre XBT, sats y dólares';
+
+  @override
+  String get psbtSpendTitle => 'Gastar con PSBT';
+
+  @override
+  String get psbtSpendIntro =>
+      'Una cartera watch-only no puede firmar. Crea aquí la PSBT, fírmala en un dispositivo que tenga la semilla y transmítela desde allí.';
+
+  @override
+  String get psbtCreate => 'Crear PSBT';
+
+  @override
+  String get psbtCreating => 'Creando la PSBT…';
+
+  @override
+  String psbtDraftReady(Object change, Object fee) {
+    return 'PSBT lista · comisión $fee sat · cambio $change sat';
+  }
+
+  @override
+  String get psbtQrTitle => 'Escanea esta PSBT';
+
+  @override
+  String psbtQrFrames(Object count) {
+    return '$count tramas — mantén la cámara apuntando mientras el QR rota';
+  }
+
+  @override
+  String get psbtCopyBase64 => 'Copiar PSBT (base64)';
+
+  @override
+  String get psbtSignTitle => 'Firmar una PSBT';
+
+  @override
+  String get psbtSignIntro =>
+      'Pega o escanea una PSBT creada en otro dispositivo. Revisa destinatarios y comisión antes de firmar.';
+
+  @override
+  String get psbtPasteLabel => 'PSBT (base64)';
+
+  @override
+  String get psbtScan => 'Escanear QR';
+
+  @override
+  String get psbtReviewTitle => 'Resumen';
+
+  @override
+  String psbtReviewFee(Object fee) {
+    return 'Comisión: $fee sat';
+  }
+
+  @override
+  String psbtReviewInputs(Object count) {
+    return 'Entradas: $count';
+  }
+
+  @override
+  String psbtReviewOutputs(Object count) {
+    return 'Destinatarios: $count';
+  }
+
+  @override
+  String get psbtSign => 'Firmar';
+
+  @override
+  String get psbtSignedTitle => 'PSBT firmada';
+
+  @override
+  String get psbtBroadcast => 'Transmitir';
+
+  @override
+  String get psbtBroadcasting => 'Transmitiendo…';
+
+  @override
+  String psbtBroadcastDone(Object txid) {
+    return 'Enviada: $txid';
+  }
+
+  @override
+  String get psbtInvalid => 'PSBT no válida';
+
+  @override
+  String get psbtNoFrames => 'No se reconoció ninguna trama PSBT';
+
+  @override
+  String psbtScanProgress(Object received, Object total) {
+    return 'Tramas leídas: $received/$total';
+  }
+
+  @override
+  String get psbtSigning => 'Firmando…';
+
+  @override
+  String get psbtNeedsSeed =>
+      'Esta cartera no tiene semilla: fírmala en el dispositivo que la tiene.';
 }

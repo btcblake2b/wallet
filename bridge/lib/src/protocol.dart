@@ -26,11 +26,14 @@ class Protocol {
   /// // PERCHÉ (I3e): aggiunto `keysend` (pagamento a un nodo senza invoice).
   /// // PERCHÉ (UX-2): aggiunto `delete_invoice` (rimozione fatture in
   /// attesa/scadute: estensione, non presente nella spec dln).
+  /// // PERCHÉ (CROSS-CHAIN): `cross_chain_check` e `cross_chain_pay` pagano una
+  /// // fattura della chain SHA-256 tramite un bridge esterno opt-in (kilobridge).
   static const String nwcInfoContent =
       'get_info get_balance make_invoice pay_invoice '
       'make_new_address pay_onchain estimate_onchain_fees list_addresses '
       'list_transactions list_utxos list_invoices lookup_invoice '
-      'list_pays get_pending_htlcs keysend delete_invoice';
+      'list_pays get_pending_htlcs keysend delete_invoice make_offer '
+      'cross_chain_check cross_chain_pay';
 
   /// Metodi dichiarati nell'evento info NCC (kind 13198).
   ///
@@ -39,8 +42,12 @@ class Protocol {
   /// nomi storici restano accettati come alias dal dispatcher, così le app
   /// non ancora aggiornate continuano a funzionare. `get_node_stats` non ha
   /// equivalente nella spec: resta un'estensione di questo bridge.
+  /// // PERCHÉ (SPLICE): `splice_channel` / `estimate_splice` sono estensioni
+  /// di questo bridge (CLN `splice_init`/`splice_update`/`signpsbt`/
+  /// `splice_signed`): una app vecchia le ignora, una nuova le usa per
+  /// ridimensionare un canale senza chiuderlo.
   static const String nccInfoContent =
-      'list_channels open_channel close_channel '
+      'list_channels open_channel close_channel splice_channel estimate_splice '
       'connect_peer disconnect_peer list_peers '
       'get_channel_fees set_channel_fees '
       'get_node_stats get_forwarding_history query_routes get_network_node';
@@ -53,6 +60,9 @@ class Protocol {
   static const List<String> nccNotifications = [
     'channel_opened',
     'channel_closed',
+    // PERCHÉ (SPLICE): lo splice non chiude il canale, cambia la capacità —
+    // senza questa voce il client non sa che la splice è stata confermata.
+    'channel_resized',
   ];
 }
 
@@ -82,7 +92,8 @@ class BridgeNotification {
     required this.payload,
   });
 
-  /// `payment_received`, `payment_sent`, `channel_opened`, `channel_closed`.
+  /// `payment_received`, `payment_sent`, `channel_opened`, `channel_closed`,
+  /// `channel_resized` (splice concluso: capacità cambiata).
   final String type;
 
   /// True → kind NCC (23200), false → kind NWC (23196).

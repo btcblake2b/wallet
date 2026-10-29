@@ -313,5 +313,165 @@ void main() {
       expect(find.text('2 sat/vB'), findsOneWidget); // normal
       expect(find.text('3 sat/vB'), findsOneWidget); // high
     });
+
+    testWidgets(
+        'UTXO in periodo di attesa: fuori dal disponibile e non selezionabili',
+        (tester) async {
+      // Ignora gli avvisi noti di ListTile/DecoratedBox (non bloccanti).
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('ListTile background color') ||
+            details
+                .exceptionAsString()
+                .contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() {
+        FlutterError.onError = originalOnError;
+      });
+
+      final wallet = WalletRecord(
+        walletId: 'test_id',
+        encryptedSeed: 'test_seed',
+        publicAddress: 'test_address',
+        deviceId: 'test_device',
+        createdAt: DateTime(2024, 1, 1),
+      );
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+      final biometricService = MockBiometricService();
+
+      final spendable = UtxoInfo(
+        txid: 'f' * 64,
+        vout: 0,
+        valueSat: 100000,
+      );
+      // PERCHÉ: payout di mining a 600 conferme (maturity 6.480) → in attesa.
+      final waiting = UtxoInfo(
+        txid: 'd' * 64,
+        vout: 1,
+        valueSat: 50000,
+        confirmations: 600,
+        isCoinbase: true,
+      );
+
+      when(() => bitcoinService.fetchFeeEstimates()).thenAnswer(
+        (_) async => FeeEstimates(lowSatVb: 1, normalSatVb: 2, highSatVb: 3),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SendScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            bitcoinService: bitcoinService,
+            biometricService: biometricService,
+            balanceSats: 100000,
+            initialUtxos: [spendable],
+            initialBlockedUtxos: [waiting],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Il disponibile è SOLO lo spendibile (100.000 sat, non 150.000).
+      expect(find.text('0.00100000 BTC'), findsOneWidget);
+      expect(find.text('100000 sat · 1 UTXO'), findsOneWidget);
+      // La riga informativa dice dove sono finiti gli altri sat.
+      expect(find.text('Waiting period: 0.00050000 BTC'), findsOneWidget);
+
+      // Apri il selettore UTXO.
+      await tester.tap(find.text('Waiting period: 0.00050000 BTC'));
+      await tester.pumpAndSettle();
+
+      // Badge dedicato + countdown in BLOCCHI (6.480 − 600 = 5.880):
+      // una volta nella riga informativa del saldo, una nella riga UTXO.
+      expect(find.text('Waiting period'), findsOneWidget);
+      expect(find.textContaining('5880 blocks to unlock'), findsNWidgets(2));
+
+      // Riga NON selezionabile: checkbox disabilitata.
+      final waitingTile = tester.widget<CheckboxListTile>(
+        find.ancestor(
+          of: find.text('Waiting period'),
+          matching: find.byType(CheckboxListTile),
+        ),
+      );
+      expect(waitingTile.onChanged, isNull);
+      expect(waitingTile.value, isFalse);
+    });
+
+    testWidgets('solo UTXO in periodo di attesa: il form li spiega (A3)',
+        (tester) async {
+      // Ignora gli avvisi noti di ListTile/DecoratedBox (non bloccanti).
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('ListTile background color') ||
+            details
+                .exceptionAsString()
+                .contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() {
+        FlutterError.onError = originalOnError;
+      });
+
+      final wallet = WalletRecord(
+        walletId: 'test_id',
+        encryptedSeed: 'test_seed',
+        publicAddress: 'test_address',
+        deviceId: 'test_device',
+        createdAt: DateTime(2024, 1, 1),
+      );
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+      final biometricService = MockBiometricService();
+
+      final waiting = UtxoInfo(
+        txid: 'd' * 64,
+        vout: 1,
+        valueSat: 50000,
+        confirmations: 600,
+        isCoinbase: true,
+      );
+
+      when(() => bitcoinService.fetchFeeEstimates()).thenAnswer(
+        (_) async => FeeEstimates(lowSatVb: 1, normalSatVb: 2, highSatVb: 3),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SendScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            bitcoinService: bitcoinService,
+            biometricService: biometricService,
+            balanceSats: 0,
+            // Nessun UTXO spendibile: solo il payout di mining in attesa.
+            initialBlockedUtxos: [waiting],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Niente prompt "carica UTXO": il form spiega dove sono i fondi.
+      expect(find.text('Waiting period: 0.00050000 BTC'), findsOneWidget);
+      expect(find.text('Loading UTXOs'), findsNothing);
+
+      // Il tap su Send lo dice esplicitamente, invece di "nessun UTXO".
+      final sendButton = find.widgetWithText(FilledButton, 'Send');
+      await tester.ensureVisible(sendButton);
+      await tester.pumpAndSettle();
+      await tester.tap(sendButton);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('they cannot be spent yet'), findsOneWidget);
+    });
   });
 }

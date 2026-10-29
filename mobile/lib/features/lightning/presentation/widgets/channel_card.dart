@@ -43,54 +43,87 @@ class LightningChannelCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // PERCHÉ (26/10): durante uno splice lo stato del nodo diventa
+              // lungo (`CHANNELD_AWAITING_SPLICE`) e, con il badge degli HTLC
+              // accanto, questa Row sforava di pochi pixel a destra. Ora il
+              // gruppo di sinistra prende lo spazio disponibile e il badge di
+              // stato si accorcia con ellissi; l'id del canale resta intatto a
+              // destra, perché è ciò che permette di riconoscere il canale.
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: stateColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: stateColor.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    child: Text(
-                      channel.state,
-                      style: TextStyle(
-                        color: stateColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Expanded(
+                    flex: 3,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: stateColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: stateColor.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            child: Text(
+                              channel.state,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: stateColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (htlcs > 0) ...[
+                          const SizedBox(width: 6),
+                          // PERCHÉ (I2): un HTLC in volo è un'informazione
+                          // operativa che va vista subito (pagamento in corso
+                          // o bloccato).
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amberAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${loc.lightningChannelHtlcs}: $htlcs',
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: Colors.amberAccent,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  if (htlcs > 0) ...[
-                    const SizedBox(width: 6),
-                    // PERCHÉ (I2): un HTLC in volo è un'informazione operativa
-                    // che va vista subito (pagamento in corso o bloccato).
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.amberAccent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '${loc.lightningChannelHtlcs}: $htlcs',
-                        style: const TextStyle(
-                          color: Colors.amberAccent,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                  const SizedBox(width: 8),
+                  // PERCHÉ flex 1: l'id resta a destra con la sua larghezza
+                  // naturale finché c'è spazio (caso reale), e accorcia solo su
+                  // schermi estremamente stretti — meglio un id abbreviato di
+                  // una card in overflow.
+                  Flexible(
+                    flex: 1,
+                    child: Text(
+                      idLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.bodySmall,
                     ),
-                  ],
-                  const Spacer(),
-                  Text(idLabel, style: theme.textTheme.bodySmall),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),

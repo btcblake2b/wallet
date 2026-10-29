@@ -250,6 +250,72 @@ void main() {
     expect(status.swapId, 'aa' * 16);
   });
 
+  group('info (swap_info)', () {
+    Map<String, dynamic> infoPayload({Map<String, dynamic>? check}) => {
+          'network': 'blake2b',
+          'min_sats': 5000,
+          'max_sats': 250000,
+          'min_sendable_sats': 4750,
+          'max_sendable_sats': 23750,
+          'available_sats': 24000,
+          'spendable_sats': 30000,
+          'outstanding_sats': 0,
+          'service_fee_sats': 0,
+          'claim_fee_sats': 250,
+          'active_sessions': 0,
+          if (check != null) 'check': check,
+        };
+
+    test('info: limiti del provider (metodo swap_info)', () async {
+      fake.responder = (method, params) {
+        expect(method, 'swap_info');
+        expect(params.containsKey('invoice'), false);
+        return {'result': infoPayload()};
+      };
+      await client.connect(provider, clientSecretHex: clientSecret);
+      final info = await client.info();
+      expect(info.minSendableSats, 4750);
+      expect(info.maxSendableSats, 23750);
+      expect(info.availableSats, 24000);
+      expect(info.check, isNull);
+    });
+
+    test('info: con invoice manda il parametro e legge il verdetto', () async {
+      fake.responder = (method, params) {
+        expect(method, 'swap_info');
+        expect(params['invoice'], 'lnbc50u1ptest');
+        return {
+          'result': infoPayload(
+            check: {
+              'valid': true,
+              'reachable': false,
+              'reason': 'PEER_UNREACHABLE',
+              'amount_sats': 5000,
+            },
+          ),
+        };
+      };
+      await client.connect(provider, clientSecretHex: clientSecret);
+      final info = await client.info(invoice: 'lnbc50u1ptest');
+      expect(info.check!.valid, true);
+      expect(info.check!.reachable, false);
+      expect(info.check!.reason, 'PEER_UNREACHABLE');
+    });
+
+    test('info: risposta priva dei limiti → BAD_RESPONSE', () async {
+      fake.responder = (method, params) => {
+            'result': {'network': 'blake2b'},
+          };
+      await client.connect(provider, clientSecretHex: clientSecret);
+      await expectLater(
+        client.info(),
+        throwsA(
+          isA<SwapException>().having((e) => e.code, 'code', 'BAD_RESPONSE'),
+        ),
+      );
+    });
+  });
+
   test('errore del provider: SwapException col codice del wire', () async {
     fake.responder = (method, params) => {
           'error': {

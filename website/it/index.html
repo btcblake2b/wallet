@@ -24,7 +24,7 @@
     "name": "Btc Blake2b Wallet",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Android",
-    "softwareVersion": "0.2.0",
+    "softwareVersion": "0.4.0",
     "url": "https://btcblake2b.org/",
     "downloadUrl": "https://github.com/btcblake2b/wallet/releases",
     "installUrl": "https://zapstore.dev/apps/com.btcblake2b.wallet",
@@ -46,6 +46,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="/it/download.html">Download</a></li>
+        <li><a href="/it/learn.html">Guida</a></li>
         <li><a href="/it/node.html">Nodo</a></li>
         <li><a href="/it/privacy.html">Privacy</a></li>
         <li><a href="/it/legal.html">Note legali</a></li>
@@ -91,13 +92,33 @@
             <p>Supporto BIP84, BIP49 e BIP44. La firma SIGHASH_UNIFIED aiuta a ridurre il rischio di replay, ma la rete non offre protezione a livello di consenso.</p>
           </article>
           <article class="card">
+            <h3>⚡ Lightning</h3>
+            <p>Controlli il tuo nodo Lightning dall'app. Non hai un nodo? Uno swap atomico sperimentale con un provider paga la fattura mentre i fondi restano nel tuo wallet on-chain (fase di test).</p>
+          </article>
+          <article class="card">
+            <h3>🔎 Indirizzi e UTXO</h3>
+            <p>Ogni indirizzo di ricezione e di resto con il suo stato on-chain, il path di derivazione e il saldo, più una vista UTXO in sola lettura.</p>
+          </article>
+          <article class="card">
             <h3>🎯 UX di livello professionale</h3>
-            <p>Onboarding guidato, backup confermato, coin control, RBF (bump fee), QR per invio e ricezione e 7 lingue. Pensato sia per chi inizia sia per chi vuole controllare direttamente le proprie chiavi.</p>
+            <p>Onboarding guidato, backup confermato, coin control, RBF (bump fee), invio multiplo fino a 20 destinatari in un solo pagamento, note private sulle transazioni, export dello storico in CSV/JSON, QR per invio e ricezione e 7 lingue.</p>
           </article>
           <article class="card">
             <h3>🕊️ Gratis e open source</h3>
             <p>Licenza MIT. Nessuna funzione a pagamento, nessun account, nessun paywall. Le donazioni sono liberalità volontaria.</p>
           </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- PERCHÉ: le stesse immagini della scheda store, self-hosted (nessuna richiesta a CDN di terzi). -->
+    <section class="screenshots" aria-label="Screenshot dell&apos;app">
+      <div class="container">
+        <h2>Screenshot</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center">
+          <img src="screenshots/01-home.png" alt="Schermata iniziale con l&apos;elenco dei wallet on-chain" loading="lazy" width="921" height="2048" style="width:min(100%,230px);height:auto;border-radius:18px">
+          <img src="screenshots/02-wallet-detail.png" alt="Dettaglio wallet con saldo, ricevi e invia" loading="lazy" width="921" height="2048" style="width:min(100%,230px);height:auto;border-radius:18px">
+          <img src="screenshots/03-lightning.png" alt="Scheda Lightning con saldo del nodo, canali e deposito on-chain" loading="lazy" width="921" height="2048" style="width:min(100%,230px);height:auto;border-radius:18px">
         </div>
       </div>
     </section>
@@ -136,6 +157,8 @@
             <p>Verifica rete, indirizzo, importo e fee prima di firmare o trasmettere una transazione.</p>
           </article>
         </div>
+        <!-- PERCHÉ: l'app è pensata per principianti — la guida è il posto dove il "perché" trova risposta. -->
+        <p class="journey-cta"><a class="btn btn-ghost" href="/it/learn.html">Nuovo nel bitcoin? Leggi la guida</a> <a class="btn btn-ghost" href="/learn.html" lang="en">Full 6-module course (EN)</a></p>
       </div>
     </section>
 
@@ -153,7 +176,7 @@
         </details>
         <details>
           <summary>Quali dati vengono trasmessi?</summary>
-          <p>Per saldo, fee e storico l'app interroga una API pubblica (<code>mempool.guide</code>). Se questo servizio non è disponibile, l'app può interrogare due mirror comunitari Esplora-compatibili (<code>mempool.kilombino.com</code>, <code>mempool.maveth.ca</code>). Questa opzione è disattivabile nelle Impostazioni. Queste richieste possono esporre al provider l'indirizzo IP e l'indirizzo pubblico interrogato.</p>
+          <p>Per saldo, fee e storico l'app interroga una API pubblica (<code>mempool.guide</code>). Se questo servizio non è disponibile, l'app può interrogare due mirror comunitari Esplora-compatibili (<code>mempool.kilombino.com</code>, <code>mempool.maveth.ca</code>). Questa opzione è disattivabile nelle Impostazioni. Se attivi il prezzo automatico nelle Impostazioni, l'app legge l'ultimo trade XBT/USDC da <code>neoxa.exchange</code> (NeoXEX) su richiesta. Se la valuta del controvalore non è USD, legge anche i cambi USDT da <code>api.coinbase.com</code>. Entrambe le opzioni sono disattivabili nelle Impostazioni. Queste richieste possono esporre al provider l'indirizzo IP e l'indirizzo pubblico interrogato.</p>
         </details>
         <details>
           <summary>C'è protezione anti-replay?</summary>

@@ -107,6 +107,10 @@ void main() {
 
         expect(wallet.walletId, 'wallet-1');
         expect(wallet.publicAddress, 'tb1qtest');
+        // PERCHÉ (26/10): l'xpub si salva alla creazione → le letture
+        // (saldo, indirizzi, storico) non richiederanno più la seed.
+        expect(wallet.accountXpub, 'tpub_test');
+        expect(wallet.hasAccountXpub, isTrue);
         // PERCHÉ: nessuna registrazione cloud — solo persistenza locale.
         // captureAny: il WalletRecord è creato DENTRO createWallet, quindi
         // non è la stessa istanza del test → verifichiamo l'avvenuta chiamata.
@@ -393,6 +397,72 @@ void main() {
           sut.setTransactionNote(wallet, '', 'nota'),
           throwsArgumentError,
         );
+        verifyNever(() => mockSecureSeedStorage.upsertWallet(any()));
+      });
+    });
+
+    group('backfillAccountXpub (migrazione 26/10)', () {
+      test('wallet hot senza xpub → deriva dal seed e salva', () async {
+        final wallet = makeWallet('legacy');
+        when(
+          () => mockCryptoService.decryptSeed(
+            encryptedSeed: any(named: 'encryptedSeed'),
+            deviceId: any(named: 'deviceId'),
+          ),
+        ).thenAnswer((_) async => 'mnemonic words');
+        when(
+          () => mockBitcoinService.deriveWalletDataFromMnemonic(
+            any(),
+            derivationPath: any(named: 'derivationPath'),
+            addressCount: any(named: 'addressCount'),
+          ),
+        ).thenAnswer(
+          (_) async => WalletDerivationResult(
+            publicAddress: 'tb1qtest',
+            masterFingerprint: 'fp',
+            derivationPath: "m/84'/1'/0'",
+            xpub: 'xpub_migrato',
+            addresses: const ['tb1qtest'],
+            changeAddresses: const [],
+          ),
+        );
+        when(() => mockSecureSeedStorage.upsertWallet(any()))
+            .thenAnswer((_) async {});
+
+        final updated = await sut.backfillAccountXpub(wallet);
+
+        expect(updated.accountXpub, 'xpub_migrato');
+        // La migrazione PERSISTE: al prossimo avvio non si rifà.
+        final captured = verify(
+          () => mockSecureSeedStorage.upsertWallet(captureAny()),
+        ).captured.cast<WalletRecord>();
+        expect(captured.single.accountXpub, 'xpub_migrato');
+      });
+
+      test('wallet con xpub già presente → nessun I/O', () async {
+        final wallet = makeWallet('modern').copyWith(accountXpub: 'xpub_ok');
+
+        final updated = await sut.backfillAccountXpub(wallet);
+
+        expect(updated.accountXpub, 'xpub_ok');
+        verifyNever(
+          () => mockCryptoService.decryptSeed(
+            encryptedSeed: any(named: 'encryptedSeed'),
+            deviceId: any(named: 'deviceId'),
+          ),
+        );
+        verifyNever(() => mockSecureSeedStorage.upsertWallet(any()));
+      });
+
+      test('watch-only → nessun backfill (la sua xpub è già la fonte)',
+          () async {
+        final wallet = makeWallet('wo').copyWith(
+          kind: WalletKind.watchOnly,
+        );
+
+        final updated = await sut.backfillAccountXpub(wallet);
+
+        expect(updated.accountXpub, isNull);
         verifyNever(() => mockSecureSeedStorage.upsertWallet(any()));
       });
     });

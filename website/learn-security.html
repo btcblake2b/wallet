@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module 3 — Keys, backups and security | Learn</title>
+  <meta name="description" content="Self-custody in practice: the recovery phrase, how to back it up and verify it, passwords and biometrics, the scams that actually happen, and what to do in an emergency.">
+  <meta name="theme-color" content="#0A0F1E">
+  <link rel="canonical" href="https://btcblake2b.org/learn-security.html">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenuto">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="Btc Blake2b Wallet — home">
+        <picture class="brand-logo">
+          <source media="(prefers-color-scheme: light)" srcset="/logo-lockup-horizontal.svg">
+          <img src="/logo-lockup-horizontal-light.svg" alt="" aria-hidden="true">
+        </picture>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/download.html">Download</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/node.html">Node</a></li>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="https://github.com/btcblake2b/wallet" rel="noopener">Source</a></li>
+        <li><a href="/it/learn.html" lang="it" aria-label="Switch to Italian">IT</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenuto" class="container page">
+    <p class="crumbs"><a href="/learn.html">Learn</a> › Module 3 of 6</p>
+    <h1>Keys, backups and security</h1>
+    <p class="lead">This is the module that decides whether you still have your money in five years. It is also the shortest one to apply: three habits cover most of the risk.</p>
+
+    <nav class="toc" aria-label="In this module">
+      <strong>In this module</strong>
+      <ol>
+        <li><a href="#trade">The deal you signed</a></li>
+        <li><a href="#seed">The recovery phrase</a></li>
+        <li><a href="#verify">Verify the backup while it is empty</a></li>
+        <li><a href="#password">Password, encryption, biometrics</a></li>
+        <li><a href="#device">Device hygiene</a></li>
+        <li><a href="#scams">The scams that actually happen</a></li>
+        <li><a href="#emergency">Emergencies, one by one</a></li>
+        <li><a href="#check">Check yourself</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="trade">1. The deal you signed</h2>
+    <p>Self-custody means the key is yours. In exchange:</p>
+    <ul>
+      <li><strong>no password reset</strong> — nobody can impersonate you to recover access;</li>
+      <li><strong>no fraud department</strong> — no reversal, no chargeback, no "we noticed something odd";</li>
+      <li><strong>no inheritance procedure</strong> — if something happens to you, the phrase is the only way your family gets access;</li>
+      <li><strong>no undo</strong> — a signed payment is final.</li>
+    </ul>
+    <p>Your <em>threat model</em> is the list of things you actually want protection from. For most people it is, in order: losing the phone, forgetting the password, a thief who knows the phone PIN, malware on a computer, and a "helpful" stranger on the internet.</p>
+
+    <h2 id="seed">2. The recovery phrase</h2>
+    <p>Twelve words from a fixed list of 2048. They are not "a password for the app": they <strong>are</strong> the wallet. From them, every address — present and future — is derived deterministically.</p>
+    <p>Anyone who reads them can rebuild your wallet elsewhere and spend your coins, without your phone and without your password.</p>
+    <h3>Storage, in order of preference</h3>
+    <ol>
+      <li><strong>Paper, offline, in a place you control</strong> — plus a second copy in a different physical location, so a fire or a flood does not destroy both.</li>
+      <li><strong>Stamped metal</strong> if you expect humidity, fire or long-term storage.</li>
+      <li><strong>Split storage</strong> (two locations, each incomplete) if you are worried about a single theft.</li>
+    </ol>
+    <h3>Never</h3>
+    <ul>
+      <li>photograph it, or store it in a screenshot, a cloud note, an email draft, a chat;</li>
+      <li>type it into a password manager, a website, a browser extension, an "AI assistant" or a support form;</li>
+      <li>keep it in the same bag as the phone, if the phone is what you are insured against losing;</li>
+      <li>say the words out loud near a smart speaker or a call.</li>
+    </ul>
+    <div class="notice"><strong>The app never asks for your phrase</strong> — except in the backup flow, where it only <em>shows</em> it to you, and when you import a wallet on your own initiative. Any other request for those words, from any "support agent", is theft in progress.</div>
+
+    <h2 id="verify">3. Verify the backup while it is empty</h2>
+    <p>A backup you have never tested is a hope, not a backup. Do this once, as soon as the wallet is created:</p>
+    <ol>
+      <li>write the words down;</li>
+      <li>complete the app's verification step (it asks you to pick a few words out of order);</li>
+      <li>reinstall the app (or use a second device) and import the wallet from the paper copy;</li>
+      <li>check that the same addresses and the same balance appear;</li>
+      <li>only then send funds to it.</li>
+    </ol>
+    <p>Bonus: keep a small "canary" amount in the wallet. If the canary moves and it was not you, you know the phrase leaked before the main balance does.</p>
+
+    <h2 id="password">4. Password, encryption, biometrics</h2>
+    <p>On the phone the phrase is stored <strong>encrypted with AES-GCM</strong>. The encryption key is derived from your password; the password itself is never stored in plain form and never sent anywhere.</p>
+    <ul>
+      <li>Without the password (or the biometric unlock you enabled), the encrypted seed is just noise.</li>
+      <li>Biometrics do not replace the password: they unlock access to the key held by the operating system's secure storage.</li>
+      <li>There is no "forgot password" flow. The recovery phrase is the only way back — that is precisely why it exists.</li>
+      <li>Enable the app lock and screen protection if you use the wallet in public.</li>
+    </ul>
+    <p><strong>On the web/PWA variant</strong> the encrypted seed lives in the browser's <code>localStorage</code>. It is the best a browser can do, but weaker than a phone keyring: any script running in that page while the vault is unlocked can read the keys in memory, and an XSS bug is a real threat. For meaningful funds, use the mobile app.</p>
+
+    <h2 id="device">5. Device hygiene</h2>
+    <ul>
+      <li>Keep the operating system and the app updated: the app warns you when its own integrity checks fail.</li>
+      <li>Install the app only from the official channel linked on this site; check the SHA-256 of the APK if you download it directly.</li>
+      <li>Do not root or jailbreak the phone you use for money; the app detects it and will tell you.</li>
+      <li>Avoid shared or public computers for anything involving the phrase. Clipboard, screenshots and browser profiles are all readable.</li>
+      <li>Prefer receiving a fresh address per payment (module 4) and double-check the first and last characters before sending.</li>
+    </ul>
+
+    <h2 id="scams">6. The scams that actually happen</h2>
+    <ul>
+      <li><strong>"Support" that asks for your phrase or offers to "validate" the wallet.</strong> No legitimate support exists for a self-custodial wallet, and none needs the phrase.</li>
+      <li><strong>A copy of this site on a similar domain</strong>, or a fake app store listing. Typosquatting is the most used attack against wallets that are not in the big stores.</li>
+      <li><strong>Remote-access apps</strong> ("install AnyDesk so I can help you"). Once installed, everything on screen is theirs.</li>
+      <li><strong>Fake giveaways and airdrops</strong> requiring you to "connect" or "import" a wallet.</li>
+      <li><strong>Clipboard malware</strong> that swaps the address you copy with the attacker's. Always compare the destination on screen with the one you intended.</li>
+      <li><strong>The "wrong wallet" love scam</strong>: a stranger who "sent you money by mistake" and asks for a refund in another coin.</li>
+    </ul>
+    <p>The common thread: all of them need you to do something — type the words, install something, sign something. Pause at the request, not after.</p>
+
+    <h2 id="emergency">7. Emergencies, one by one</h2>
+    <ul>
+      <li><strong>Lost the phone, have the phrase</strong> — install the app elsewhere, import the phrase, you are back. Nothing is lost but time.</li>
+      <li><strong>Lost the phone, no phrase</strong> — the funds are gone. This is the scenario the whole module exists to prevent.</li>
+      <li><strong>Forgot the password, have the phrase</strong> — reinstall, import the phrase, set a new password. (Reinstalling wipes the encrypted copy.)</li>
+      <li><strong>Forgot the password, no phrase</strong> — the encrypted seed cannot be opened. No reset exists.</li>
+      <li><strong>Phone stolen and unlocked</strong> — assume the wallet is compromised: create a new wallet elsewhere and move the funds.</li>
+      <li><strong>Phrase leaked</strong> — same: new wallet, move the funds. A phrase cannot be "changed" for an existing wallet.</li>
+      <li><strong>Sent to the wrong address</strong> — irreversible. Nothing to do but learn (verify the first and last four characters, every time).</li>
+      <li><strong>Deliberating an inheritance</strong> — write down how to restore (which app, which network, where the backup is) and keep it away from the phrase itself.</li>
+    </ul>
+    <div class="takeaway">
+      <strong>Takeaway</strong> — The recovery phrase is the wallet. Keep it offline, in two places, verified while the wallet is empty. Treat the password as convenience and the phrase as ownership. No legitimate request for those twelve words exists.
+    </div>
+
+    <h2 id="check">8. Check yourself</h2>
+    <ol>
+      <li>Where are your twelve words right now? If the answer is "in the phone", fix that today.</li>
+      <li>You restore the phrase on a new phone. Do you also need the old password?</li>
+      <li>Someone offers to "fix your wallet" if you read them the phrase. What is the only correct reply?</li>
+    </ol>
+
+    <nav class="chapter-nav" aria-label="Course navigation">
+      <a class="btn btn-ghost" href="/learn-how-it-works.html">← Module 2: How it works</a>
+      <a class="btn btn-primary" href="/learn-privacy.html">Module 4: Privacy →</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p><strong>Btc Blake2b Wallet</strong> — <a href="https://github.com/btcblake2b/wallet/blob/main/LICENSE" rel="noopener">MIT license</a>.</p>
+        <p>Static site: no analytics or profiling cookies. Hosted by Cloudflare.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/learn.html">Learn</a></li>
+        <li><a href="/privacy.html">Privacy policy</a></li>
+        <li><a href="/legal.html">Legal</a></li>
+        <li><a href="mailto:contact@btcblake2b.org">contact@btcblake2b.org</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

@@ -63,4 +63,38 @@ void main() {
 
     expect(find.text('Invoice paid'), findsWidgets);
   });
+
+  testWidgets('nodo senza canali → avviso «non puoi ricevere» prima del QR',
+      (tester) async {
+    service = LightningServiceMock(channelCount: 0);
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('You cannot receive yet'), findsOneWidget);
+    expect(find.text('Get inbound liquidity'), findsOneWidget);
+  });
+
+  testWidgets('canale senza liquidità in entrata → avviso mostrato',
+      (tester) async {
+    service = LightningServiceMock(channelCount: 1, inboundOverrideMsat: 0);
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('You cannot receive yet'), findsOneWidget);
+  });
+
+  testWidgets('canale con liquidità in entrata → nessun avviso',
+      (tester) async {
+    service = LightningServiceMock();
+    await tester.runAsync(() => service.connect(connection));
+    await tester.pumpWidget(wrap(service));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('You cannot receive yet'), findsNothing);
+  });
 }

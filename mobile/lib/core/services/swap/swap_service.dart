@@ -138,6 +138,29 @@ class SwapService {
 
   // ── Flusso pagamento ───────────────────────────────────────────────────────
 
+  /// Limiti/liquidità del provider collegato e — con [invoice] — il verdetto
+  /// sul DESTINATARIO (peer) della fattura.
+  ///
+  /// // PERCHÉ (27/10/2026): senza questo dato l'utente scopriva il tetto solo
+  /// // dall'errore della quote, dopo aver scelto wallet e importo. Ritorna
+  /// // `null` (e non un errore) quando il provider non conosce `swap_info`:
+  /// // il controllo server-side della quote resta comunque attivo.
+  Future<SwapProviderInfo?> providerInfo({String? invoice}) async {
+    if (_client.provider == null) return null;
+    try {
+      return await _client.info(invoice: invoice);
+    } on SwapException catch (e) {
+      if (e.code == 'NOT_IMPLEMENTED' || e.code == 'NOT_CONNECTED') {
+        debugPrint(
+          '[LoopEngineer] SwapService.providerInfo: ${e.code} '
+          '(limiti non disponibili)',
+        );
+        return null;
+      }
+      rethrow;
+    }
+  }
+
   /// Path della chiave di refund per [keyIndex]: `m/84'/coin'/2'/0/x`.
   ///
   /// // PERCHÉ: riusa il COIN TYPE del wallet attivo (dalla config di rete) e
@@ -194,6 +217,7 @@ class SwapService {
       invoice: invoice,
       paymentHashHex: quote.paymentHashHex,
       fundingAmountSats: quote.fundingAmountSats,
+      amountSats: quote.amountSats,
       cltvHeight: quote.cltvHeight,
       fundingDeadlineHeight: status.fundingDeadlineHeight,
       claimPubkeyHex: quote.claimPubkeyHex,

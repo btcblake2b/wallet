@@ -8,6 +8,8 @@ import '../../../core/widgets/glass_container.dart';
 import '../../../l10n/app_localizations.dart';
 import 'lightning_channel_detail_screen.dart';
 import 'widgets/channel_card.dart';
+import 'widgets/inbound_liquidity_notice.dart';
+import 'widgets/peer_discovery_card.dart';
 
 /// Elenco completo dei canali del nodo.
 ///
@@ -97,18 +99,39 @@ class _LightningChannelsScreenState extends State<LightningChannelsScreen> {
               else if (_channels.isEmpty)
                 GlassContainer(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    loc.lightningNoChannels,
-                    style: theme.textTheme.bodyMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loc.lightningNoChannels,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      // PERCHÉ (adozione, 26/10): "nessun canale" senza una via
+                      // d'uscita è un vicolo cieco — il passo successivo è la
+                      // liquidità in entrata, non un'altra lettura della lista.
+                      TextButton.icon(
+                        onPressed: () => PeerDiscoveryCard.openUrl(
+                          context,
+                          PeerDiscoveryCard.lspUrl,
+                        ),
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: Text(loc.lightningInboundMissingCta),
+                      ),
+                    ],
                   ),
                 )
-              else
+              else ...[
+                InboundLiquidityNotice(
+                  inboundSats: InboundLiquidityNotice.inboundOf(_channels),
+                  onRefresh: _load,
+                ),
                 ..._channels.map(
                   (channel) => LightningChannelCard(
                     channel: channel,
                     onTap: () => _openDetail(channel),
                   ),
                 ),
+              ],
             ],
           ),
         ),

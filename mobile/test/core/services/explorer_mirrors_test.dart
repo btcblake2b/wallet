@@ -99,5 +99,50 @@ void main() {
       expect(mirrors.readHosts, hasLength(3));
       expect(mirrors.broadcastHosts, hasLength(2));
     });
+
+    test('mobile/VM: la preferenza è disponibile (toggleAvailable)', () {
+      // PERCHÉ: è il default fuori dal web — guardia contro un forcing
+      // accidentale che toglierebbe all'utente mobile la scelta privacy.
+      final mirrors = ExplorerMirrors(storage: storage);
+
+      expect(mirrors.toggleAvailable, isTrue);
+    });
+
+    test('web: la preferenza non esiste e un OFF viene ignorato', () async {
+      final mirrors = ExplorerMirrors(
+        storage: storage,
+        webMirrorsRequired: true,
+      );
+
+      await mirrors.setEnabled(false);
+
+      expect(mirrors.toggleAvailable, isFalse);
+      expect(mirrors.enabled, isTrue);
+      expect(mirrors.readHosts, hasLength(3));
+      expect(mirrors.broadcastHosts, hasLength(2));
+      // PERCHÉ: nessuna scrittura = nessuna preferenza persistita da cui
+      // restare bloccati se in futuro il web cambiasse politica.
+      verifyNever(
+        () => storage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      );
+    });
+
+    test('web: anche un "false" persistito è ignorato (l\'app resta in rete)',
+        () async {
+      when(() => storage.read(key: any(named: 'key')))
+          .thenAnswer((_) async => 'false');
+
+      final mirrors = ExplorerMirrors(
+        storage: storage,
+        webMirrorsRequired: true,
+      );
+      await mirrors.init();
+
+      expect(mirrors.enabled, isTrue);
+      expect(mirrors.readHosts, hasLength(3));
+    });
   });
 }

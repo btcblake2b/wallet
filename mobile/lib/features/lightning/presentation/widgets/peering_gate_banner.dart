@@ -5,14 +5,19 @@ import '../../../../core/utils/cln_release_utils.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../l10n/app_localizations.dart';
 
-/// Avviso informativo: il nodo richiede `option_blake2b` (bit 68) e non ha
-/// peer connessi, quindi i peer su release precedenti NON possono connettersi.
+/// Avviso informativo: il nodo ha un gate di peering attivo e non ha peer
+/// connessi, quindi i peer su release precedenti NON possono connettersi.
 ///
 /// // PERCHÉ (P8): senza questo messaggio l'utente vede "0 peer" e un pulsante
 /// "Connetti peer" che fallisce senza spiegazione — sembra un bug dell'app o
 /// del bridge, mentre è una scelta del NODO (release `.4`+). Il widget è
 /// **self-gating**: si disegna solo quando il gate è dimostrabile, così le
 /// schermate che lo usano non duplicano la condizione.
+///
+/// // PERCHÉ (30/09, A5): il gate ha due generazioni — `.4` parla il bit 68,
+/// `.5+` parla i bit 512/514 e non peerа nemmeno con `.4` — e il testo deve
+/// dire quello che il nodo fa davvero: un avviso credibile ma sbagliato è
+/// peggio di nessun avviso.
 class PeeringGateBanner extends StatelessWidget {
   const PeeringGateBanner({
     super.key,
@@ -34,11 +39,19 @@ class PeeringGateBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!clnRequiresBit68(version) || peersConnected != 0) {
+    if (!clnHasPeeringGate(version) || peersConnected != 0) {
       return const SizedBox.shrink();
     }
     final loc = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    // PERCHÉ (A5): testo per generazione di gate — bit 68 (`.4`) o bits 512/514
+    // (`.5+`). Il link alla matrice è comune.
+    final isNewBits =
+        parsePeeringGate(version) == ClnPeeringGate.newBits;
+    final title =
+        isNewBits ? loc.lightningPeeringGateNewTitle : loc.lightningPeeringGateTitle;
+    final body =
+        isNewBits ? loc.lightningPeeringGateNewBody : loc.lightningPeeringGateBody;
     return GlassContainer(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
@@ -51,7 +64,7 @@ class PeeringGateBanner extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  loc.lightningPeeringGateTitle,
+                  title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -60,7 +73,7 @@ class PeeringGateBanner extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(loc.lightningPeeringGateBody, style: theme.textTheme.bodySmall),
+          Text(body, style: theme.textTheme.bodySmall),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(

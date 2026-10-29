@@ -2,7 +2,22 @@ import 'app_localizations.dart';
 
 /// Identificatori dei pallini "info": UNO per concetto, non per punto di
 /// aggancio (es. `coinControl` si usa sia nel dettaglio wallet sia nell'invio).
+///
+/// PERCHÉ (26/10): i primi id sono i concetti da PRINCIPIANTE — sono anche
+/// l'ordine con cui la Guida in-app li presenta, così chi non sa cosa sia un
+/// wallet trova prima "cos'è" e solo dopo "coin control".
 enum InfoHintId {
+  whatIsWallet,
+  selfCustody,
+  seedPhrase,
+  appEncryption,
+  networkBlake2b,
+  balanceUtxo,
+  confirmations,
+  feeConcept,
+  changeAddress,
+  lightningVsOnchain,
+  privacyBasics,
   coinControl,
   dustLimit,
   feeRate,
@@ -27,6 +42,17 @@ enum InfoHintId {
 /// un id senza la relativa chiave ARB non compila.
 extension InfoHintL10n on AppLocalizations {
   String infoTitle(InfoHintId id) => switch (id) {
+        InfoHintId.whatIsWallet => infoWhatIsWalletTitle,
+        InfoHintId.selfCustody => infoSelfCustodyTitle,
+        InfoHintId.seedPhrase => infoSeedPhraseTitle,
+        InfoHintId.appEncryption => infoAppEncryptionTitle,
+        InfoHintId.networkBlake2b => infoNetworkBlake2bTitle,
+        InfoHintId.balanceUtxo => infoBalanceUtxoTitle,
+        InfoHintId.confirmations => infoConfirmationsTitle,
+        InfoHintId.feeConcept => infoFeeConceptTitle,
+        InfoHintId.changeAddress => infoChangeAddressTitle,
+        InfoHintId.lightningVsOnchain => infoLightningVsOnchainTitle,
+        InfoHintId.privacyBasics => infoPrivacyBasicsTitle,
         InfoHintId.coinControl => infoCoinControlTitle,
         InfoHintId.dustLimit => infoDustLimitTitle,
         InfoHintId.feeRate => infoFeeRateTitle,
@@ -48,6 +74,17 @@ extension InfoHintL10n on AppLocalizations {
       };
 
   String infoBody(InfoHintId id) => switch (id) {
+        InfoHintId.whatIsWallet => infoWhatIsWalletBody,
+        InfoHintId.selfCustody => infoSelfCustodyBody,
+        InfoHintId.seedPhrase => infoSeedPhraseBody,
+        InfoHintId.appEncryption => infoAppEncryptionBody,
+        InfoHintId.networkBlake2b => infoNetworkBlake2bBody,
+        InfoHintId.balanceUtxo => infoBalanceUtxoBody,
+        InfoHintId.confirmations => infoConfirmationsBody,
+        InfoHintId.feeConcept => infoFeeConceptBody,
+        InfoHintId.changeAddress => infoChangeAddressBody,
+        InfoHintId.lightningVsOnchain => infoLightningVsOnchainBody,
+        InfoHintId.privacyBasics => infoPrivacyBasicsBody,
         InfoHintId.coinControl => infoCoinControlBody,
         InfoHintId.dustLimit => infoDustLimitBody,
         InfoHintId.feeRate => infoFeeRateBody,

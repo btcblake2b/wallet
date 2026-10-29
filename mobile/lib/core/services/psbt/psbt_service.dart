@@ -557,8 +557,7 @@ String _publicKeyForSigning(
 /// HASH160 (sha256→ripemd160) esadecimale di una chiave pubblica compressa.
 /// // PERCHÉ: identico a `_pubKeyHash160Hex` di `bitcoin_service.dart` — se i
 /// due calcoli divergessero, un wallet non riconoscerebbe i propri input.
-String _pubKeyHash160Hex(ECPublic publicKey) {
-  final sha =
+String _pubKeyHash160Hex(ECPublic publicKey) {  final sha =
       crypto.sha256.convert(BytesUtils.fromHexString(publicKey.toHex())).bytes;
   final ripemd = RIPEMD160Digest();
   final hash = ripemd.process(Uint8List.fromList(sha));
@@ -580,4 +579,26 @@ Script spentScriptFor(UtxoWithAddress utxo) {
     ).toScriptPubKey();
   }
   return utxo.public().toSegwitAddress().toScriptPubKey();
+}
+
+/// Chiave pubblica (hex) dichiarata da ogni input della PSBT, `null` se
+/// l'input non porta metadati BIP32.
+///
+/// // PERCHÉ (P4, 26/10): per firmare una PSBT che arriva da un altro
+/// dispositivo serve sapere QUALI chiavi cercare. Il firmatario deriva una
+/// finestra di indirizzi e usa questa lista per non dover indovinare, e per
+/// poter dire "queste chiavi non sono nel wallet" invece di fallire a caso.
+List<String?> psbtInputPublicKeys(String psbtBase64) {
+  final builder = PsbtBuilder.fromBase64<PsbtBuilderV0>(psbtBase64);
+  return <String?>[
+    for (final input in builder.psbtInputs())
+      _declaredPublicKey(input),
+  ];
+}
+
+String? _declaredPublicKey(PsbtTransactionInput input) {
+  final derivations =
+      input.bip32derivationPath ?? const <PsbtInputBip32DerivationPath>[];
+  if (derivations.isEmpty) return null;
+  return BytesUtils.toHexString(derivations.first.publicKey);
 }

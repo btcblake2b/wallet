@@ -11,6 +11,14 @@ String normalizeLightningInvoice(String raw) {
   return value;
 }
 
+/// True se [raw] è un'offerta BOLT12 (`lno1…`).
+///
+/// // PERCHÉ (BOLT12): un'offerta è un codice riutilizzabile che chi paga
+/// // trasforma in fattura; può essere **senza importo**, quindi la UI deve
+/// // chiederlo all'utente prima di inviare.
+bool isLightningOffer(String raw) =>
+    normalizeLightningInvoice(raw).toLowerCase().startsWith('lno1');
+
 /// True se [raw] ha la forma di un invoice BOLT11 (`lnbc…`).
 ///
 /// // PERCHÉ: è un controllo di forma (prefisso + lunghezza minima), non di

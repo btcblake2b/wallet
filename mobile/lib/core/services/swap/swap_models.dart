@@ -216,6 +216,104 @@ class SwapQuote {
       };
 }
 
+/// Verdetto del provider su una invoice (`swap_info` con `invoice`).
+///
+/// // PERCHÉ: il controllo che il DESTINATARIO della fattura ("peer") sia
+/// // raggiungibile deve essere visibile PRIMA del funding — la quote lo fa
+/// // già lato provider, ma solo dopo che l'utente ha scelto wallet e importo.
+class SwapPeerCheck {
+  const SwapPeerCheck({
+    required this.valid,
+    required this.reachable,
+    this.amountSats = 0,
+    this.payee = '',
+    this.reason,
+    this.message,
+  });
+
+  /// La fattura è leggibile (payee/importo validi, non scaduta).
+  final bool valid;
+
+  /// Il provider ha una rotta verso il destinatario e l'importo è nei limiti.
+  final bool reachable;
+
+  /// Importo della invoice (sat), valorizzato quando [valid].
+  final int amountSats;
+
+  /// Node id del destinatario (66 hex), valorizzato quando [valid].
+  final String payee;
+
+  /// Codice del motivo quando [reachable] è false (`PEER_UNREACHABLE`, …):
+  /// la UI lo traduce con `swapErrorReason`, [message] resta il fallback.
+  final String? reason;
+  final String? message;
+
+  /// `null` se il payload non contiene un verdetto (provider più vecchio).
+  static SwapPeerCheck? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final json = raw.cast<String, dynamic>();
+    return SwapPeerCheck(
+      valid: json['valid'] == true,
+      reachable: json['reachable'] == true,
+      amountSats: _optInt(json, 'amount_sats') ?? 0,
+      payee: _optStr(json, 'payee') ?? '',
+      reason: _optStr(json, 'reason'),
+      message: _optStr(json, 'message'),
+    );
+  }
+}
+
+/// Limiti e capacità corrente del provider (`swap_info`).
+///
+/// // PERCHÉ: la liquidità del nodo cambia in continuazione — dire all'utente
+/// // "puoi inviare fino a X sat" richiede il dato MISURATO dal provider
+/// // (`available_sats`), non il tetto di config.
+class SwapProviderInfo {
+  const SwapProviderInfo({
+    required this.minSats,
+    required this.maxSats,
+    required this.minSendableSats,
+    required this.maxSendableSats,
+    required this.availableSats,
+    this.activeSessions = 0,
+    this.check,
+  });
+
+  /// Limiti di config sul TOTALE da lockare (invoice + fee).
+  final int minSats;
+  final int maxSats;
+
+  /// Range dell'importo della INVOICE pagabile adesso (le fee sono nel lock).
+  final int minSendableSats;
+  final int maxSendableSats;
+
+  /// Capacità residua del provider (sat) al netto delle sessioni attive.
+  final int availableSats;
+  final int activeSessions;
+
+  /// Verdetto sul destinatario: presente solo se richiesto con una invoice.
+  final SwapPeerCheck? check;
+
+  /// true se [sats] sta nel range pagabile adesso.
+  bool canSend(int sats) => sats >= minSendableSats && sats <= maxSendableSats;
+
+  /// `null` se il payload non è un `swap_info` valido.
+  static SwapProviderInfo? fromJson(Map<String, dynamic> json) {
+    final minSats = _optInt(json, 'min_sats');
+    final maxSats = _optInt(json, 'max_sats');
+    if (minSats == null || maxSats == null) return null;
+    return SwapProviderInfo(
+      minSats: minSats,
+      maxSats: maxSats,
+      minSendableSats: _optInt(json, 'min_sendable_sats') ?? minSats,
+      maxSendableSats: _optInt(json, 'max_sendable_sats') ?? maxSats,
+      availableSats: _optInt(json, 'available_sats') ?? 0,
+      activeSessions: _optInt(json, 'active_sessions') ?? 0,
+      check: SwapPeerCheck.fromJson(json['check']),
+    );
+  }
+}
+
 /// Stato di una sessione di swap (risposta di create/funding/status).
 class SwapStatus {
   const SwapStatus({
@@ -290,6 +388,7 @@ class SwapSession {
     required this.invoice,
     required this.paymentHashHex,
     required this.fundingAmountSats,
+    this.amountSats,
     required this.cltvHeight,
     required this.fundingDeadlineHeight,
     required this.claimPubkeyHex,
@@ -316,6 +415,14 @@ class SwapSession {
   final String invoice;
   final String paymentHashHex;
   final int fundingAmountSats;
+
+  /// Importo della INVOICE (sat) = quanto arriva al destinatario; il totale
+  /// bloccato ([fundingAmountSats]) è questo importo + le fee.
+  ///
+  /// // PERCHÉ (07/10/2026): lo storico deve mostrare quanto è stato PAGATO,
+  /// // non solo quanto è stato bloccato. Null per le sessioni salvate prima
+  /// // di questa data (l'importo non era persistito): la UI degrada al totale.
+  final int? amountSats;
   final int cltvHeight;
   final int fundingDeadlineHeight;
   final String claimPubkeyHex;
@@ -350,7 +457,6 @@ class SwapSession {
   final String? preimageHex;
   final String? errorCode;
   final String? errorMessage;
-
   /// Sessioni "vive" o comunque da seguire (non ancora finali/refunded).
   bool get needsAttention => state.isActive || state.isRefundable;
 
@@ -369,6 +475,7 @@ class SwapSession {
         invoice: invoice,
         paymentHashHex: paymentHashHex,
         fundingAmountSats: fundingAmountSats,
+        amountSats: amountSats,
         cltvHeight: cltvHeight,
         fundingDeadlineHeight: fundingDeadlineHeight,
         claimPubkeyHex: claimPubkeyHex,
@@ -396,6 +503,7 @@ class SwapSession {
         'invoice': invoice,
         'payment_hash': paymentHashHex,
         'funding_amount_sats': fundingAmountSats,
+        if (amountSats != null) 'amount_sats': amountSats,
         'cltv_height': cltvHeight,
         'funding_deadline_height': fundingDeadlineHeight,
         'claim_pubkey': claimPubkeyHex,
@@ -423,6 +531,7 @@ class SwapSession {
         invoice: _str(json, 'invoice'),
         paymentHashHex: _str(json, 'payment_hash'),
         fundingAmountSats: _int(json, 'funding_amount_sats'),
+        amountSats: _invoiceAmountSats(json),
         cltvHeight: _int(json, 'cltv_height'),
         fundingDeadlineHeight: _int(json, 'funding_deadline_height'),
         claimPubkeyHex: _str(json, 'claim_pubkey'),
@@ -482,6 +591,17 @@ abstract final class SwapRecoveryBlob {
 }
 
 // ── Helper di parsing (chiavi snake_case, errori espliciti) ──────────────────
+
+/// Importo invoice (sat) dai campi del provider: `amount_sats` (risposta di
+/// `swap_quote`) oppure `amount_msat` (blob di recupero, arrotondato per
+/// eccesso come fa il provider). Null se assenti → la UI degrada al totale.
+int? _invoiceAmountSats(Map<dynamic, dynamic> json) {
+  final sats = _optInt(json, 'amount_sats');
+  if (sats != null && sats > 0) return sats;
+  final msat = _optInt(json, 'amount_msat');
+  if (msat != null && msat > 0) return (msat + 999) ~/ 1000;
+  return null;
+}
 
 String _str(Map<dynamic, dynamic> json, String key) {
   final value = json[key];
