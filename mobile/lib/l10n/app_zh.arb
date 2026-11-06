@@ -106,7 +106,8 @@
   "infoWatchOnlyTitle": "只读钱包",
   "infoWatchOnlyBody": "你只导入了 xpub：应用可以看到余额和历史，但不持有私钥，因此无法签名。要从这个钱包支出，你需要持有 seed 的设备。",
   "infoSignVerifyTitle": "签名/验证消息",
-  "infoSignVerifyBody": "签名证明一个地址是你的，而无需移动资金。任何人都可以随后针对该地址和相同消息验证签名。",  "infoChannelCapacityTitle": "通道容量",
+  "infoSignVerifyBody": "签名证明一个地址是你的，而无需移动资金。任何人都可以随后针对该地址和相同消息验证签名。",
+  "infoChannelCapacityTitle": "通道容量",
   "infoChannelCapacityBody": "通道中的聪的总金额，由你和你的节点伙伴平分。更多容量意味着能够处理更大的支付。容量 = 本地余额 + 远程余额。",
   "infoChannelReserveTitle": "通道储备",
   "infoChannelReserveBody": "你的一部分资金必须作为安全保证金保持锁定（“储备金”）。它确保双方都有损失——如果另一方恶意离线，储备金可用于在链上惩罚他们。",
@@ -123,7 +124,8 @@
   "infoPeersTitle": "已连接的节点伙伴",
   "infoPeersBody": "节点伙伴是与你通过 TCP/Tor 直接连接的其他 Lightning 节点。每个节点伙伴可以有一个或多个通道。你可以连接到新的节点伙伴以打开通道并增加你节点的流动性和路由能力。",
   "infoNodeManagementTitle": "节点管理",
-  "infoNodeManagementBody": "你的 Lightning 节点身份：公钥、版本、活跃/待处理的通道和节点伙伴数量。此屏幕显示节点 bookkeeper 插件的会计数据和转发统计信息。",  "appLockTitle": "应用已锁定",
+  "infoNodeManagementBody": "你的 Lightning 节点身份：公钥、版本、活跃/待处理的通道和节点伙伴数量。此屏幕显示节点 bookkeeper 插件的会计数据和转发统计信息。",
+  "appLockTitle": "应用已锁定",
   "appLockSubtitle": "使用生物识别或手机密码解锁",
   "appLockUnlock": "解锁",
   "appLockReason": "解锁钱包",
@@ -149,13 +151,17 @@
   "walletDetailTxExportCsv": "CSV（表格）",
   "@walletDetailTxExportCopied": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportCopied": "已复制到剪贴板（{fileName}）",
   "@walletDetailTxExportDownloaded": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportDownloaded": "已开始下载（{fileName}）",
@@ -173,7 +179,6 @@
   "walletDetailTxPending": "待确认",
   "walletDetailTxReplaced": "已替换（已从内存池移除）",
   "walletDetailTxRetry": "重试",
-
   "backupSeedTitle": "助记词备份",
   "backupSeedIntro": "将助记词写在纸上并妥善保管。这是恢复资金的唯一方法。",
   "backupSeedStart": "开始备份",
@@ -219,14 +224,20 @@
   "walletDetailUtxoEmpty": "未找到可花费的UTXO",
   "@walletDetailUtxoConfirmations": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoConfirmations": "{count} 个确认",
   "@walletDetailUtxoSelected": {
     "placeholders": {
-      "count": {"type": "int"},
-      "sats": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "sats": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoSelected": "已选 {count} 个 · {sats} sat",
@@ -244,7 +255,9 @@
   "walletDetailBumpFeeTitle": "提高交易手续费",
   "@walletDetailBumpFeeCurrent": {
     "placeholders": {
-      "fee": {"type": "int"}
+      "fee": {
+        "type": "int"
+      }
     }
   },
   "walletDetailBumpFeeCurrent": "当前手续费：{fee} sat/vB",
@@ -321,7 +334,9 @@
   "importScriptTypeHint": "地址以 {prefix} 开头",
   "@importScriptTypeHint": {
     "placeholders": {
-      "prefix": { "type": "String" }
+      "prefix": {
+        "type": "String"
+      }
     }
   },
   "importScreenHint": "word1 word2 word3 ...",
@@ -444,7 +459,6 @@
   "walletDetailXpubCopied": "XPUB 已复制",
   "walletDetailXpubDesc": "此 XPUB 可查看所有未来地址和余额，但无法花费资金。",
   "walletDetailXpubTitle": "钱包 XPUB",
-
   "explorerTitle": "区块浏览器",
   "explorerAddressLabel": "地址",
   "explorerRefresh": "刷新",
@@ -723,7 +737,6 @@
   "lightningPeeringGateNewTitle": "仅允许新协议版本的节点互联",
   "lightningPeeringGateNewBody": "此节点使用最终的 feature bit（option_blake2b 512，option_unified_sigs 514）：未更新的节点——版本 .4 及更早——无法连接。这是网络的选择，不是应用或桥接的问题。对等节点需更新到 .5 或更新的版本。",
   "lightningPeersRegisteredOnly": "{count} 个已注册节点，均未连接",
-
   "lightningSwapOpen": "无需节点支付发票（swap）",
   "lightningSwapWebOnlyNote": "网页版：Lightning 支付通过交换（swap）服务商完成，无需节点。连接自己的节点请使用 Android 应用。",
   "lightningSwapTitle": "通过服务商进行 Lightning 支付",
@@ -919,5 +932,61 @@
   "psbtNoFrames": "未识别到 PSBT 分帧",
   "psbtScanProgress": "已读取分帧：{received}/{total}",
   "psbtSigning": "正在签名…",
-  "psbtNeedsSeed": "该钱包没有种子：请在持有种子的设备上签名。"
+  "psbtNeedsSeed": "该钱包没有种子：请在持有种子的设备上签名。",
+  "indicesCorruptTitle": "地址索引状态不可用",
+  "indicesCorruptBody": "钱包仍可读取余额和交易记录，但在索引状态恢复之前，收款和付款已被禁用。请检查备份，然后重试扫描或按提示从零开始。",
+  "indicesAnomalousTitle": "地址索引异常",
+  "indicesAnomalousBody": "保存的索引远超预期范围。请从备份恢复或联系支持：从零开始会重复使用已派生的地址。",
+  "indicesAdoptionTitle": "新功能：地址轮换",
+  "indicesAdoptionBody": "钱包将为每笔收款使用新地址，收款之间不再相互关联。是否继续？",
+  "indicesAlreadyAssigned": "这是已分配的地址：没有创建新地址。",
+  "receiveGapFoundAtIndex": "收款: 已验证到索引 {index}",
+  "@receiveGapFoundAtIndex": {
+    "description": "Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapPartial": "收款: 部分校验 {probed}/{requested}",
+  "@receiveGapPartial": {
+    "description": "Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapInterrupted": "收款: 校验在 {probed}/{requested} 处中断——区块浏览器无法访问或超时。请重试。",
+  "@receiveGapInterrupted": {
+    "description": "Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+
+  "indicesActionRetry": "重试扫描",
+  "indicesActionRestore": "从备份恢复",
+  "indicesActionSupport": "联系支持",
+  "indicesActionContinue": "继续",
+  "indicesSeedRequiredTitle": "解锁以派生地址",
+  "indicesSeedRequiredBody": "此钱包创建时尚未保存账户公钥。请解锁保险库一次：密钥将被派生并保存，此后收款不再需要助记词。",
+  "indicesSeedMismatchTitle": "种子不匹配",
+  "indicesSeedMismatchBody": "本设备保存的种子无法生成此钱包的地址。为安全起见不保存公钥，以便有历史记录的地址仍可访问。请确认导入的钱包是否正确，或联系支持。",
+  "@indicesSeedMismatchTitle": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "@indicesSeedMismatchBody": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "indicesActionUnlock": "解锁"
 }

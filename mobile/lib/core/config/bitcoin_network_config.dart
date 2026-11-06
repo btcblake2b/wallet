@@ -1,6 +1,8 @@
 import 'package:bip32/bip32.dart' as bip32;
 import 'package:bitcoin_base/bitcoin_base.dart' as bitcoin_base;
 
+import 'coinbase_maturity_rules.dart';
+
 /// Rete Bitcoin supportate.
 enum BtcNetwork {
   testnet,
@@ -27,22 +29,42 @@ class BitcoinNetworkConfig {
   static const BtcNetwork current = BtcNetwork.mainnet;
 
   // ============================================================
-  // Maturity di RELAY di un output coinbase (policy di rete, non consenso)
+  // Maturity di un output coinbase (consenso + policy di relay)
   // ============================================================
-  // PERCHÉ: dalla release CLN `v26.06.8-blake2b.5` un output di coinbase non è
-  // propagabile dai peer prima di questa soglia (PR privkeyio/lightning#11:
-  // 6.480 blocchi mainnet, 6.705 testnet4, 100 altrove). Il mining del progetto
-  // paga in coinbase → il coin selection e il SALDO devono escluderli finché
-  // non maturano (6.480 blocchi ≈ 45 giorni col block time attuale ~600 s).
-  // Il conteggio è in BLOCCHI: la UI mostra i blocchi mancanti allo sblocco.
-  static int get coinbaseRelayMaturityBlocks {
+  // PERCHÉ: il mining del progetto paga in coinbase → il coin selection e il
+  // SALDO devono escluderli finché la rete non ne propaga la spesa. Fino al
+  // blocco 979.918 valeva una profondità unica (6.480 blocchi, PR
+  // privkeyio/lightning#11); dal 979.919 Knots `v29.4.3` (PR
+  // bitcoinknots#419, consenso `knots#468`) applica DUE regole: le coinbase
+  // dell'epoca 973.440-979.918 si sbloccano tutte a 979.919, quelle da
+  // 979.919 maturano dopo 25.920 blocchi (~180 giorni). La matematica sta in
+  // [CoinbaseMaturityRules]; qui restano solo i parametri della rete.
+  // ⚠️ Limite noto: la regola lunga vale fino all'expiry RDTS (2027-09); dopo
+  // quella data il consenso cambierà ancora e questi numeri vanno rivisti.
+  static CoinbaseMaturityRules get coinbaseMaturityRules {
     switch (current) {
       case BtcNetwork.mainnet:
-        return 6480;
+        return const CoinbaseMaturityRules(
+          longMaturityBlocks: 25920,
+          longStartHeight: 979919,
+          epochStartHeight: 973440,
+          epochReleaseHeight: 979919,
+          consensusMaturityBlocks: 100,
+        );
+      // PERCHÉ (testnet4): nessuna fonte per le altezze dell'epoca su questa
+      // rete → si resta sulla profondità fissa documentata dalla PR #11
+      // (6.705). Prudente: non si inventano epoche che non possiamo verificare.
       case BtcNetwork.testnet:
-        return 6705;
+        return const CoinbaseMaturityRules(longMaturityBlocks: 6705);
     }
   }
+
+  /// Profondità della regola più recente (blocchi) — usata dai testi UI.
+  ///
+  /// PERCHÉ resta una profondità e non un'altezza: la UI spiega "dopo N
+  /// blocchi", mentre il countdown per singolo UTXO usa l'altezza reale.
+  static int get coinbaseRelayMaturityBlocks =>
+      coinbaseMaturityRules.longMaturityBlocks;
 
   // ============================================================
   // BIP32 – prefissi extended key (xpub/xprv per mainnet, tpub/tprv per testnet)

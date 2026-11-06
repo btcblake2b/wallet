@@ -171,6 +171,10 @@ Capabilities: **18 NWC / 14 NCC** methods.
 - BOLT 11 invoices and BOLT 12 offers carry the bit, and an artifact **without it is not paid**.
 - A channel whose funding transaction is a **coinbase** is refused, and the node wallet does not spend a
   coinbase output before the network will relay it (`relay_coinbase_maturity` = 6,480 blocks on mainnet).
+  ⚠️ Since block **979,919** the *consensus* rule is **25,920 blocks (~180 days)** for newly mined coins
+  (Knots `v29.4.3`, `bitcoinknots#419` / `knots#468`); the 6,480 value above describes the
+  973,440-979,918 epoch only. The wallet-side maths lives in
+  `mobile/lib/core/config/coinbase_maturity_rules.dart`.
 - The bridge **rune** derives from `hsm_secret` and **survives** node upgrades → no regeneration; the
   probe (`bin/probe.dart`) remains the end-to-end check. With a node without usable channels the probe
   **skips `get_route`** (the route cannot exist) instead of reporting a false failure.

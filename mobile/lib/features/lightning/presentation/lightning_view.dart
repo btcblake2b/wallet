@@ -143,6 +143,11 @@ class _LightningViewState extends State<LightningView> {
 
   /// Tenta la riconnessione con l'ultima URI salvata (se presente).
   Future<void> _autoReconnect() async {
+    // PERCHÉ (30/10/2026): il nodo salvato va comunque registrato nello storico
+    // — se il collegamento arriva da una versione senza storico, dopo un
+    // disconnect il menu "nodi recenti" resterebbe vuoto. Best-effort e senza
+    // attesa: la riconnessione non deve dipendere dallo storage.
+    unawaited(widget.connectionStore.rememberActive());
     if (widget.lightningService.isConnected) {
       await _refresh();
       return;

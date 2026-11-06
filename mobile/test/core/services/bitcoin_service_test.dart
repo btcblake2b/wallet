@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:btc_blake2b_wallet/core/config/bitcoin_network_config.dart';
 import 'package:btc_blake2b_wallet/core/models/transaction_record.dart';
 import 'package:btc_blake2b_wallet/core/services/bitcoin_service.dart';
 import 'package:btc_blake2b_wallet/core/services/explorer_api.dart';
@@ -741,10 +740,9 @@ void main() {
       expect(snapshot.utxos, isEmpty);
       expect(snapshot.blockedCoinbaseSats, 50000);
       expect(snapshot.blockedUtxos, hasLength(1));
-      expect(
-        snapshot.blockedRemainingBlocks,
-        BitcoinNetworkConfig.coinbaseRelayMaturityBlocks - 11,
-      );
+      // Mock: tip 100, block_height 90 → altezza 90 = PRE-epoca, quindi vale
+      // la maturity ordinaria di consenso (100 conferme): 100 − 11 = 89.
+      expect(snapshot.blockedRemainingBlocks, 89);
     });
 
     test('tx normale: resta nel saldo spendibile (nessun falso positivo)',

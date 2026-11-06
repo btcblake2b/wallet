@@ -2975,4 +2975,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get psbtNeedsSeed =>
       'This wallet has no seed: sign on the device that holds it.';
+
+  @override
+  String get indicesCorruptTitle => 'Address index unavailable';
+
+  @override
+  String get indicesCorruptBody =>
+      'This wallet can read balances and history, but receiving and sending are disabled until the index state is restored. Verify your backup, then retry the scan or restart from zero with the warning shown.';
+
+  @override
+  String get indicesAnomalousTitle => 'Unusual address index';
+
+  @override
+  String get indicesAnomalousBody =>
+      'The saved index is far beyond the expected range for this wallet. Restore from a backup or contact support: restarting from zero would reuse addresses.';
+
+  @override
+  String get indicesAdoptionTitle => 'New: rotating addresses';
+
+  @override
+  String get indicesAdoptionBody =>
+      'This wallet will now use a new address for each payment, so your receipts are no longer linked. Continue?';
+
+  @override
+  String get indicesAlreadyAssigned =>
+      'This is the address already assigned to you: no new address was created.';
+
+  @override
+  String receiveGapFoundAtIndex(int index) {
+    return 'Receiving: verified up to index $index';
+  }
+
+  @override
+  String receiveGapPartial(int probed, int requested) {
+    return 'Receiving: partial check, $probed/$requested';
+  }
+
+  @override
+  String receiveGapInterrupted(int probed, int requested) {
+    return 'Receiving: check interrupted at $probed/$requested — explorer unreachable or time ran out. Try again.';
+  }
+
+  @override
+  String get indicesActionRetry => 'Retry scan';
+
+  @override
+  String get indicesActionRestore => 'Restore from backup';
+
+  @override
+  String get indicesActionSupport => 'Contact support';
+
+  @override
+  String get indicesActionContinue => 'Continue';
+
+  @override
+  String get indicesSeedRequiredTitle => 'Unlock to derive the address';
+
+  @override
+  String get indicesSeedRequiredBody =>
+      'This wallet was created before the public account key was stored. Unlock the vault once: the key is derived and saved, and from then on receiving needs no seed.';
+
+  @override
+  String get indicesSeedMismatchTitle => 'Seed does not match';
+
+  @override
+  String get indicesSeedMismatchBody =>
+      'The seed stored on this device does not derive this wallet’s addresses. For safety no public key is saved, so the addresses with history stay reachable. Check that you imported the right wallet or contact support.';
+
+  @override
+  String get indicesActionUnlock => 'Unlock';
 }

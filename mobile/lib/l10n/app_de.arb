@@ -151,13 +151,17 @@
   "walletDetailTxExportCsv": "CSV (Tabelle)",
   "@walletDetailTxExportCopied": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportCopied": "In die Zwischenablage kopiert ({fileName})",
   "@walletDetailTxExportDownloaded": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportDownloaded": "Download gestartet ({fileName})",
@@ -175,7 +179,6 @@
   "walletDetailTxPending": "Ausstehend",
   "walletDetailTxReplaced": "Ersetzt (aus dem Mempool entfernt)",
   "walletDetailTxRetry": "Erneut versuchen",
-
   "backupSeedTitle": "Seed-Backup",
   "backupSeedIntro": "Schreibe deine Seed-Phrase auf Papier und bewahre sie sicher auf. Sie ist der einzige Weg, deine Gelder wiederherzustellen.",
   "backupSeedStart": "Backup starten",
@@ -221,14 +224,20 @@
   "walletDetailUtxoEmpty": "Keine ausgabefähigen UTXO gefunden",
   "@walletDetailUtxoConfirmations": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoConfirmations": "{count} Bestätigungen",
   "@walletDetailUtxoSelected": {
     "placeholders": {
-      "count": {"type": "int"},
-      "sats": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "sats": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoSelected": "{count} ausgewählt · {sats} sat",
@@ -246,7 +255,9 @@
   "walletDetailBumpFeeTitle": "Transaktionsgebühr erhöhen",
   "@walletDetailBumpFeeCurrent": {
     "placeholders": {
-      "fee": {"type": "int"}
+      "fee": {
+        "type": "int"
+      }
     }
   },
   "walletDetailBumpFeeCurrent": "Aktuelle Gebühr: {fee} sat/vB",
@@ -323,7 +334,9 @@
   "importScriptTypeHint": "Adressen beginnen mit {prefix}",
   "@importScriptTypeHint": {
     "placeholders": {
-      "prefix": { "type": "String" }
+      "prefix": {
+        "type": "String"
+      }
     }
   },
   "importScreenHint": "wort1 wort2 wort3 ...",
@@ -446,7 +459,6 @@
   "walletDetailXpubCopied": "XPUB kopiert",
   "walletDetailXpubDesc": "Dieser XPUB ermöglicht das Anzeigen aller zukünftigen Adressen und Salden, kann aber keine Gelder ausgeben.",
   "walletDetailXpubTitle": "Wallet-XPUB",
-
   "explorerTitle": "Block-Explorer",
   "explorerAddressLabel": "Adresse",
   "explorerRefresh": "Aktualisieren",
@@ -725,7 +737,6 @@
   "lightningPeeringGateNewTitle": "Peering auf die neuen Protokoll-Releases beschränkt",
   "lightningPeeringGateNewBody": "Dieser Knoten verwendet die endgültigen Feature-Bits (option_blake2b 512, option_unified_sigs 514): Knoten, die nicht aktualisiert wurden — Release .4 und älter — können sich nicht verbinden. Es ist eine Entscheidung des Netzwerks, kein Problem der App oder der Bridge. Peers müssen auf Release .5 oder neuer aktualisieren.",
   "lightningPeersRegisteredOnly": "{count} registrierte Peers, keine verbunden",
-
   "lightningSwapOpen": "Rechnung ohne eigenen Node bezahlen (Swap)",
   "lightningSwapWebOnlyNote": "Web-App: Lightning-Zahlungen laufen über einen Swap-Anbieter (kein Node nötig). Das Verbinden des eigenen Nodes gibt es in der Android-App.",
   "lightningSwapTitle": "Lightning-Zahlung über Anbieter",
@@ -921,5 +932,61 @@
   "psbtNoFrames": "Kein PSBT-Frame erkannt",
   "psbtScanProgress": "Frames gelesen: {received}/{total}",
   "psbtSigning": "Signiere…",
-  "psbtNeedsSeed": "Diese Wallet hat keinen Seed: signiere auf dem Gerät, das ihn hat."
+  "psbtNeedsSeed": "Diese Wallet hat keinen Seed: signiere auf dem Gerät, das ihn hat.",
+  "indicesCorruptTitle": "Adressindex nicht verfuegbar",
+  "indicesCorruptBody": "Diese Wallet kann Guthaben und Verlauf lesen, aber Empfangen und Senden sind gesperrt, bis der Indexzustand wiederhergestellt ist. Pruefe das Backup und starte den Scan erneut oder beginne mit dem angezeigten Hinweis bei null.",
+  "indicesAnomalousTitle": "Ungewoehnlicher Adressindex",
+  "indicesAnomalousBody": "Der gespeicherte Index liegt weit ausserhalb des erwarteten Bereichs. Stelle aus einem Backup wieder her oder kontaktiere den Support: ein Neustart bei null wuerde Adressen wiederverwenden.",
+  "indicesAdoptionTitle": "Neu: rotierende Adressen",
+  "indicesAdoptionBody": "Diese Wallet verwendet nun fuer jede Zahlung eine neue Adresse, damit Eingaenge nicht mehr verknuepft sind. Fortfahren?",
+  "indicesAlreadyAssigned": "Dies ist die bereits zugewiesene Adresse: es wurde keine neue erzeugt.",
+  "receiveGapFoundAtIndex": "Empfang: bis Index {index} verifiziert",
+  "@receiveGapFoundAtIndex": {
+    "description": "Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapPartial": "Empfang: Teilprüfung, {probed}/{requested}",
+  "@receiveGapPartial": {
+    "description": "Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapInterrupted": "Empfang: Prüfung bei {probed}/{requested} unterbrochen — Explorer nicht erreichbar oder Zeit abgelaufen. Erneut versuchen.",
+  "@receiveGapInterrupted": {
+    "description": "Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+
+  "indicesActionRetry": "Scan wiederholen",
+  "indicesActionRestore": "Aus Backup wiederherstellen",
+  "indicesActionSupport": "Support kontaktieren",
+  "indicesActionContinue": "Weiter",
+  "indicesSeedRequiredTitle": "Entsperren, um die Adresse abzuleiten",
+  "indicesSeedRequiredBody": "Diese Wallet wurde erstellt, bevor der öffentliche Kontoschlüssel gespeichert wurde. Entsperre den Tresor einmal: der Schlüssel wird abgeleitet und gespeichert, danach braucht das Empfangen keine Seed mehr.",
+  "indicesSeedMismatchTitle": "Seed passt nicht",
+  "indicesSeedMismatchBody": "Die auf diesem Gerät gespeicherte Seed leitet die Adressen dieser Wallet nicht ab. Aus Sicherheitsgründen wird kein Public Key gespeichert, damit die Adressen mit Historie erreichbar bleiben. Prüfe, ob du die richtige Wallet importiert hast, oder kontaktiere den Support.",
+  "@indicesSeedMismatchTitle": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "@indicesSeedMismatchBody": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "indicesActionUnlock": "Entsperren"
 }

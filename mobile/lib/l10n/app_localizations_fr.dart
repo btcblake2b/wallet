@@ -2990,4 +2990,73 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get psbtNeedsSeed =>
       'Ce portefeuille n\'a pas de seed : signe sur l\'appareil qui la détient.';
+
+  @override
+  String get indicesCorruptTitle => 'Etat des index indisponible';
+
+  @override
+  String get indicesCorruptBody =>
+      'Le portefeuille lit encore le solde et l’historique, mais la reception et l’envoi sont desactives jusqu’a la restauration de l’etat des index. Verifiez la sauvegarde, puis relancez le scan ou repartez de zero avec l’avertissement affiche.';
+
+  @override
+  String get indicesAnomalousTitle => 'Index inhabituel';
+
+  @override
+  String get indicesAnomalousBody =>
+      'L’index enregistre depasse largement la plage attendue. Restaurez depuis une sauvegarde ou contactez le support : repartir de zero reutiliserait des adresses.';
+
+  @override
+  String get indicesAdoptionTitle => 'Nouveau : adresses tournantes';
+
+  @override
+  String get indicesAdoptionBody =>
+      'Le portefeuille utilise desormais une nouvelle adresse pour chaque paiement, vos encaissements ne sont plus lies. Continuer ?';
+
+  @override
+  String get indicesAlreadyAssigned =>
+      'Ceci est l’adresse deja attribuee : aucune nouvelle adresse n’a ete creee.';
+
+  @override
+  String receiveGapFoundAtIndex(int index) {
+    return 'Réception : vérifiée jusqu’à l’indice $index';
+  }
+
+  @override
+  String receiveGapPartial(int probed, int requested) {
+    return 'Réception : vérification partielle, $probed/$requested';
+  }
+
+  @override
+  String receiveGapInterrupted(int probed, int requested) {
+    return 'Réception : vérification interrompue à $probed/$requested — explorateur injoignable ou temps écoulé. Réessayez.';
+  }
+
+  @override
+  String get indicesActionRetry => 'Relancer le scan';
+
+  @override
+  String get indicesActionRestore => 'Restaurer depuis une sauvegarde';
+
+  @override
+  String get indicesActionSupport => 'Contacter le support';
+
+  @override
+  String get indicesActionContinue => 'Continuer';
+
+  @override
+  String get indicesSeedRequiredTitle => 'Deverrouiller pour deriver l’adresse';
+
+  @override
+  String get indicesSeedRequiredBody =>
+      'Ce portefeuille a ete cree avant l’enregistrement de la cle publique du compte. Deverrouillez le coffre une fois : la cle est derivee et enregistree, ensuite recevoir ne demande plus la phrase.';
+
+  @override
+  String get indicesSeedMismatchTitle => 'Seed non concordante';
+
+  @override
+  String get indicesSeedMismatchBody =>
+      'La seed enregistrée sur cet appareil ne dérive pas les adresses de ce portefeuille. Par sécurité aucune clé publique n’est enregistrée, afin que les adresses ayant un historique restent accessibles. Vérifie que tu as importé le bon portefeuille ou contacte le support.';
+
+  @override
+  String get indicesActionUnlock => 'Deverrouiller';
 }

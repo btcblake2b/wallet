@@ -1,9 +1,7 @@
 {
   "@@locale": "en",
   "@@last_modified": "2026-07-27",
-
   "appTitle": "Btc Blake2b Wallet",
-
   "homeScreenTitle": "Btc Blake2b Wallet",
   "homeNoConnectionTitle": "No connection",
   "homeNoConnectionCreate": "Unable to create wallet without an active internet connection. The address must be verified on the network. Please try again when the connection is restored.",
@@ -139,7 +137,6 @@
   "appLockPromptLater": "Later",
   "aboutLicensesOpenOnline": "Open online",
   "homeWalletSemantics": "Wallet {name}{balance}",
-
   "walletDetailTitle": "Wallet",
   "walletDetailCopied": "{label} copied. Will be removed after 60s.",
   "walletDetailAddress": "Address",
@@ -154,13 +151,17 @@
   "walletDetailTxExportCsv": "CSV (spreadsheet)",
   "@walletDetailTxExportCopied": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportCopied": "Copied to clipboard ({fileName})",
   "@walletDetailTxExportDownloaded": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportDownloaded": "Download started ({fileName})",
@@ -178,7 +179,6 @@
   "walletDetailTxPending": "Pending",
   "walletDetailTxReplaced": "Replaced (dropped from mempool)",
   "walletDetailTxRetry": "Retry",
-
   "backupSeedTitle": "Seed backup",
   "backupSeedIntro": "Write down your seed phrase on paper and store it in a safe place. It is the only way to recover your funds.",
   "backupSeedStart": "Start backup",
@@ -194,7 +194,6 @@
   "backupSeedSkipWarning": "If you skip, you risk losing your funds if you lose this device. You can do it later from the wallet details.",
   "walletDetailSend": "Send",
   "walletDetailReceive": "Receive",
-
   "sendScreenTitle": "Send BTC",
   "sendScreenAddressLabel": "Recipient address",
   "sendScreenAmountLabel": "Amount (BTC)",
@@ -215,8 +214,12 @@
   "sendScreenSending": "Sending...",
   "@homeDeleteMultiSummary": {
     "placeholders": {
-      "deleted": {"type": "int"},
-      "errors": {"type": "int"},
+      "deleted": {
+        "type": "int"
+      },
+      "errors": {
+        "type": "int"
+      },
       "error": {}
     }
   },
@@ -230,14 +233,20 @@
   "walletDetailUtxoEmpty": "No spendable UTXO found",
   "@walletDetailUtxoConfirmations": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoConfirmations": "{count} confirmations",
   "@walletDetailUtxoSelected": {
     "placeholders": {
-      "count": {"type": "int"},
-      "sats": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "sats": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoSelected": "{count} selected · {sats} sat",
@@ -249,19 +258,25 @@
   },
   "@walletUtxoWaitingBlocks": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletUtxoWaitingBlocks": "{count} blocks to unlock",
   "@walletUtxoWaitingHint": {
     "placeholders": {
-      "blocks": {"type": "int"}
+      "blocks": {
+        "type": "int"
+      }
     }
   },
   "walletUtxoWaitingHint": "Mining payouts (coinbase) are relayed by the network only after {blocks} blocks: they cannot be spent yet.",
   "@walletBalanceWaiting": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "walletBalanceWaiting": "Waiting period: {amount}",
@@ -273,7 +288,9 @@
   "walletDetailBumpFeeTitle": "Increase transaction fee",
   "@walletDetailBumpFeeCurrent": {
     "placeholders": {
-      "fee": {"type": "int"}
+      "fee": {
+        "type": "int"
+      }
     }
   },
   "walletDetailBumpFeeCurrent": "Current fee: {fee} sat/vB",
@@ -296,7 +313,9 @@
   "sendBatchToggleSingle": "Single recipient",
   "@sendBatchRecipientLabel": {
     "placeholders": {
-      "index": {"type": "int"}
+      "index": {
+        "type": "int"
+      }
     }
   },
   "sendBatchRecipientLabel": "Recipient {index}",
@@ -309,7 +328,9 @@
   "sendBatchMinRecipients": "Add at least 2 recipients to send a batch",
   "@sendBatchConfirmRecipients": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sendBatchConfirmRecipients": "{count} recipients",
@@ -327,8 +348,12 @@
   "sendScreenMaxHelper": "Max: {amount}",
   "@sendScreenUtxoSummary": {
     "placeholders": {
-      "sats": {"type": "int"},
-      "count": {"type": "int"}
+      "sats": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sendScreenUtxoSummary": "{sats} sat · {count} UTXO",
@@ -344,14 +369,20 @@
   "legalTermsContent": "These Terms of Service are provisional and will be replaced by the final version when the official website becomes available.\n\nBtc Blake2b Wallet is a self-custodial Bitcoin wallet for the experimental \"bitcoin-blake2b\" network (a fork of Bitcoin). Private keys and the seed phrase remain solely on your device: we do not hold, transfer or have access to your funds.\n\nThe app is provided free of charge, \"as is\", without warranties of any kind. You use it at your own risk. The bitcoin-blake2b network is an experimental network derived from Bitcoin: its coins may have no market value, may not be recognized by exchanges and may undergo reorganizations. Nothing in the app constitutes financial or investment advice.\n\nYou are solely responsible for keeping your seed phrase and your funds: anyone who has possession of them can spend the coins. The app cannot recover a lost seed. Use for illegal activities is prohibited. You declare that you are at least 16 years old.\n\nBtc Blake2b Wallet is not affiliated with, nor sponsored or endorsed by, Bitcoin, Bitcoin Core or bitcoin.org.",
   "@legalPrivacyContent": {
     "placeholders": {
-      "holder": {"type": "String"},
-      "email": {"type": "String"}
+      "holder": {
+        "type": "String"
+      },
+      "email": {
+        "type": "String"
+      }
     }
   },
   "legalPrivacyContent": "This Privacy Policy is provisional and will be replaced by the final version published on the official website when available.\n\n1) DATA ON YOUR DEVICE. The app does not require an account and does not store personal data on servers operated by the author. The encrypted seed (AES-256-GCM), preferences and consents remain ONLY on your device.\n\n2) DATA SENT TO THIRD PARTIES FOR OPERATION. To display balance and fees the app queries public third-party APIs:\n• mempool.guide (blockchain explorer).\n• If mempool.guide is unavailable, the app may query two community Esplora-compatible mirrors (mempool.kilombino.com, mempool.maveth.ca). This can be turned off in Settings.\n• If you enable the automatic price in Settings, the app reads the last XBT/USDC trade from neoxa.exchange (NeoXEX) on demand. If your value currency is not USD, the app also reads the USDT exchange rates from api.coinbase.com. Both can be turned off in Settings.\nEach request transmits your IP address and the public address of the queried wallet. Private keys and the seed are NEVER transmitted.\n\n3) NO TRACKERS. No analytics, no advertising, no cookies inside the app.\n\n4) RIGHTS (GDPR arts. 13-14). You have the right of access, rectification, erasure and objection by writing to the data controller: {holder} — {email}. Since we do not store personal data, these rights are already largely guaranteed by the fact that the data stays on your device.",
   "@legalSecurityContact": {
     "placeholders": {
-      "email": {"type": "String"}
+      "email": {
+        "type": "String"
+      }
     }
   },
   "legalSecurityContact": "To report security vulnerabilities use the private \"Report a vulnerability\" reporting of the GitHub repository (Security tab) or write to:\n{email}\n\nDo not open public issues for security problems. Response time: 72 hours. Disclosure policy: 90 days.",
@@ -376,7 +407,6 @@
   "sendConfirmTitle": "Confirm transaction",
   "sendConfirmWarning": "This transaction is irreversible. Verify the details before confirming.",
   "sendConfirmSend": "Confirm & Send",
-
   "importScreenTitle": "Import Wallet",
   "importScreenHeading": "Enter your seed phrase",
   "importScreenSubtitle": "Enter the mnemonic phrase (12, 15, 18, 21 or 24 words) separated by spaces, then choose the account type that matches the original wallet.",
@@ -388,7 +418,9 @@
   "importScriptTypeHint": "Addresses start with {prefix}",
   "@importScriptTypeHint": {
     "placeholders": {
-      "prefix": { "type": "String" }
+      "prefix": {
+        "type": "String"
+      }
     }
   },
   "importScreenHint": "word1 word2 word3 ...",
@@ -405,10 +437,6 @@
   "importWatchOnlyValidateEmpty": "Enter the account xpub.",
   "importWatchOnlyValidatePrefix": "The xpub must start with \"xpub\" (mainnet).",
   "watchOnlyBadge": "Watch-only",
-
-
-
-
   "passwordDialogCreateTitle": "Create Security Password",
   "passwordDialogCreateHint": "Enter a secure password",
   "passwordDialogCreateConfirm": "Confirm password",
@@ -418,7 +446,6 @@
   "passwordDialogEnterHint": "Enter your password",
   "passwordDialogEnter": "Confirm",
   "passwordDialogWrong": "Incorrect password",
-
   "languageSelector": "Language",
   "languageSelectorAuto": "🌐 Automatic (system)",
   "languageSelectorEn": "🇬🇧 English",
@@ -428,7 +455,6 @@
   "languageSelectorEs": "🇪🇸 Español",
   "languageSelectorZhCN": "🇨🇳 中文",
   "languageSelectorFrCA": "🇨🇦 Français (CA)",
-
   "walletDetailRefresh": "Refresh",
   "walletDetailDeleteTitle": "Delete Wallet?",
   "walletDetailDeleteConfirm": "Delete permanently",
@@ -485,7 +511,6 @@
   "walletDetailErrorAddresses": "Error deriving addresses: {error}",
   "walletDetailValidSig": "VALID SIGNATURE ✓",
   "walletDetailInvalidSig": "INVALID SIGNATURE ✗",
-
   "donateTitle": "Support the project ❤️",
   "donatePhrase": "☕ \"If the project is useful to you, buy us a virtual coffee\"",
   "donateAddressLabel": "Bitcoin donation address:",
@@ -496,8 +521,6 @@
   "donateNoWalletMessage": "No Bitcoin wallet app was found on your device. You can still copy the address and paste it into your favorite wallet.",
   "donateOpenWallet": "Open in wallet",
   "donateButton": "Support the project ❤️",
-
-
   "onboardingTitle": "Welcome to Btc Blake2b Wallet",
   "onboardingSubtitle": "Open-source Bitcoin wallet. Self-custody. No KYC.",
   "onboardingResidenceLabel": "Country of tax residence",
@@ -515,7 +538,6 @@
   "onboardingValidationResidence": "Select your country of tax residence",
   "onboardingLinkTerms": "Terms of Service",
   "onboardingLinkPrivacy": "Privacy Policy",
-
   "aboutTitle": "About Btc Blake2b Wallet",
   "aboutDescription": "Btc Blake2b Wallet is an open-source, self-custody Bitcoin wallet. No registration, no KYC, no tracking. Your keys, your coins.",
   "aboutLicenseTitle": "License",
@@ -523,7 +545,6 @@
   "aboutThirdPartyLicensesDesc": "View the complete list of open-source licenses",
   "aboutBuiltWith": "Built with",
   "aboutDisclaimer": "This software is provided \"AS IS\" without warranty of any kind.",
-
   "explorerTitle": "Explorer",
   "explorerAddressLabel": "Address",
   "explorerRefresh": "Refresh",
@@ -886,14 +907,18 @@
   "lightningStatsEntries": "{count,plural, =1{1 entry} other{{count} entries}}",
   "@lightningStatsEntries": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "lightningPluginsTitle": "Plugins",
   "lightningPluginsActiveCount": "{count} active",
   "@lightningPluginsActiveCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "lightningPluginInactive": "inactive",
@@ -924,7 +949,9 @@
   "walletAddressesStatusFunds": "With funds",
   "@walletAddressesTxCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletAddressesTxCount": "{count} transactions",
@@ -937,11 +964,12 @@
   "lightningPeeringGateNewBody": "This node uses the final feature bits (option_blake2b 512, option_unified_sigs 514): nodes that have not updated — release .4 and earlier — cannot connect. It is a decision of the network, not a problem of the app or of the bridge. Peers must update to release .5 or later.",
   "@lightningPeersRegisteredOnly": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "lightningPeersRegisteredOnly": "{count} registered peers, none connected",
-
   "lightningSwapOpen": "Pay an invoice without a node (swap)",
   "lightningSwapWebOnlyNote": "Web app: Lightning payments use a swap provider (no node required). Connecting your own node is available in the Android app.",
   "lightningSwapTitle": "Lightning payment via provider",
@@ -950,7 +978,9 @@
   "lightningSwapProviderConnect": "Connect provider",
   "@lightningSwapProviderConnected": {
     "placeholders": {
-      "pubkey": {"type": "String"}
+      "pubkey": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapProviderConnected": "Provider connected: {pubkey}",
@@ -961,21 +991,29 @@
   "lightningSwapProviderDown": "The default node is not responding right now.",
   "@lightningSwapProviderSendLimit": {
     "placeholders": {
-      "min": {"type": "String"},
-      "max": {"type": "String"}
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapProviderSendLimit": "Right now you can send between {min} and {max} sat",
   "@lightningSwapProviderLiquidity": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapProviderLiquidity": "Liquidity available now: {amount} sat",
   "lightningSwapPeerCheck": "Check recipient",
   "@lightningSwapPeerReachable": {
     "placeholders": {
-      "amount": {"type": "String"}
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapPeerReachable": "Recipient reachable: {amount} sat to pay",
@@ -991,7 +1029,9 @@
   "lightningSwapHtlc": "HTLC address",
   "@lightningSwapCltv": {
     "placeholders": {
-      "height": {"type": "int"}
+      "height": {
+        "type": "int"
+      }
     }
   },
   "lightningSwapCltv": "Refund available from block {height}",
@@ -1010,7 +1050,9 @@
   "lightningSwapRefund": "Recover funds (refund)",
   "@lightningSwapRefundNotYet": {
     "placeholders": {
-      "height": {"type": "int"}
+      "height": {
+        "type": "int"
+      }
     }
   },
   "lightningSwapRefundNotYet": "Refund not available yet: it opens from block {height}",
@@ -1030,7 +1072,9 @@
   "lightningSwapOpenInExplorer": "Open in explorer",
   "@lightningSwapRefundSent": {
     "placeholders": {
-      "txid": {"type": "String"}
+      "txid": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapRefundSent": "Refund sent: {txid}",
@@ -1041,7 +1085,9 @@
   "lightningSwapNoUtxos": "No spendable funds in this wallet",
   "@lightningSwapErrorGeneric": {
     "placeholders": {
-      "message": {"type": "String"}
+      "message": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapErrorGeneric": "Error: {message}",
@@ -1049,22 +1095,34 @@
   "lightningSwapWalletLabel": "Wallet",
   "@lightningSwapWalletBalance": {
     "placeholders": {
-      "balance": {"type": "String"}
+      "balance": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapWalletBalance": "Balance: {balance} sat",
   "@lightningSwapInsufficientFunds": {
     "placeholders": {
-      "needed": {"type": "String"},
-      "available": {"type": "String"}
+      "needed": {
+        "type": "String"
+      },
+      "available": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapInsufficientFunds": "Insufficient funds: {needed} sat needed, {available} sat available",
   "@lightningSwapInsufficientFundsWaiting": {
     "placeholders": {
-      "needed": {"type": "String"},
-      "available": {"type": "String"},
-      "waiting": {"type": "String"}
+      "needed": {
+        "type": "String"
+      },
+      "available": {
+        "type": "String"
+      },
+      "waiting": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapInsufficientFundsWaiting": "Insufficient funds: {needed} sat needed, {available} sat available ({waiting} sat in the waiting period)",
@@ -1090,7 +1148,9 @@
   "lightningSwapWalletMissing": "The wallet bound to this swap is no longer available",
   "@lightningSwapBoundWallet": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "lightningSwapBoundWallet": "Bound wallet: {name}",
@@ -1201,5 +1261,61 @@
   "psbtNoFrames": "No PSBT frame recognised",
   "psbtScanProgress": "Frames read: {received}/{total}",
   "psbtSigning": "Signing…",
-  "psbtNeedsSeed": "This wallet has no seed: sign on the device that holds it."
+  "psbtNeedsSeed": "This wallet has no seed: sign on the device that holds it.",
+  "indicesCorruptTitle": "Address index unavailable",
+  "indicesCorruptBody": "This wallet can read balances and history, but receiving and sending are disabled until the index state is restored. Verify your backup, then retry the scan or restart from zero with the warning shown.",
+  "indicesAnomalousTitle": "Unusual address index",
+  "indicesAnomalousBody": "The saved index is far beyond the expected range for this wallet. Restore from a backup or contact support: restarting from zero would reuse addresses.",
+  "indicesAdoptionTitle": "New: rotating addresses",
+  "indicesAdoptionBody": "This wallet will now use a new address for each payment, so your receipts are no longer linked. Continue?",
+  "indicesAlreadyAssigned": "This is the address already assigned to you: no new address was created.",
+  "receiveGapFoundAtIndex": "Receiving: verified up to index {index}",
+  "@receiveGapFoundAtIndex": {
+    "description": "Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapPartial": "Receiving: partial check, {probed}/{requested}",
+  "@receiveGapPartial": {
+    "description": "Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapInterrupted": "Receiving: check interrupted at {probed}/{requested} — explorer unreachable or time ran out. Try again.",
+  "@receiveGapInterrupted": {
+    "description": "Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+
+  "indicesActionRetry": "Retry scan",
+  "indicesActionRestore": "Restore from backup",
+  "indicesActionSupport": "Contact support",
+  "indicesActionContinue": "Continue",
+  "indicesSeedRequiredTitle": "Unlock to derive the address",
+  "indicesSeedRequiredBody": "This wallet was created before the public account key was stored. Unlock the vault once: the key is derived and saved, and from then on receiving needs no seed.",
+  "indicesSeedMismatchTitle": "Seed does not match",
+  "indicesSeedMismatchBody": "The seed stored on this device does not derive this wallet’s addresses. For safety no public key is saved, so the addresses with history stay reachable. Check that you imported the right wallet or contact support.",
+  "@indicesSeedMismatchTitle": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "@indicesSeedMismatchBody": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "indicesActionUnlock": "Unlock"
 }

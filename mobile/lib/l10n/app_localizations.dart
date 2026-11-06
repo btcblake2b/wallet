@@ -5316,6 +5316,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This wallet has no seed: sign on the device that holds it.'**
   String get psbtNeedsSeed;
+
+  /// No description provided for @indicesCorruptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Address index unavailable'**
+  String get indicesCorruptTitle;
+
+  /// No description provided for @indicesCorruptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This wallet can read balances and history, but receiving and sending are disabled until the index state is restored. Verify your backup, then retry the scan or restart from zero with the warning shown.'**
+  String get indicesCorruptBody;
+
+  /// No description provided for @indicesAnomalousTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unusual address index'**
+  String get indicesAnomalousTitle;
+
+  /// No description provided for @indicesAnomalousBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved index is far beyond the expected range for this wallet. Restore from a backup or contact support: restarting from zero would reuse addresses.'**
+  String get indicesAnomalousBody;
+
+  /// No description provided for @indicesAdoptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New: rotating addresses'**
+  String get indicesAdoptionTitle;
+
+  /// No description provided for @indicesAdoptionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This wallet will now use a new address for each payment, so your receipts are no longer linked. Continue?'**
+  String get indicesAdoptionBody;
+
+  /// No description provided for @indicesAlreadyAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the address already assigned to you: no new address was created.'**
+  String get indicesAlreadyAssigned;
+
+  /// Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving: verified up to index {index}'**
+  String receiveGapFoundAtIndex(int index);
+
+  /// Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving: partial check, {probed}/{requested}'**
+  String receiveGapPartial(int probed, int requested);
+
+  /// Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving: check interrupted at {probed}/{requested} — explorer unreachable or time ran out. Try again.'**
+  String receiveGapInterrupted(int probed, int requested);
+
+  /// No description provided for @indicesActionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry scan'**
+  String get indicesActionRetry;
+
+  /// No description provided for @indicesActionRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from backup'**
+  String get indicesActionRestore;
+
+  /// No description provided for @indicesActionSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get indicesActionSupport;
+
+  /// No description provided for @indicesActionContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get indicesActionContinue;
+
+  /// No description provided for @indicesSeedRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock to derive the address'**
+  String get indicesSeedRequiredTitle;
+
+  /// No description provided for @indicesSeedRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This wallet was created before the public account key was stored. Unlock the vault once: the key is derived and saved, and from then on receiving needs no seed.'**
+  String get indicesSeedRequiredBody;
+
+  /// La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed).
+  ///
+  /// In en, this message translates to:
+  /// **'Seed does not match'**
+  String get indicesSeedMismatchTitle;
+
+  /// La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed).
+  ///
+  /// In en, this message translates to:
+  /// **'The seed stored on this device does not derive this wallet’s addresses. For safety no public key is saved, so the addresses with history stay reachable. Check that you imported the right wallet or contact support.'**
+  String get indicesSeedMismatchBody;
+
+  /// No description provided for @indicesActionUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get indicesActionUnlock;
 }
 
 class _AppLocalizationsDelegate

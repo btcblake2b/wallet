@@ -32,8 +32,9 @@ class WalletSnapshot {
   final List<UtxoInfo>? utxos;
 
   /// UTXO non spendibili perché payout di mining (coinbase) in periodo di
-  /// attesa: la rete non ne propaga la spesa prima di
-  /// [BitcoinNetworkConfig.coinbaseRelayMaturityBlocks] blocchi.
+  /// attesa: la rete non ne propaga la spesa prima della maturity della loro
+  /// epoca (25.920 blocchi per le coinbase dal 979.919, sblocco comune a
+  /// 979.919 per quelle del 973.440-979.918).
   ///
   /// PERCHÉ: NON concorrono a [balanceSats] — la UI li mostra a parte
   /// (badge + blocchi mancanti) e non devono essere selezionabili.

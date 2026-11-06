@@ -54,7 +54,9 @@ class LightningConnectionStore {
       }
       return out;
     } catch (e) {
-      debugPrint('[LoopEngineer] LightningConnectionStore: storico illeggibile');
+      debugPrint(
+        '[LoopEngineer] LightningConnectionStore: storico illeggibile',
+      );
       return const [];
     }
   }
@@ -80,6 +82,18 @@ class LightningConnectionStore {
     } catch (e) {
       debugPrint('[LoopEngineer] LightningConnectionStore: remember fallito');
     }
+  }
+
+  /// Registra nello storico la connessione ATTIVA, se presente.
+  ///
+  /// // PERCHÉ (30/10/2026): chi si è collegato con una versione precedente allo
+  /// // storico ha la URI nel solo campo "attivo" → dopo un disconnect il menu
+  /// // a tendina resterebbe vuoto per sempre. Questa migrazione all'avvio
+  /// // riporta nello storico ogni nodo già collegato.
+  Future<void> rememberActive() async {
+    final active = await load();
+    if (active == null) return;
+    await remember(active);
   }
 
   Future<LightningConnection?> load() async {

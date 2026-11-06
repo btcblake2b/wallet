@@ -151,13 +151,17 @@
   "walletDetailTxExportCsv": "CSV (taulukko)",
   "@walletDetailTxExportCopied": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportCopied": "Kopioitu leikepöydälle ({fileName})",
   "@walletDetailTxExportDownloaded": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportDownloaded": "Lataus aloitettu ({fileName})",
@@ -175,7 +179,6 @@
   "walletDetailTxPending": "Odottaa vahvistusta",
   "walletDetailTxReplaced": "Korvattu (poistettu mempoolista)",
   "walletDetailTxRetry": "Yritä uudelleen",
-
   "backupSeedTitle": "Siementen varmuuskopio",
   "backupSeedIntro": "Kirjoita siemenlauseesi paperille ja säilytä se turvallisessa paikassa. Se on ainoa tapa palauttaa varasi.",
   "backupSeedStart": "Aloita varmuuskopio",
@@ -221,14 +224,20 @@
   "walletDetailUtxoEmpty": "Käytettäviä UTXOita ei löytynyt",
   "@walletDetailUtxoConfirmations": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoConfirmations": "{count} vahvistusta",
   "@walletDetailUtxoSelected": {
     "placeholders": {
-      "count": {"type": "int"},
-      "sats": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "sats": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoSelected": "{count} valittu · {sats} sat",
@@ -246,7 +255,9 @@
   "walletDetailBumpFeeTitle": "Korota transaktiopalkkiota",
   "@walletDetailBumpFeeCurrent": {
     "placeholders": {
-      "fee": {"type": "int"}
+      "fee": {
+        "type": "int"
+      }
     }
   },
   "walletDetailBumpFeeCurrent": "Nykyinen palkkio: {fee} sat/vB",
@@ -323,7 +334,9 @@
   "importScriptTypeHint": "Osoitteet alkavat {prefix}",
   "@importScriptTypeHint": {
     "placeholders": {
-      "prefix": { "type": "String" }
+      "prefix": {
+        "type": "String"
+      }
     }
   },
   "importScreenHint": "sana1 sana2 sana3 ...",
@@ -446,7 +459,6 @@
   "walletDetailXpubCopied": "XPUB kopioitu",
   "walletDetailXpubDesc": "Tämä XPUB mahdollistaa kaikkien tulevien osoitteiden ja saldojen tarkastelun, mutta sillä ei voi käyttää varoja.",
   "walletDetailXpubTitle": "Lompakon XPUB",
-
   "explorerTitle": "Selain",
   "explorerAddressLabel": "Osoite",
   "explorerRefresh": "Päivitä",
@@ -725,7 +737,6 @@
   "lightningPeeringGateNewTitle": "Peering rajoitettu uuden protokollan julkaisuihin",
   "lightningPeeringGateNewBody": "Tämä solmu käyttää lopullisia feature-bittejä (option_blake2b 512, option_unified_sigs 514): solmut, joita ei ole päivitetty — julkaisu .4 ja vanhemmat — eivät voi muodostaa yhteyttä. Kyse on verkon valinnasta, ei sovelluksen tai bridgen ongelmasta. Vertaisten on päivitettävä julkaisuun .5 tai uudempaan.",
   "lightningPeersRegisteredOnly": "{count} rekisteröityä vertaista, ei yhtään yhdistetty",
-
   "lightningSwapOpen": "Maksa lasku ilman solmua (swap)",
   "lightningSwapWebOnlyNote": "Verkkosovellus: Lightning-maksut käyttävät swap-palveluntarjoajaa (solmua ei tarvita). Oman solmun yhdistäminen on Android-sovelluksessa.",
   "lightningSwapTitle": "Lightning-maksu palveluntarjoajan kautta",
@@ -921,5 +932,61 @@
   "psbtNoFrames": "PSBT-kehystä ei tunnistettu",
   "psbtScanProgress": "Kehyksiä luettu: {received}/{total}",
   "psbtSigning": "Allekirjoitetaan…",
-  "psbtNeedsSeed": "Tässä lompakossa ei ole siementä: allekirjoita laitteella, jossa se on."
+  "psbtNeedsSeed": "Tässä lompakossa ei ole siementä: allekirjoita laitteella, jossa se on.",
+  "indicesCorruptTitle": "Osoiteindeksin tila ei ole kaytettavissa",
+  "indicesCorruptBody": "Lompakko lukee edelleen saldon ja historian, mutta vastaanotto ja lahetys on estetty, kunnes indeksin tila palautetaan. Tarkista varmuuskopio, yrita skannausta uudelleen tai aloita nollasta naytetylla varoituksella.",
+  "indicesAnomalousTitle": "Poikkeava osoiteindeksi",
+  "indicesAnomalousBody": "Tallennettu indeksi on selvasti odotettua aluetta suurempi. Palauta varmuuskopiosta tai ota yhteytta tukeen: nollasta aloittaminen kayttaisi osoitteita uudelleen.",
+  "indicesAdoptionTitle": "Uutta: kiertavat osoitteet",
+  "indicesAdoptionBody": "Lompakko kayttaa nyt uutta osoitetta jokaisessa maksussa, joten maksut eivat ole enaa yhdistettavissa. Jatketaanko?",
+  "indicesAlreadyAssigned": "Tama on jo maaritetty osoite: uutta ei luotu.",
+  "receiveGapFoundAtIndex": "Vastaanotto: vahvistettu indeksiin {index} asti",
+  "@receiveGapFoundAtIndex": {
+    "description": "Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapPartial": "Vastaanotto: osittainen tarkistus, {probed}/{requested}",
+  "@receiveGapPartial": {
+    "description": "Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapInterrupted": "Vastaanotto: tarkistus keskeytyi kohtaan {probed}/{requested} — selain ei vastaa tai aika loppui. Yritä uudelleen.",
+  "@receiveGapInterrupted": {
+    "description": "Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+
+  "indicesActionRetry": "Yrita skannausta",
+  "indicesActionRestore": "Palauta varmuuskopiosta",
+  "indicesActionSupport": "Ota yhteytta tukeen",
+  "indicesActionContinue": "Jatka",
+  "indicesSeedRequiredTitle": "Avaa lompakko osoitteen johtamiseksi",
+  "indicesSeedRequiredBody": "Tama lompakko luotiin ennen julkisen tiliavaimen tallentamista. Avaa holvi kerran: avain johdetaan ja tallennetaan, ja sen jalkeen vastaanotto ei vaadi siemenlausetta.",
+  "indicesSeedMismatchTitle": "Seed ei vastaa",
+  "indicesSeedMismatchBody": "Tähän laitteeseen tallennettu seed ei johda tämän lompakon osoitteita. Turvallisuuden vuoksi julkista avainta ei tallenneta, jotta historialliset osoitteet pysyvät saavutettavina. Tarkista, että toit oikean lompakon, tai ota yhteyttä tukeen.",
+  "@indicesSeedMismatchTitle": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "@indicesSeedMismatchBody": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "indicesActionUnlock": "Avaa"
 }

@@ -18,6 +18,8 @@ import 'package:btc_blake2b_wallet/l10n/app_localizations.dart';
 import 'package:btc_blake2b_wallet/core/services/device_service.dart';
 import 'package:btc_blake2b_wallet/core/services/fiat_price.dart';
 import 'package:btc_blake2b_wallet/core/services/rbf_params_registry.dart';
+import 'package:btc_blake2b_wallet/core/services/receive_address_presenter.dart';
+import 'package:btc_blake2b_wallet/core/services/receive_address_service.dart';
 import 'package:btc_blake2b_wallet/core/services/wallet_repository.dart';
 import 'package:btc_blake2b_wallet/features/wallet/presentation/wallet_detail_screen.dart';
 import 'package:btc_blake2b_wallet/features/wallet/presentation/send_screen.dart';
@@ -31,6 +33,8 @@ class MockBitcoinService extends Mock implements BitcoinService {}
 class MockCryptoService extends Mock implements CryptoService {}
 
 class MockDeviceService extends Mock implements DeviceService {}
+
+class MockReceiveAddressService extends Mock implements ReceiveAddressService {}
 
 /// Costruisce uno snapshot di test "fresco" (fetchedAt = adesso).
 /// PERCHÉ: il Detail ora legge tutto da WalletSnapshot → i mock del servizio
@@ -1692,9 +1696,10 @@ void main() {
       await tester.tap(find.text('UTXO'));
       await tester.pumpAndSettle();
 
-      // Badge dedicato + countdown in BLOCCHI (6.480 − 600 = 5.880).
+      // Badge dedicato + countdown in BLOCCHI (25.920 − 600 = 25.320: altezza
+      // ignota → regola lunga dal 979.919).
       expect(find.text('Waiting period'), findsOneWidget);
-      expect(find.text('5880 blocks to unlock'), findsOneWidget);
+      expect(find.text('25320 blocks to unlock'), findsOneWidget);
 
       // Riga NON selezionabile: checkbox disabilitata e non spuntata.
       final waitingTile = tester.widget<CheckboxListTile>(
@@ -2023,6 +2028,271 @@ void main() {
 
       expect(find.text('Prima metti al sicuro la seed'), findsNothing);
       expect(find.text('first_address'), findsWidgets);
+    });
+  });
+
+  group('A2 — Ricevi fail-closed sugli indici (ADR 01/11-24)', () {
+    testWidgets('indici corrotti: nessun indirizzo, avviso dedicato', (
+      tester,
+    ) async {
+      // PERCHÉ: il vecchio `catch (_) -> publicAddress` mostrava /0/0 anche con
+      // gli indici corrotti (reuse). Ora il dialog Ricevi si ferma e spiega.
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        final text = details.exceptionAsString();
+        if (text.contains('ListTile background color') ||
+            text.contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      final wallet = WalletRecord.fromMap(<String, dynamic>{
+        'wallet_id': 'corrupt',
+        'encrypted_seed': 'test_seed',
+        'public_address': 'unsafe_first_address',
+        'device_id': 'test_device',
+        'created_at': '2024-01-01T00:00:00.000Z',
+        'seed_backup_confirmed': true,
+        'schema_version': 2,
+        'next_receive_index': -5,
+        'next_change_index': 0,
+      });
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+      when(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+        ),
+      ).thenAnswer((_) async => _snap());
+      when(
+        () => bitcoinService.fetchAddressInfo(any()),
+      ).thenAnswer((_) async => {'balance': 0, 'tx_count': 0});
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('it'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WalletDetailScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoinService,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Ricevi'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Ricevi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Stato indici non disponibile'), findsOneWidget);
+      // Il punto: nessun QR di ricezione viene generato in questo stato.
+      expect(find.byType(QrImageView), findsNothing);
+    });
+  });
+
+  group('A2 — Ricevi con indice ANOMALO (ADR 01/11-25 §3)', () {
+    testWidgets('anomalo a flag spento: avviso dedicato, NIENTE riparti da 0', (
+      tester,
+    ) async {
+      // PERCHÉ: `corrupt` e `anomalous` hanno uscite diverse. Se il dialog
+      // Ricevi avesse un pulsante «riparti da 0» hardcoded invece di usare
+      // WalletIndicesNotice, questo test lo scoprirebbe (sarebbe reuse
+      // informato: l'indice anomalo è NOTO).
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        final text = details.exceptionAsString();
+        if (text.contains('ListTile background color') ||
+            text.contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      final wallet = WalletRecord.fromMap(<String, dynamic>{
+        'wallet_id': 'anomalous',
+        'encrypted_seed': 'test_seed',
+        'public_address': 'first_address_anomalous',
+        'device_id': 'test_device',
+        'created_at': '2024-01-01T00:00:00.000Z',
+        'seed_backup_confirmed': true,
+        'schema_version': 2,
+        'next_receive_index': 15000,
+        'next_change_index': 0,
+      });
+      final walletRepository = MockWalletRepository();
+      final bitcoinService = MockBitcoinService();
+      when(
+        () => bitcoinService.fetchWalletSnapshot(
+          any(),
+          derivationPath: any(named: 'derivationPath'),
+        ),
+      ).thenAnswer((_) async => _snap());
+      when(
+        () => bitcoinService.fetchAddressInfo(any()),
+      ).thenAnswer((_) async => {'balance': 0, 'tx_count': 0});
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('it'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WalletDetailScreen(
+            wallet: wallet,
+            walletRepository: walletRepository,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoinService,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Ricevi'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Ricevi'));
+      await tester.pumpAndSettle();
+
+      // Il titolo dell'ANOMALO, non quello del corrotto.
+      expect(find.text('Indice anomalo'), findsOneWidget);
+      expect(find.text('Stato indici non disponibile'), findsNothing);
+      // Nessun QR e nessun «riparti da 0».
+      expect(find.byType(QrImageView), findsNothing);
+      expect(find.text('Novità: indirizzi a rotazione'), findsNothing);
+    });
+  });
+
+  group('A2 — backfill xpub: la seed si decifra UNA volta (ADR 02/11-32)', () {
+    // PERCHÉ il seam: il flag di rotazione è una costante di compilazione, quindi
+    // nei test il ramo con rotazione attiva non sarebbe raggiungibile — e proprio
+    // lì vive l'invariante «una decifratura, poi xpub-only». Il test inietta il
+    // servizio e verifica il comportamento della SCHERMATA (aggiornare `_wallet`
+    // con il record persistito), che è la parte che il repository non può
+    // garantire.
+    testWidgets('due tap su Ricevi → una sola decifratura della seed', (
+      tester,
+    ) async {
+      // PERCHÉ: il Detail usa ListTile dentro DecoratedBox → Flutter emette
+      // l'assert «ink splashes may be invisible» (rumore noto, non un difetto
+      // di questo test). Stesso filtro degli altri widget test del file.
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        final text = details.exceptionAsString();
+        if (text.contains('ListTile background color') ||
+            text.contains('ink splashes may be invisible')) {
+          return;
+        }
+        originalOnError?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      final repo = MockWalletRepository();
+      final bitcoin = MockBitcoinService();
+      final service = MockReceiveAddressService();
+      const mnemonic =
+          'abandon abandon abandon abandon abandon abandon abandon abandon '
+          'abandon abandon abandon about';
+      final legacy = WalletRecord(
+        walletId: 'test_id',
+        encryptedSeed: 'test_seed',
+        publicAddress: 'first_address',
+        deviceId: 'test_device',
+        createdAt: DateTime(2024, 1, 1),
+        seedBackupConfirmed: true,
+      );
+
+      when(() => repo.decryptSeed(any())).thenAnswer((_) async => mnemonic);
+      when(
+        () => bitcoin.fetchAddressInfo(any()),
+      ).thenAnswer((_) async => {'balance': 0, 'tx_count': 0});
+      when(
+        () => service.next(
+          any(),
+          mnemonic: any(named: 'mnemonic'),
+          adoptLegacy: any(named: 'adoptLegacy'),
+        ),
+      ).thenAnswer(
+        (_) async => ReceiveAddressResolution(
+          view: ReceiveAddressView.fresh,
+          address: 'bc1qfreshaddress0000000000000000000000',
+          index: 0,
+          // Il record persistito dal backfill: da qui in poi la schermata sa
+          // che l'xpub c'è.
+          record: legacy.copyWith(accountXpub: 'xpub_reale'),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('it'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WalletDetailScreen(
+            wallet: legacy,
+            walletRepository: repo,
+            biometricService: MockBiometricService(),
+            bitcoinService: bitcoin,
+            cryptoService: MockCryptoService(),
+            deviceService: MockDeviceService(),
+            receiveAddressService: service,
+            requireSeedBackupBeforeReceive: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Le interazioni del primo caricamento (saldo/fingerprint) non contano:
+      // qui interessa solo la decifratura fatta dal dialog Ricevi.
+      clearInteractions(repo);
+
+      Future<void> openReceive() async {
+        await tester.scrollUntilVisible(
+          find.text('Ricevi'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ricevi'));
+        await tester.pumpAndSettle();
+      }
+
+      await openReceive();
+      expect(find.byType(QrImageView), findsOneWidget);
+      // Chiude il dialog: il secondo tap è un gesto separato dell'utente.
+      await tester.tap(find.text('Chiudi'));
+      await tester.pumpAndSettle();
+
+      await openReceive();
+      expect(find.byType(QrImageView), findsOneWidget);
+
+      // L'invariante: la seed è stata decifrata una volta sola, e il servizio
+      // è stato chiamato due volte (la seconda senza mnemonic).
+      verify(() => repo.decryptSeed(any())).called(1);
+      final calls = verify(
+        () => service.next(
+          any(),
+          mnemonic: captureAny(named: 'mnemonic'),
+          adoptLegacy: any(named: 'adoptLegacy'),
+        ),
+      ).captured.cast<String?>();
+      expect(calls.length, 2);
+      expect(calls[0], mnemonic);
+      expect(calls[1], isNull);
     });
   });
 }

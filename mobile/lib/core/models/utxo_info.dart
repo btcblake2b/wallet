@@ -18,10 +18,16 @@ class UtxoInfo {
   // PERCHÉ (S7): 0 = pending, 1+ = confermata, null = sconosciuta (API fallita).
   // Campo OPZIONALE → zero breaking su costruttori/copyWith esistenti.
   final int? confirmations;
+  // PERCHÉ (A3-bis): altezza del blocco che contiene l'UTXO. Serve perché la
+  // maturity dipende dall'ALTEZZA della coinbase, non solo dalle conferme: le
+  // coinbase dell'epoca 973.440-979.918 si sbloccano tutte a 979.919, quelle
+  // da 979.919 maturano dopo 25.920 blocchi (vedi `CoinbaseMaturityRules`).
+  // `null` = altezza ignota → il guard applica la regola più restrittiva.
+  final int? blockHeight;
   // PERCHÉ (A3): i payout di mining arrivano da una coinbase e la rete non ne
-  // propaga la spesa prima della maturity di relay (6.480 blocchi sulla mainnet
-  // blake2b): il coin selection deve poterli riconoscere ed escludere.
-  // Default `false` → zero breaking sui costruttori esistenti.
+  // propaga la spesa prima della maturity di rete (25.920 blocchi sulla mainnet
+  // blake2b dal 979.919): il coin selection deve poterli riconoscere ed
+  // escludere. Default `false` → zero breaking sui costruttori esistenti.
   final bool isCoinbase;
 
   UtxoInfo({
@@ -34,6 +40,7 @@ class UtxoInfo {
     this.ownerAddress,
     this.ownerDerivationPath,
     this.confirmations,
+    this.blockHeight,
     this.isCoinbase = false,
   });
 
@@ -44,6 +51,7 @@ class UtxoInfo {
     String? ownerAddress,
     String? ownerDerivationPath,
     int? confirmations,
+    int? blockHeight,
     bool? isCoinbase,
   }) {
     return UtxoInfo(
@@ -56,6 +64,7 @@ class UtxoInfo {
       ownerAddress: ownerAddress ?? this.ownerAddress,
       ownerDerivationPath: ownerDerivationPath ?? this.ownerDerivationPath,
       confirmations: confirmations ?? this.confirmations,
+      blockHeight: blockHeight ?? this.blockHeight,
       isCoinbase: isCoinbase ?? this.isCoinbase,
     );
   }

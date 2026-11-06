@@ -2985,4 +2985,74 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get psbtNeedsSeed =>
       'Diese Wallet hat keinen Seed: signiere auf dem Gerät, das ihn hat.';
+
+  @override
+  String get indicesCorruptTitle => 'Adressindex nicht verfuegbar';
+
+  @override
+  String get indicesCorruptBody =>
+      'Diese Wallet kann Guthaben und Verlauf lesen, aber Empfangen und Senden sind gesperrt, bis der Indexzustand wiederhergestellt ist. Pruefe das Backup und starte den Scan erneut oder beginne mit dem angezeigten Hinweis bei null.';
+
+  @override
+  String get indicesAnomalousTitle => 'Ungewoehnlicher Adressindex';
+
+  @override
+  String get indicesAnomalousBody =>
+      'Der gespeicherte Index liegt weit ausserhalb des erwarteten Bereichs. Stelle aus einem Backup wieder her oder kontaktiere den Support: ein Neustart bei null wuerde Adressen wiederverwenden.';
+
+  @override
+  String get indicesAdoptionTitle => 'Neu: rotierende Adressen';
+
+  @override
+  String get indicesAdoptionBody =>
+      'Diese Wallet verwendet nun fuer jede Zahlung eine neue Adresse, damit Eingaenge nicht mehr verknuepft sind. Fortfahren?';
+
+  @override
+  String get indicesAlreadyAssigned =>
+      'Dies ist die bereits zugewiesene Adresse: es wurde keine neue erzeugt.';
+
+  @override
+  String receiveGapFoundAtIndex(int index) {
+    return 'Empfang: bis Index $index verifiziert';
+  }
+
+  @override
+  String receiveGapPartial(int probed, int requested) {
+    return 'Empfang: Teilprüfung, $probed/$requested';
+  }
+
+  @override
+  String receiveGapInterrupted(int probed, int requested) {
+    return 'Empfang: Prüfung bei $probed/$requested unterbrochen — Explorer nicht erreichbar oder Zeit abgelaufen. Erneut versuchen.';
+  }
+
+  @override
+  String get indicesActionRetry => 'Scan wiederholen';
+
+  @override
+  String get indicesActionRestore => 'Aus Backup wiederherstellen';
+
+  @override
+  String get indicesActionSupport => 'Support kontaktieren';
+
+  @override
+  String get indicesActionContinue => 'Weiter';
+
+  @override
+  String get indicesSeedRequiredTitle =>
+      'Entsperren, um die Adresse abzuleiten';
+
+  @override
+  String get indicesSeedRequiredBody =>
+      'Diese Wallet wurde erstellt, bevor der öffentliche Kontoschlüssel gespeichert wurde. Entsperre den Tresor einmal: der Schlüssel wird abgeleitet und gespeichert, danach braucht das Empfangen keine Seed mehr.';
+
+  @override
+  String get indicesSeedMismatchTitle => 'Seed passt nicht';
+
+  @override
+  String get indicesSeedMismatchBody =>
+      'Die auf diesem Gerät gespeicherte Seed leitet die Adressen dieser Wallet nicht ab. Aus Sicherheitsgründen wird kein Public Key gespeichert, damit die Adressen mit Historie erreichbar bleiben. Prüfe, ob du die richtige Wallet importiert hast, oder kontaktiere den Support.';
+
+  @override
+  String get indicesActionUnlock => 'Entsperren';
 }

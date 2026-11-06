@@ -1,13 +1,21 @@
-/// Maturity di relay di un output coinbase — guardia per il coin selection.
+/// Maturity di un output coinbase — guardia per il coin selection.
 ///
-/// PERCHÉ: da CLN `v26.06.8-blake2b.5` (e dalle regole di policy di Knots,
-/// PR `privkeyio/lightning#11`) un output di coinbase non viene propagato dai
-/// nodi della rete prima di [BitcoinNetworkConfig.coinbaseRelayMaturityBlocks]
-/// blocchi — 6.480 sulla mainnet blake2b, ~45 giorni al block time attuale
-/// (~600 s/blocco). Il periodo si misura in BLOCCHI: la UI mostra quanti
-/// blocchi mancano, non una data.
-/// Il mining del progetto paga in coinbase: un wallet che ne selezionasse uno
-/// costruirebbe una transazione che nessun peer accetta nel mempool.
+/// PERCHÉ: la rete non propaga la spesa di una coinbase prima della maturity.
+/// Dal blocco 979.919 (Knots `v29.4.3`, PR `bitcoinknots#419`, consenso
+/// `knots#468`) le regole in vigore sulla mainnet blake2b sono DUE:
+///
+/// - coinbase minate fra 973.440 e 979.918 (45 giorni): si sbloccano tutte
+///   insieme a 979.919;
+/// - coinbase minate da 979.919 in poi (180 giorni): 25.920 blocchi di attesa.
+///
+/// Quindi la profondità dovuta dipende dall'ALTEZZA della coinbase
+/// ([UtxoInfo.blockHeight]): una costante unica sbaglia in entrambe le
+/// direzioni. I parametri stanno in [CoinbaseMaturityRules]
+/// ([BitcoinNetworkConfig.coinbaseMaturityRules]); qui c'è solo la decisione.
+/// Il periodo si misura in BLOCCHI: la UI mostra quanti blocchi mancano, non
+/// una data. Il mining del progetto paga in coinbase: un wallet che ne
+/// selezionasse una immatura costruirebbe una transazione che nessun peer
+/// accetta nel mempool.
 library;
 
 import '../config/bitcoin_network_config.dart';
@@ -33,15 +41,29 @@ bool isCoinbaseRelayable({
   return confs >= maturityBlocks;
 }
 
-/// Come [isCoinbaseRelayable], applicato a un [UtxoInfo] e con la maturity
-/// della rete corrente come default.
+/// Come [isCoinbaseRelayable], applicato a un [UtxoInfo]: la profondità dovuta
+/// non è una costante di rete, dipende dall'epoca della coinbase.
 bool isUtxoRelayable(UtxoInfo utxo, {int? maturityBlocks}) {
   return isCoinbaseRelayable(
     isCoinbase: utxo.isCoinbase,
     confirmations: utxo.confirmations,
-    maturityBlocks:
-        maturityBlocks ?? BitcoinNetworkConfig.coinbaseRelayMaturityBlocks,
+    maturityBlocks: relayRequiredDepth(utxo, maturityBlocks: maturityBlocks),
   );
+}
+
+/// Conferme che la rete pretende da [utxo] prima di propagarne la spesa.
+///
+/// - [maturityBlocks] esplicito → profondità fissa (test e reti senza epoche).
+/// - [UtxoInfo.blockHeight] nota → regola dell'epoca di quella coinbase.
+/// - altezza ignota → profondità della regola PIÙ RESTRITTIVA: senza altezza
+///   non si può datare la coinbase, e una tx non propagabile è un fallimento
+///   silenzioso (resta nel wallet, non nel mempool).
+int relayRequiredDepth(UtxoInfo utxo, {int? maturityBlocks}) {
+  if (maturityBlocks != null) return maturityBlocks;
+  final rules = BitcoinNetworkConfig.coinbaseMaturityRules;
+  final height = utxo.blockHeight;
+  if (height == null) return rules.longMaturityBlocks;
+  return rules.requiredDepth(height);
 }
 
 /// Esito della separazione di un elenco di UTXO in spendibili e bloccati.
@@ -53,13 +75,12 @@ typedef UtxoSplit = ({List<UtxoInfo> spendable, List<UtxoInfo> blocked});
 /// - `null` → coinbase con conferme ignote (API fallita): non si può dire
 ///   quanti blocchi mancano, ma l'UTXO resta NON spendibile (prudenza).
 int? remainingRelayBlocks(UtxoInfo utxo, {int? maturityBlocks}) {
-  final maturity =
-      maturityBlocks ?? BitcoinNetworkConfig.coinbaseRelayMaturityBlocks;
   if (!utxo.isCoinbase) return 0;
-  if (maturity <= 0) return 0;
+  final depth = relayRequiredDepth(utxo, maturityBlocks: maturityBlocks);
+  if (depth <= 0) return 0;
   final confs = utxo.confirmations;
   if (confs == null) return null;
-  final missing = maturity - confs;
+  final missing = depth - confs;
   return missing > 0 ? missing : 0;
 }
 

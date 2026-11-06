@@ -388,10 +388,11 @@ void main() {
       await tester.tap(find.text('Waiting period: 0.00050000 BTC'));
       await tester.pumpAndSettle();
 
-      // Badge dedicato + countdown in BLOCCHI (6.480 − 600 = 5.880):
-      // una volta nella riga informativa del saldo, una nella riga UTXO.
+      // Badge dedicato + countdown in BLOCCHI (25.920 − 600 = 25.320: altezza
+      // ignota → si applica la regola lunga dal 979.919): una volta nella riga
+      // informativa del saldo, una nella riga UTXO.
       expect(find.text('Waiting period'), findsOneWidget);
-      expect(find.textContaining('5880 blocks to unlock'), findsNWidgets(2));
+      expect(find.textContaining('25320 blocks to unlock'), findsNWidgets(2));
 
       // Riga NON selezionabile: checkbox disabilitata.
       final waitingTile = tester.widget<CheckboxListTile>(

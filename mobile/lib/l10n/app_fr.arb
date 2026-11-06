@@ -50,7 +50,8 @@
   "settingsAppLockEnabled": "Verrouillage activé",
   "settingsAppLockDisabled": "Verrouillage désactivé",
   "settingsExplorerMirrors": "Explorateurs de secours",
-  "settingsExplorerMirrorsDesc": "Si mempool.guide ne répond pas, l''app interroge deux miroirs communautaires. Désactivez pour n''utiliser que mempool.guide.",  "settingsSectionInterface": "Interface",
+  "settingsExplorerMirrorsDesc": "Si mempool.guide ne répond pas, l''app interroge deux miroirs communautaires. Désactivez pour n''utiliser que mempool.guide.",
+  "settingsSectionInterface": "Interface",
   "settingsInfoDots": "Aides info",
   "settingsInfoDotsDesc": "Afficher les petits boutons d''information qui expliquent chaque fonctionnalité",
   "guideTitle": "Comment ça marche",
@@ -150,13 +151,17 @@
   "walletDetailTxExportCsv": "CSV (tableur)",
   "@walletDetailTxExportCopied": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportCopied": "Copié dans le presse-papiers ({fileName})",
   "@walletDetailTxExportDownloaded": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportDownloaded": "Téléchargement lancé ({fileName})",
@@ -174,7 +179,6 @@
   "walletDetailTxPending": "En attente",
   "walletDetailTxReplaced": "Remplacée (retirée du mempool)",
   "walletDetailTxRetry": "Réessayer",
-
   "backupSeedTitle": "Sauvegarde de la phrase",
   "backupSeedIntro": "Écrivez votre phrase de récupération sur papier et rangez-la en lieu sûr. Ceci est le seul moyen de récupérer vos fonds.",
   "backupSeedStart": "Commencer la sauvegarde",
@@ -220,14 +224,20 @@
   "walletDetailUtxoEmpty": "Aucun UTXO dépensable trouvé",
   "@walletDetailUtxoConfirmations": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoConfirmations": "{count} confirmations",
   "@walletDetailUtxoSelected": {
     "placeholders": {
-      "count": {"type": "int"},
-      "sats": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "sats": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoSelected": "{count} sélectionnés · {sats} sat",
@@ -245,7 +255,9 @@
   "walletDetailBumpFeeTitle": "Augmenter les frais de transaction",
   "@walletDetailBumpFeeCurrent": {
     "placeholders": {
-      "fee": {"type": "int"}
+      "fee": {
+        "type": "int"
+      }
     }
   },
   "walletDetailBumpFeeCurrent": "Frais actuels : {fee} sat/vB",
@@ -322,7 +334,9 @@
   "importScriptTypeHint": "Les adresses commencent par {prefix}",
   "@importScriptTypeHint": {
     "placeholders": {
-      "prefix": { "type": "String" }
+      "prefix": {
+        "type": "String"
+      }
     }
   },
   "importScreenHint": "mot1 mot2 mot3 ...",
@@ -445,7 +459,6 @@
   "walletDetailXpubCopied": "XPUB copié",
   "walletDetailXpubDesc": "Ce XPUB permet de consulter toutes les adresses et soldes futurs mais ne peut pas dépenser les fonds.",
   "walletDetailXpubTitle": "XPUB du portefeuille",
-
   "explorerTitle": "Explorateur",
   "explorerAddressLabel": "Adresse",
   "explorerRefresh": "Actualiser",
@@ -724,7 +737,6 @@
   "lightningPeeringGateNewTitle": "Peering limité aux versions du nouveau protocole",
   "lightningPeeringGateNewBody": "Ce nœud utilise les bits de fonctionnalité définitifs (option_blake2b 512, option_unified_sigs 514) : les nœuds non mis à jour — version .4 et antérieures — ne peuvent pas se connecter. C''est un choix du réseau, pas un problème de l''app ni du bridge. Les pairs doivent passer à la version .5 ou ultérieure.",
   "lightningPeersRegisteredOnly": "{count} pairs enregistrés, aucun connecté",
-
   "lightningSwapOpen": "Payer une facture sans nœud (swap)",
   "lightningSwapWebOnlyNote": "Application web : les paiements Lightning passent par un fournisseur de swap (aucun nœud requis). La connexion de votre propre nœud est disponible dans l''application Android.",
   "lightningSwapTitle": "Paiement Lightning via fournisseur",
@@ -920,5 +932,61 @@
   "psbtNoFrames": "Aucune trame PSBT reconnue",
   "psbtScanProgress": "Trames lues : {received}/{total}",
   "psbtSigning": "Signature…",
-  "psbtNeedsSeed": "Ce portefeuille n''a pas de seed : signe sur l''appareil qui la détient."
+  "psbtNeedsSeed": "Ce portefeuille n''a pas de seed : signe sur l''appareil qui la détient.",
+  "indicesCorruptTitle": "Etat des index indisponible",
+  "indicesCorruptBody": "Le portefeuille lit encore le solde et l’historique, mais la reception et l’envoi sont desactives jusqu’a la restauration de l’etat des index. Verifiez la sauvegarde, puis relancez le scan ou repartez de zero avec l’avertissement affiche.",
+  "indicesAnomalousTitle": "Index inhabituel",
+  "indicesAnomalousBody": "L’index enregistre depasse largement la plage attendue. Restaurez depuis une sauvegarde ou contactez le support : repartir de zero reutiliserait des adresses.",
+  "indicesAdoptionTitle": "Nouveau : adresses tournantes",
+  "indicesAdoptionBody": "Le portefeuille utilise desormais une nouvelle adresse pour chaque paiement, vos encaissements ne sont plus lies. Continuer ?",
+  "indicesAlreadyAssigned": "Ceci est l’adresse deja attribuee : aucune nouvelle adresse n’a ete creee.",
+  "receiveGapFoundAtIndex": "Réception : vérifiée jusqu’à l’indice {index}",
+  "@receiveGapFoundAtIndex": {
+    "description": "Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapPartial": "Réception : vérification partielle, {probed}/{requested}",
+  "@receiveGapPartial": {
+    "description": "Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapInterrupted": "Réception : vérification interrompue à {probed}/{requested} — explorateur injoignable ou temps écoulé. Réessayez.",
+  "@receiveGapInterrupted": {
+    "description": "Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+
+  "indicesActionRetry": "Relancer le scan",
+  "indicesActionRestore": "Restaurer depuis une sauvegarde",
+  "indicesActionSupport": "Contacter le support",
+  "indicesActionContinue": "Continuer",
+  "indicesSeedRequiredTitle": "Deverrouiller pour deriver l’adresse",
+  "indicesSeedRequiredBody": "Ce portefeuille a ete cree avant l’enregistrement de la cle publique du compte. Deverrouillez le coffre une fois : la cle est derivee et enregistree, ensuite recevoir ne demande plus la phrase.",
+  "indicesSeedMismatchTitle": "Seed non concordante",
+  "indicesSeedMismatchBody": "La seed enregistrée sur cet appareil ne dérive pas les adresses de ce portefeuille. Par sécurité aucune clé publique n’est enregistrée, afin que les adresses ayant un historique restent accessibles. Vérifie que tu as importé le bon portefeuille ou contacte le support.",
+  "@indicesSeedMismatchTitle": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "@indicesSeedMismatchBody": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "indicesActionUnlock": "Deverrouiller"
 }

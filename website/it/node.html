@@ -42,20 +42,20 @@
     <div class="download-box">
       <p><strong>Prima di scaricare</strong>: ottieni l'installer solo da questa pagina (dominio <code>btcblake2b.org</code>) o dal repository GitHub ufficiale.</p>
       <a class="btn btn-primary btn-lg" href="https://github.com/btcblake2b/control-plane/releases/latest" rel="noopener">Scarica l'installer (GitHub Releases)</a>
-      <p class="small">Release <strong>v0.3.0</strong> — pacchetto <code>tlw-node-installer-0.3.0.tar.gz</code>, con <code>SHA256SUMS</code> (checksum del pacchetto e del bridge).</p>
+      <p class="small">Release <strong>v0.4.0</strong> — pacchetto <code>tlw-node-installer-0.4.0.tar.gz</code>, con <code>SHA256SUMS</code> (checksum del pacchetto e del bridge).</p>
 
       <h2>Verifica il checksum (SHA-256)</h2>
-      <p>Il file <code>tlw-node-installer-0.3.0.tar.gz</code> deve avere questo hash:</p>
-      <pre class="checksum" aria-label="Checksum SHA-256 del pacchetto installer"><code>SHA256(tlw-node-installer-0.3.0.tar.gz) = <span id="checksum">b3ed03d9dc2fe6f6112d2db72769c0eb8ea8cd85ddce18763e357bfd70268422</span></code></pre>
+      <p>Il file <code>tlw-node-installer-0.4.0.tar.gz</code> deve avere questo hash:</p>
+      <pre class="checksum" aria-label="Checksum SHA-256 del pacchetto installer"><code>SHA256(tlw-node-installer-0.4.0.tar.gz) = <span id="checksum">0e312b98ca44d23f842023dcd53e0c40977cccf82736a88732b4f99da8dbf465</span></code></pre>
       <h3>Verifica su Linux</h3>
-      <pre><code>sha256sum tlw-node-installer-0.3.0.tar.gz</code></pre>
+      <pre><code>sha256sum tlw-node-installer-0.4.0.tar.gz</code></pre>
       <h3>Verifica su Windows (PowerShell)</h3>
-      <pre><code>Get-FileHash .\tlw-node-installer-0.3.0.tar.gz -Algorithm SHA256</code></pre>
+      <pre><code>Get-FileHash .\tlw-node-installer-0.4.0.tar.gz -Algorithm SHA256</code></pre>
     </div>
 
     <h2>Installazione (3 comandi)</h2>
-    <pre><code>tar -xzf tlw-node-installer-0.3.0.tar.gz
-cd tlw-node-installer-0.3.0
+    <pre><code>tar -xzf tlw-node-installer-0.4.0.tar.gz
+cd tlw-node-installer-0.4.0
 ./install.sh --bitcoind-rpc rpcuser:rpcpass@127.0.0.1:8332</code></pre>
     <p class="small">Eseguilo con il tuo utente normale: <code>sudo</code> non è mai richiesto.</p>
     <p>Alla fine l'installer stampa la <strong>stringa di connessione</strong> (URI NWC/NCC) — vedi “Collegare l'app” qui sotto per dove trovarla e un esempio di formato.</p>

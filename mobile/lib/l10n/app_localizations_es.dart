@@ -2982,4 +2982,73 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get psbtNeedsSeed =>
       'Esta cartera no tiene semilla: fírmala en el dispositivo que la tiene.';
+
+  @override
+  String get indicesCorruptTitle => 'Estado de indices no disponible';
+
+  @override
+  String get indicesCorruptBody =>
+      'La cartera sigue leyendo saldo e historial, pero recibir y enviar estan desactivados hasta restaurar el estado de los indices. Verifica la copia de seguridad y reintenta el escaneo o empieza de cero con el aviso mostrado.';
+
+  @override
+  String get indicesAnomalousTitle => 'Indice anomalo';
+
+  @override
+  String get indicesAnomalousBody =>
+      'El indice guardado esta muy por encima del rango esperado. Restaura desde una copia de seguridad o contacta con soporte: empezar de cero reutilizaria direcciones.';
+
+  @override
+  String get indicesAdoptionTitle => 'Nuevo: direcciones rotativas';
+
+  @override
+  String get indicesAdoptionBody =>
+      'La cartera usara una direccion nueva para cada pago, asi los cobros dejan de estar vinculados. Continuar?';
+
+  @override
+  String get indicesAlreadyAssigned =>
+      'Esta es la direccion ya asignada: no se creo una nueva.';
+
+  @override
+  String receiveGapFoundAtIndex(int index) {
+    return 'Recepción: verificado hasta el índice $index';
+  }
+
+  @override
+  String receiveGapPartial(int probed, int requested) {
+    return 'Recepción: verificación parcial, $probed/$requested';
+  }
+
+  @override
+  String receiveGapInterrupted(int probed, int requested) {
+    return 'Recepción: verificación interrumpida en $probed/$requested — explorador inaccesible o tiempo agotado. Reintenta.';
+  }
+
+  @override
+  String get indicesActionRetry => 'Reintentar escaneo';
+
+  @override
+  String get indicesActionRestore => 'Restaurar desde copia';
+
+  @override
+  String get indicesActionSupport => 'Contactar con soporte';
+
+  @override
+  String get indicesActionContinue => 'Continuar';
+
+  @override
+  String get indicesSeedRequiredTitle => 'Desbloquea para derivar la direccion';
+
+  @override
+  String get indicesSeedRequiredBody =>
+      'Esta cartera se creo antes de guardar la clave publica de la cuenta. Desbloquea la boveda una vez: la clave se deriva y se guarda, y desde entonces recibir ya no necesita la semilla.';
+
+  @override
+  String get indicesSeedMismatchTitle => 'Seed no coincide';
+
+  @override
+  String get indicesSeedMismatchBody =>
+      'La semilla guardada en este dispositivo no deriva las direcciones de este monedero. Por seguridad no se guarda ninguna clave pública, para que las direcciones con historial sigan siendo alcanzables. Comprueba que importaste el monedero correcto o contacta con el soporte.';
+
+  @override
+  String get indicesActionUnlock => 'Desbloquear';
 }

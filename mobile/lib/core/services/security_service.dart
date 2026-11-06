@@ -28,10 +28,12 @@ class SecurityService {
     Future<void> Function()? screenshotOn,
     Future<void> Function()? screenshotOff,
     void Function()? onForceKill,
+    String? configuredSignatures,
   }) {
     _emulateNative = emulateNative;
     _testing = true;
     _getSignatureOverride = getSignature;
+    _configuredSignaturesOverride = configuredSignatures;
     _isJailbrokenOverride = isJailbroken;
     _screenshotOnOverride = screenshotOn;
     _screenshotOffOverride = screenshotOff;
@@ -48,6 +50,12 @@ class SecurityService {
   bool _testing = false;
 
   Future<String> Function()? _getSignatureOverride;
+
+  /// PERCHÉ: `Env.appSignature` viene letto a compile-time dal `.env` di chi
+  /// esegue i test, quindi i due rami (configurata / vuota) sarebbero
+  /// mutuamente esclusivi e uno dei due resterebbe sempre skippato. Con
+  /// l'override entrambi sono esercitabili in modo deterministico.
+  String? _configuredSignaturesOverride;
   Future<bool> Function()? _isJailbrokenOverride;
   Future<void> Function()? _screenshotOnOverride;
   Future<void> Function()? _screenshotOffOverride;
@@ -220,7 +228,9 @@ class SecurityService {
       return true;
     }
 
-    if (Env.appSignature.isEmpty) {
+    final configuredSignatures =
+        _configuredSignaturesOverride ?? Env.appSignature;
+    if (configuredSignatures.isEmpty) {
       // PERCHÉ (audit R2/F5): fail-closed in release — senza APP_SIGNATURE un
       // APK ripacchettato/firmato con chiave diversa non sarebbe rilevabile.
       // Configurare la firma dal log di una build debug ("Add this to .env as
@@ -237,7 +247,7 @@ class SecurityService {
           await (_getSignatureOverride ?? getAppSignature)();
       final integrityOk = evaluateIntegrity(
         currentSignature: currentSignature,
-        configuredSignatures: Env.appSignature,
+        configuredSignatures: configuredSignatures,
       );
       if (!integrityOk) {
         // PERCHÉ (diagnosi v0.1.1): un mismatch in release si manifesta solo
@@ -245,7 +255,7 @@ class SecurityService {
         // Le firme sono dati pubblici (incorporate nell'APK stesso).
         debugPrint(
           'SECURITY: signature mismatch — corrente=[$currentSignature] '
-          'attesa=[${Env.appSignature}]',
+          'attesa=[$configuredSignatures]',
         );
       }
       return integrityOk;

@@ -1,9 +1,7 @@
 {
   "@@locale": "it",
   "@@last_modified": "2026-07-27",
-
   "appTitle": "Btc Blake2b Wallet",
-
   "homeScreenTitle": "Btc Blake2b Wallet",
   "homeNoConnectionTitle": "Nessuna connessione",
   "homeNoConnectionCreate": "Impossibile creare il wallet senza una connessione a internet attiva. La creazione richiede di verificare l''indirizzo sulla rete. Riprova quando la connessione sarà ristabilita.",
@@ -52,7 +50,8 @@
   "settingsAppLockEnabled": "Blocco app attivato",
   "settingsAppLockDisabled": "Blocco app disattivato",
   "settingsExplorerMirrors": "Explorer di riserva",
-  "settingsExplorerMirrorsDesc": "Se mempool.guide non risponde, l''app interroga due mirror comunitari. Disattiva per usare solo mempool.guide.",  "settingsSectionInterface": "Interfaccia",
+  "settingsExplorerMirrorsDesc": "Se mempool.guide non risponde, l''app interroga due mirror comunitari. Disattiva per usare solo mempool.guide.",
+  "settingsSectionInterface": "Interfaccia",
   "settingsInfoDots": "Suggerimenti informativi",
   "settingsInfoDotsDesc": "Mostra i pallini info che spiegano ogni funzione",
   "guideTitle": "Come funziona",
@@ -138,7 +137,6 @@
   "appLockPromptLater": "Più tardi",
   "aboutLicensesOpenOnline": "Apri online",
   "homeWalletSemantics": "Wallet {name}{balance}",
-
   "walletDetailTitle": "Portafoglio",
   "walletDetailCopied": "{label} copiato. Verrà rimosso tra 60s.",
   "walletDetailAddress": "Indirizzo",
@@ -153,13 +151,17 @@
   "walletDetailTxExportCsv": "CSV (foglio di calcolo)",
   "@walletDetailTxExportCopied": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportCopied": "Copiato negli appunti ({fileName})",
   "@walletDetailTxExportDownloaded": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportDownloaded": "Download avviato ({fileName})",
@@ -177,7 +179,6 @@
   "walletDetailTxPending": "In attesa di conferma",
   "walletDetailTxReplaced": "Sostituita (espulsa dal mempool)",
   "walletDetailTxRetry": "Riprova",
-
   "backupSeedTitle": "Backup della seed",
   "backupSeedIntro": "Scrivi la seed phrase su carta e conservala in un luogo sicuro. È il solo modo per recuperare i fondi.",
   "backupSeedStart": "Inizia il backup",
@@ -193,7 +194,6 @@
   "backupSeedSkipWarning": "Se salti, rischi di perdere i fondi se perdi questo dispositivo. Puoi farlo in seguito dal dettaglio wallet.",
   "walletDetailSend": "Invia",
   "walletDetailReceive": "Ricevi",
-
   "sendScreenTitle": "Invia BTC",
   "sendScreenAddressLabel": "Indirizzo destinatario",
   "sendScreenAmountLabel": "Importo (BTC)",
@@ -214,8 +214,12 @@
   "sendScreenSending": "Invio in corso...",
   "@homeDeleteMultiSummary": {
     "placeholders": {
-      "deleted": {"type": "int"},
-      "errors": {"type": "int"},
+      "deleted": {
+        "type": "int"
+      },
+      "errors": {
+        "type": "int"
+      },
       "error": {}
     }
   },
@@ -231,14 +235,20 @@
   "walletDetailUtxoEmpty": "Nessun UTXO spendibile trovato",
   "@walletDetailUtxoConfirmations": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoConfirmations": "{count} conferme",
   "@walletDetailUtxoSelected": {
     "placeholders": {
-      "count": {"type": "int"},
-      "sats": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "sats": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoSelected": "{count} selezionati · {sats} sat",
@@ -256,7 +266,9 @@
   "walletDetailBumpFeeTitle": "Aumenta la fee della transazione",
   "@walletDetailBumpFeeCurrent": {
     "placeholders": {
-      "fee": {"type": "int"}
+      "fee": {
+        "type": "int"
+      }
     }
   },
   "walletDetailBumpFeeCurrent": "Fee attuale: {fee} sat/vB",
@@ -279,7 +291,9 @@
   "sendBatchToggleSingle": "Un destinatario",
   "@sendBatchRecipientLabel": {
     "placeholders": {
-      "index": {"type": "int"}
+      "index": {
+        "type": "int"
+      }
     }
   },
   "sendBatchRecipientLabel": "Destinatario {index}",
@@ -292,7 +306,9 @@
   "sendBatchMinRecipients": "Servono almeno 2 destinatari per un invio multiplo",
   "@sendBatchConfirmRecipients": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sendBatchConfirmRecipients": "{count} destinatari",
@@ -310,8 +326,12 @@
   "sendScreenMaxHelper": "Max: {amount}",
   "@sendScreenUtxoSummary": {
     "placeholders": {
-      "sats": {"type": "int"},
-      "count": {"type": "int"}
+      "sats": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sendScreenUtxoSummary": "{sats} sat · {count} UTXO",
@@ -343,7 +363,6 @@
   "sendConfirmTitle": "Conferma transazione",
   "sendConfirmWarning": "Questa transazione è irreversibile. Verifica i dettagli prima di confermare.",
   "sendConfirmSend": "Conferma e Invia",
-
   "importScreenTitle": "Importa Wallet",
   "importScreenHeading": "Inserisci la seed phrase",
   "importScreenSubtitle": "Inserisci la frase mnemonica (12, 15, 18, 21 o 24 parole) separata da spazi, poi scegli il tipo di account corrispondente al wallet originale.",
@@ -355,7 +374,9 @@
   "importScriptTypeHint": "Gli indirizzi iniziano con {prefix}",
   "@importScriptTypeHint": {
     "placeholders": {
-      "prefix": { "type": "String" }
+      "prefix": {
+        "type": "String"
+      }
     }
   },
   "importScreenHint": "word1 word2 word3 ...",
@@ -372,10 +393,6 @@
   "importWatchOnlyValidateEmpty": "Inserisci l''xpub dell''account.",
   "importWatchOnlyValidatePrefix": "L''xpub deve iniziare con \"xpub\" (mainnet).",
   "watchOnlyBadge": "Solo visualizzazione",
-
-
-
-
   "passwordDialogCreateTitle": "Crea Password di Sicurezza",
   "passwordDialogCreateHint": "Inserisci una password sicura",
   "passwordDialogCreateConfirm": "Conferma password",
@@ -385,7 +402,6 @@
   "passwordDialogEnterHint": "Inserisci la tua password",
   "passwordDialogEnter": "Conferma",
   "passwordDialogWrong": "Password errata",
-
   "languageSelector": "Lingua",
   "languageSelectorAuto": "🌐 Automatica (sistema)",
   "languageSelectorEn": "🇬🇧 English",
@@ -395,7 +411,6 @@
   "languageSelectorEs": "🇪🇸 Español",
   "languageSelectorZhCN": "🇨🇳 中文",
   "languageSelectorFrCA": "🇨🇦 Français (CA)",
-
   "walletDetailRefresh": "Aggiorna",
   "walletDetailDeleteTitle": "Elimina Wallet?",
   "walletDetailDeleteConfirm": "Elimina definitivamente",
@@ -438,7 +453,6 @@
   "walletDetailErrorAddresses": "Errore derivazione indirizzi: {error}",
   "walletDetailValidSig": "FIRMA VALIDA ✓",
   "walletDetailInvalidSig": "FIRMA NON VALIDA ✗",
-
   "donateTitle": "Supporta il progetto ❤️",
   "donatePhrase": "☕ \"Se il progetto ti è utile, offrici un caffè virtuale\"",
   "donateAddressLabel": "Indirizzo Bitcoin per donazioni:",
@@ -449,8 +463,6 @@
   "donateNoWalletMessage": "Non è stato trovato un wallet Bitcoin installato sul dispositivo. Puoi comunque copiare l''indirizzo e incollarlo nel tuo wallet preferito.",
   "donateOpenWallet": "Apri nel wallet",
   "donateButton": "Supporta il progetto ❤️",
-
-
   "onboardingTitle": "Benvenuto in Btc Blake2b Wallet",
   "onboardingSubtitle": "Wallet Bitcoin open-source. Self-custody. No KYC.",
   "onboardingResidenceLabel": "Paese di residenza fiscale",
@@ -468,7 +480,6 @@
   "onboardingValidationResidence": "Seleziona il tuo paese di residenza fiscale",
   "onboardingLinkTerms": "Termini di Servizio",
   "onboardingLinkPrivacy": "Informativa sulla Privacy",
-
   "aboutTitle": "Info su Btc Blake2b Wallet",
   "aboutDescription": "Btc Blake2b Wallet è un wallet Bitcoin open-source self-custody. Nessuna registrazione, nessun KYC, nessun tracciamento. Le tue chiavi, i tuoi bitcoin.",
   "aboutLicenseTitle": "Licenza",
@@ -476,7 +487,6 @@
   "aboutThirdPartyLicensesDesc": "Visualizza l''elenco completo delle licenze open-source",
   "aboutBuiltWith": "Realizzato con",
   "aboutDisclaimer": "Questo software è fornito \"COSÌ COM''È\" senza garanzie di alcun tipo.",
-
   "walletDetailShowSeedTitle": "Visualizzare seed?",
   "walletDetailShowSeedContent": "La seed phrase permette di accedere a tutti i fondi. Assicurati di essere in un luogo sicuro.",
   "walletDetailShowSeedConfirm": "Sì, mostra",
@@ -489,7 +499,6 @@
   "walletDetailHideSeed": "Nascondi",
   "walletDetailBackupNotConfirmed": "Backup non confermato",
   "walletDetailBackupNotConfirmedDesc": "Non hai ancora salvato la seed phrase. Se perdi il dispositivo o reinstalli l''app, perderai permanentemente l''accesso ai tuoi fondi.",
-
   "explorerTitle": "Esplora nodo",
   "explorerAddressLabel": "Indirizzo",
   "explorerRefresh": "Ricarica",
@@ -768,7 +777,6 @@
   "lightningPeeringGateNewTitle": "Peering limitato alle release del nuovo protocollo",
   "lightningPeeringGateNewBody": "Questo nodo usa i feature bit definitivi (option_blake2b 512, option_unified_sigs 514): i nodi non aggiornati — release .4 e precedenti — non possono connettersi. È una scelta della rete, non un problema dell''app o del bridge. I peer devono aggiornare alla release .5 o successiva.",
   "lightningPeersRegisteredOnly": "{count} peer registrati, nessuno connesso",
-
   "lightningSwapOpen": "Paga un invoice senza nodo (swap)",
   "lightningSwapWebOnlyNote": "App web: i pagamenti Lightning usano un provider di swap (nessun nodo richiesto). La connessione al tuo nodo è disponibile nell''app Android.",
   "lightningSwapTitle": "Pagamento Lightning via provider",
@@ -964,5 +972,61 @@
   "psbtNoFrames": "Nessun frame PSBT riconosciuto",
   "psbtScanProgress": "Frame letti: {received}/{total}",
   "psbtSigning": "Firma in corso…",
-  "psbtNeedsSeed": "Questo wallet non ha il seed: firmala sul dispositivo che lo possiede."
+  "psbtNeedsSeed": "Questo wallet non ha il seed: firmala sul dispositivo che lo possiede.",
+  "indicesCorruptTitle": "Stato indici non disponibile",
+  "indicesCorruptBody": "Il wallet legge ancora saldo e storico, ma ricezione e invio sono disabilitati finché lo stato degli indici non viene ripristinato. Verifica il backup, poi riprova la scansione o riparti da zero con l’avviso mostrato.",
+  "indicesAnomalousTitle": "Indice anomalo",
+  "indicesAnomalousBody": "L’indice salvato è molto oltre l’intervallo atteso per questo wallet. Ripristina da un backup o contatta il supporto: ripartire da zero riuserebbe indirizzi già derivati.",
+  "indicesAdoptionTitle": "Novità: indirizzi a rotazione",
+  "indicesAdoptionBody": "Da ora il wallet usa un indirizzo nuovo per ogni incasso, così gli incassi non sono più collegabili fra loro. Continuare?",
+  "indicesAlreadyAssigned": "Questo è l’indirizzo già assegnato: non ne è stato creato uno nuovo.",
+  "receiveGapFoundAtIndex": "Ricezione: verificata fino all’indice {index}",
+  "@receiveGapFoundAtIndex": {
+    "description": "Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapPartial": "Ricezione: verifica parziale, {probed}/{requested}",
+  "@receiveGapPartial": {
+    "description": "Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapInterrupted": "Ricezione: verifica interrotta a {probed}/{requested} — explorer non raggiungibile o tempo esaurito. Riprova.",
+  "@receiveGapInterrupted": {
+    "description": "Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+
+  "indicesActionRetry": "Riprova la scansione",
+  "indicesActionRestore": "Ripristina da backup",
+  "indicesActionSupport": "Contatta il supporto",
+  "indicesActionContinue": "Continua",
+  "indicesSeedRequiredTitle": "Sblocca per derivare l’indirizzo",
+  "indicesSeedRequiredBody": "Questo wallet è stato creato prima che venisse salvata la chiave pubblica dell’account. Sblocca il vault una volta: la chiave viene derivata e salvata, e da quel momento ricevere non richiede più la seed.",
+  "indicesSeedMismatchTitle": "Seed non corrispondente",
+  "indicesSeedMismatchBody": "Il seed salvato su questo dispositivo non deriva gli indirizzi di questo wallet. Per sicurezza non viene salvata alcuna chiave pubblica, così gli indirizzi con storia restano raggiungibili. Verifica di aver importato il wallet giusto o contatta il supporto.",
+  "@indicesSeedMismatchTitle": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "@indicesSeedMismatchBody": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "indicesActionUnlock": "Sblocca"
 }

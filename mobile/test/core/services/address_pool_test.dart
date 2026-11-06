@@ -39,7 +39,10 @@ void main() {
 
       expect(block.external, full.addresses);
       expect(block.change, full.changeAddresses);
-      expect(block.external.first, 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu');
+      expect(
+        block.external.first,
+        'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu',
+      );
     });
 
     test('blocco con start>0 combacia con la derivazione completa', () {
@@ -56,6 +59,104 @@ void main() {
 
       expect(block.external, full.addresses.sublist(5, 8));
       expect(block.change, full.changeAddresses.sublist(5, 8));
+    });
+
+    test('backfill: xpub salvato ⇒ indirizzi IDENTICI a quelli dalla seed', () {
+      // PERCHÉ (ADR 02/11-32 §3): è il test che copre path, script type e rete
+      // in un colpo solo. Il backfill salva l'xpub derivato dal path del wallet;
+      // se la derivazione successiva usasse un altro path (o un'altra rete),
+      // gli indirizzi cambierebbero **silenziosamente** dopo la migrazione.
+      for (final path in <String>[
+        "m/84'/0'/0'",
+        "m/49'/0'/0'",
+        "m/44'/0'/0'",
+      ]) {
+        // Ciò che fa il backfill: xpub dell'account dal path del wallet.
+        final saved = deriveWalletData(
+          AddressDerivationData(mnemonic, path, 1),
+        );
+        // Ciò che fa il repository quando deriva un indirizzo.
+        final scriptType = WalletScriptType.fromDerivationPath(path);
+
+        for (final index in <int>[0, 1, 7]) {
+          final fromSeed = deriveAddressBlock(
+            AddressBlockRequest(
+              mnemonic: mnemonic,
+              derivationPath: path,
+              start: index,
+              count: 1,
+            ),
+          ).external.single;
+          final fromXpub = deriveAddressBlock(
+            AddressBlockRequest(
+              accountXpub: saved.xpub,
+              scriptType: scriptType,
+              derivationPath: path,
+              start: index,
+              count: 1,
+            ),
+          ).external.single;
+
+          expect(fromXpub, fromSeed, reason: '$path indice $index');
+        }
+
+        // PERCHÉ anche la chain del RESTO (ADR 02/11-33 §2): `/0/N` da sola
+        // lascerebbe scoperto il caso peggiore — un cambio derivato da un xpub
+        // diverso produce un resto non spendibile, e nessun test di ricezione
+        // se ne accorgerebbe.
+        for (final index in <int>[0, 7]) {
+          final changeFromSeed = deriveAddressBlock(
+            AddressBlockRequest(
+              mnemonic: mnemonic,
+              derivationPath: path,
+              start: index,
+              count: 1,
+            ),
+          ).change.single;
+          final changeFromXpub = deriveAddressBlock(
+            AddressBlockRequest(
+              accountXpub: saved.xpub,
+              scriptType: scriptType,
+              derivationPath: path,
+              start: index,
+              count: 1,
+            ),
+          ).change.single;
+
+          expect(
+            changeFromXpub,
+            changeFromSeed,
+            reason: '$path resto $index',
+          );
+        }
+      }
+    });
+
+    test('rete: indirizzi e xpub seguono la configurazione di build', () {
+      // PERCHÉ (ADR 02/11-32 §3): oggi la rete è una costante di build, quindi
+      // «wallet testnet con xpub mainnet» non è rappresentabile. Questo assert
+      // lega xpub e indirizzi alla STESSA configurazione: se un domani la rete
+      // diventasse per-wallet, il test cade qui invece che sul device.
+      final saved = deriveWalletData(
+        AddressDerivationData(mnemonic, "m/84'/0'/0'", 1),
+      );
+      final address = deriveAddressBlock(
+        AddressBlockRequest(
+          accountXpub: saved.xpub,
+          scriptType: WalletScriptType.p2wpkh,
+          derivationPath: "m/84'/0'/0'",
+          start: 0,
+          count: 1,
+        ),
+      ).external.single;
+
+      expect(address, startsWith(BitcoinNetworkConfig.bech32Hrp));
+      expect(
+        saved.xpub,
+        startsWith(
+          BitcoinNetworkConfig.current == BtcNetwork.mainnet ? 'xpub' : 'tpub',
+        ),
+      );
     });
 
     test('watch-only: blocco = derivazione dallo xpub', () {

@@ -10,6 +10,10 @@ class MockStorage extends Mock implements FlutterSecureStorage {}
 /// corrotti nello storage finto.
 const _historyKey = 'lightning_nwc_history';
 
+/// Chiave della connessione attiva (privata nello store): usata per simulare
+/// un collegamento creato da una versione precedente allo storico.
+const _uriKey = 'lightning_nwc_uri';
+
 /// Secret di default per i test (una costante di default non può contenere
 /// l'operatore `*`: per questo è un `final` a livello di file).
 final _defaultSecret = 'aa' * 32;
@@ -85,5 +89,22 @@ void main() {
     await store.clear();
     expect(await store.load(), isNull);
     expect((await store.history()).length, 1);
+  });
+
+  test('rememberActive: migra nello storico il collegamento salvato', () async {
+    // Simula un collegamento creato PRIMA dello storico: c'è la URI attiva,
+    // non la lista dei nodi recenti.
+    data[_uriKey] = uriFor('44' * 32);
+    await store.rememberActive();
+    final history = await store.history();
+    expect(history.single.walletPubkey, '44' * 32);
+    // La connessione attiva non viene toccata dalla migrazione.
+    expect((await store.load())!.walletPubkey, '44' * 32);
+  });
+
+  test('rememberActive: senza collegamento salvato lo storico resta vuoto',
+      () async {
+    await store.rememberActive();
+    expect(await store.history(), isEmpty);
   });
 }

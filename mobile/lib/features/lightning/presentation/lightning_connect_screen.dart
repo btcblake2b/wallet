@@ -32,6 +32,10 @@ class _LightningConnectScreenState extends State<LightningConnectScreen> {
   /// Nodi usati di recente (più recente per primo) — menu a tendina.
   List<LightningConnection> _history = const [];
 
+  /// Voce selezionata nel menu (deve esistere tra le voci, altrimenti Flutter
+  /// solleva un'asserzione).
+  String? _selectedUri;
+
   @override
   void initState() {
     super.initState();
@@ -42,7 +46,23 @@ class _LightningConnectScreenState extends State<LightningConnectScreen> {
   Future<void> _loadHistory() async {
     final history = await widget.connectionStore.history();
     if (!mounted) return;
-    setState(() => _history = history);
+    setState(() {
+      _history = history;
+      if (history.isEmpty) return;
+      final uris = <String>[for (final c in history) c.toUri()];
+      final typed = _uriController.text.trim();
+      if (typed.isEmpty) {
+        // PERCHÉ: chi riapre questa schermata vuole quasi sempre tornare
+        // all'ultimo nodo → campo già compilato e voce selezionata, un tocco
+        // solo per ricollegarsi.
+        _selectedUri = uris.first;
+        _uriController.text = uris.first;
+      } else {
+        // La selezione deve puntare a una voce esistente: un valore fuori
+        // lista farebbe scattare un'asserzione di Flutter.
+        _selectedUri = uris.contains(typed) ? typed : null;
+      }
+    });
   }
 
   /// Etichetta compatta per il menu: Lightning Address (se c'è) o pubkey
@@ -81,6 +101,12 @@ class _LightningConnectScreenState extends State<LightningConnectScreen> {
       return;
     }
 
+    // PERCHÉ: il nodo entra nello storico appena l'URI è valida, NON solo a
+    // collegamento riuscito — così un nodo offline (o un'app chiusa durante
+    // l'handshake) resta nel menu a tendina e il tentativo successivo è un
+    // solo tocco, senza dover conservare a mano la stringa NIP-47.
+    await widget.connectionStore.remember(connection);
+
     try {
       await widget.lightningService.connect(connection);
       // PERCHÉ: la URI contiene il secret di sessione → solo secure storage.
@@ -90,6 +116,8 @@ class _LightningConnectScreenState extends State<LightningConnectScreen> {
     } on LightningException catch (e) {
       if (!mounted) return;
       setState(() => _connecting = false);
+      // Il nodo è già nello storico: ricarico per far comparire il menu subito.
+      unawaited(_loadHistory());
       final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(loc.lightningErrorGeneric(e.message))),
@@ -114,6 +142,7 @@ class _LightningConnectScreenState extends State<LightningConnectScreen> {
             if (_history.isNotEmpty) ...[
               DropdownButtonFormField<String>(
                 isExpanded: true,
+                initialValue: _selectedUri,
                 decoration: InputDecoration(
                   labelText: loc.lightningConnectRecentNodes,
                 ),
@@ -131,9 +160,11 @@ class _LightningConnectScreenState extends State<LightningConnectScreen> {
                 onChanged: _connecting
                     ? null
                     : (uri) {
-                        if (uri != null) {
-                          setState(() => _uriController.text = uri);
-                        }
+                        if (uri == null) return;
+                        setState(() {
+                          _selectedUri = uri;
+                          _uriController.text = uri;
+                        });
                       },
               ),
               const SizedBox(height: 12),

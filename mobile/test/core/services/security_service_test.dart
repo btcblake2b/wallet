@@ -120,33 +120,23 @@ void main() {
       );
     });
 
-    test(
-      'native fail-closed: APP_SIGNATURE vuota ⇒ false',
-      () async {
-        final svc = SecurityService.test(
-          emulateNative: true,
-          getSignature: () async => 'MySig',
-        );
-        expect(await svc.verifyIntegrity(), isFalse);
-      },
-      skip: Env.appSignature.isNotEmpty
-          ? 'APP_SIGNATURE configurata: fail-closed non applicabile'
-          : false,
-    );
+    test('native fail-closed: APP_SIGNATURE vuota ⇒ false', () async {
+      final svc = SecurityService.test(
+        emulateNative: true,
+        getSignature: () async => 'MySig',
+        configuredSignatures: '',
+      );
+      expect(await svc.verifyIntegrity(), isFalse);
+    });
 
-    test(
-      'native fail-secure: errore nel recupero firma ⇒ false',
-      () async {
-        final svc = SecurityService.test(
-          emulateNative: true,
-          getSignature: () async => throw Exception('channel down'),
-        );
-        expect(await svc.verifyIntegrity(), isFalse);
-      },
-      skip: Env.appSignature.isEmpty
-          ? 'richiede APP_SIGNATURE configurata per esercitare il ramo catch'
-          : false,
-    );
+    test('native fail-secure: errore nel recupero firma ⇒ false', () async {
+      final svc = SecurityService.test(
+        emulateNative: true,
+        getSignature: () async => throw Exception('channel down'),
+        configuredSignatures: 'AA:BB:CC',
+      );
+      expect(await svc.verifyIntegrity(), isFalse);
+    });
   });
 
   group('init (protezione globale)', () {
@@ -211,7 +201,8 @@ void main() {
       expect(offCalls, 1);
     });
 
-    test('native: release ridondante a contatore 0 ⇒ off idempotente (nessun '
+    test(
+        'native: release ridondante a contatore 0 ⇒ off idempotente (nessun '
         'crash), ma mai off con protezione globale attiva', () async {
       var offCalls = 0;
       final svc = SecurityService.test(

@@ -151,13 +151,17 @@
   "walletDetailTxExportCsv": "CSV (hoja de cálculo)",
   "@walletDetailTxExportCopied": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportCopied": "Copiado al portapapeles ({fileName})",
   "@walletDetailTxExportDownloaded": {
     "placeholders": {
-      "fileName": {"type": "String"}
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "walletDetailTxExportDownloaded": "Descarga iniciada ({fileName})",
@@ -175,7 +179,6 @@
   "walletDetailTxPending": "Pendiente",
   "walletDetailTxReplaced": "Reemplazada (expulsada del mempool)",
   "walletDetailTxRetry": "Reintentar",
-
   "backupSeedTitle": "Copia de seguridad de la semilla",
   "backupSeedIntro": "Escribe tu frase semilla en papel y guárdala en un lugar seguro. Es la única forma de recuperar tus fondos.",
   "backupSeedStart": "Iniciar copia",
@@ -221,14 +224,20 @@
   "walletDetailUtxoEmpty": "No se encontraron UTXO gastables",
   "@walletDetailUtxoConfirmations": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoConfirmations": "{count} confirmaciones",
   "@walletDetailUtxoSelected": {
     "placeholders": {
-      "count": {"type": "int"},
-      "sats": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "sats": {
+        "type": "int"
+      }
     }
   },
   "walletDetailUtxoSelected": "{count} seleccionados · {sats} sat",
@@ -246,7 +255,9 @@
   "walletDetailBumpFeeTitle": "Aumentar la comisión de la transacción",
   "@walletDetailBumpFeeCurrent": {
     "placeholders": {
-      "fee": {"type": "int"}
+      "fee": {
+        "type": "int"
+      }
     }
   },
   "walletDetailBumpFeeCurrent": "Comisión actual: {fee} sat/vB",
@@ -323,7 +334,9 @@
   "importScriptTypeHint": "Las direcciones empiezan por {prefix}",
   "@importScriptTypeHint": {
     "placeholders": {
-      "prefix": { "type": "String" }
+      "prefix": {
+        "type": "String"
+      }
     }
   },
   "importScreenHint": "palabra1 palabra2 palabra3 ...",
@@ -446,7 +459,6 @@
   "walletDetailXpubCopied": "XPUB copiado",
   "walletDetailXpubDesc": "Este XPUB permite ver todas las direcciones y saldos futuros pero no puede gastar fondos.",
   "walletDetailXpubTitle": "XPUB del monedero",
-
   "explorerTitle": "Explorador",
   "explorerAddressLabel": "Dirección",
   "explorerRefresh": "Actualizar",
@@ -725,7 +737,6 @@
   "lightningPeeringGateNewTitle": "Peering limitado a las versiones del nuevo protocolo",
   "lightningPeeringGateNewBody": "Este nodo usa los bits de característica definitivos (option_blake2b 512, option_unified_sigs 514): los nodos que no se han actualizado — versión .4 y anteriores — no pueden conectarse. Es una decisión de la red, no un problema de la app ni del bridge. Los pares deben actualizar a la versión .5 o posterior.",
   "lightningPeersRegisteredOnly": "{count} pares registrados, ninguno conectado",
-
   "lightningSwapOpen": "Paga una factura sin nodo (swap)",
   "lightningSwapWebOnlyNote": "App web: los pagos Lightning usan un proveedor de swap (sin nodo). La conexión a tu propio nodo está disponible en la app de Android.",
   "lightningSwapTitle": "Pago Lightning vía proveedor",
@@ -921,5 +932,61 @@
   "psbtNoFrames": "No se reconoció ninguna trama PSBT",
   "psbtScanProgress": "Tramas leídas: {received}/{total}",
   "psbtSigning": "Firmando…",
-  "psbtNeedsSeed": "Esta cartera no tiene semilla: fírmala en el dispositivo que la tiene."
+  "psbtNeedsSeed": "Esta cartera no tiene semilla: fírmala en el dispositivo que la tiene.",
+  "indicesCorruptTitle": "Estado de indices no disponible",
+  "indicesCorruptBody": "La cartera sigue leyendo saldo e historial, pero recibir y enviar estan desactivados hasta restaurar el estado de los indices. Verifica la copia de seguridad y reintenta el escaneo o empieza de cero con el aviso mostrado.",
+  "indicesAnomalousTitle": "Indice anomalo",
+  "indicesAnomalousBody": "El indice guardado esta muy por encima del rango esperado. Restaura desde una copia de seguridad o contacta con soporte: empezar de cero reutilizaria direcciones.",
+  "indicesAdoptionTitle": "Nuevo: direcciones rotativas",
+  "indicesAdoptionBody": "La cartera usara una direccion nueva para cada pago, asi los cobros dejan de estar vinculados. Continuar?",
+  "indicesAlreadyAssigned": "Esta es la direccion ya asignada: no se creo una nueva.",
+  "receiveGapFoundAtIndex": "Recepción: verificado hasta el índice {index}",
+  "@receiveGapFoundAtIndex": {
+    "description": "Scansione conclusa: la catena di ricezione e verificata fino a questo indice (nessuna frazione: sarebbe fuorviante).",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapPartial": "Recepción: verificación parcial, {probed}/{requested}",
+  "@receiveGapPartial": {
+    "description": "Scansione incompleta per limite di scansione: il wallet ha piu indirizzi della finestra, riprovare non cambia l esito.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+  "receiveGapInterrupted": "Recepción: verificación interrumpida en {probed}/{requested} — explorador inaccesible o tiempo agotado. Reintenta.",
+  "@receiveGapInterrupted": {
+    "description": "Scansione interrotta (explorer non raggiungibile o tempo esaurito): qui riprovare ha senso, quindi il messaggio e distinto dal parziale.",
+    "placeholders": {
+      "probed": {
+        "type": "int"
+      },
+      "requested": {
+        "type": "int"
+      }
+    }
+  },
+
+  "indicesActionRetry": "Reintentar escaneo",
+  "indicesActionRestore": "Restaurar desde copia",
+  "indicesActionSupport": "Contactar con soporte",
+  "indicesActionContinue": "Continuar",
+  "indicesSeedRequiredTitle": "Desbloquea para derivar la direccion",
+  "indicesSeedRequiredBody": "Esta cartera se creo antes de guardar la clave publica de la cuenta. Desbloquea la boveda una vez: la clave se deriva y se guarda, y desde entonces recibir ya no necesita la semilla.",
+  "indicesSeedMismatchTitle": "Seed no coincide",
+  "indicesSeedMismatchBody": "La semilla guardada en este dispositivo no deriva las direcciones de este monedero. Por seguridad no se guarda ninguna clave pública, para que las direcciones con historial sigan siendo alcanzables. Comprueba que importaste el monedero correcto o contacta con el soporte.",
+  "@indicesSeedMismatchTitle": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "@indicesSeedMismatchBody": {
+    "description": "La seed nel vault non deriva gli indirizzi del wallet: nessuna chiave pubblica viene salvata (fail-closed)."
+  },
+  "indicesActionUnlock": "Desbloquear"
 }

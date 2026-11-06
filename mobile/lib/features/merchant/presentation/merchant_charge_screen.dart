@@ -8,10 +8,13 @@ import '../../../core/models/lightning_invoice.dart';
 import '../../../core/models/wallet_record.dart';
 import '../../../core/services/bitcoin_service.dart';
 import '../../../core/services/lightning/lightning_service.dart';
+import '../../../core/services/receive_address_presenter.dart';
+import '../../../core/services/receive_address_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/bip21.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/wallet_indices_notice.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Modalità di incasso.
@@ -40,6 +43,7 @@ class MerchantChargeScreen extends StatefulWidget {
     required this.wallet,
     required this.bitcoinService,
     this.lightningService,
+    this.receiveAddressService,
     this.pollInterval = const Duration(seconds: 5),
   });
 
@@ -48,6 +52,10 @@ class MerchantChargeScreen extends StatefulWidget {
 
   /// Nodo Lightning collegato (NWC/NCC). `null` = solo on-chain.
   final LightningService? lightningService;
+
+  /// Rotazione degli indirizzi (A2). `null` = comportamento storico:
+  /// `publicAddress` unico. Presente = ogni incasso usa `/0/N`.
+  final ReceiveAddressService? receiveAddressService;
 
   /// Ogni quanto verificare il pagamento.
   final Duration pollInterval;
@@ -66,6 +74,9 @@ class _MerchantChargeScreenState extends State<MerchantChargeScreen> {
   ChargeMode _mode = ChargeMode.onchain;
   bool _creating = false;
   String? _error;
+
+  /// Stato degli indici che impedisce l'incasso (corrotto/anomalo/adozione).
+  ReceiveAddressView? _view;
 
   /// Richiesta corrente: fattura LN oppure URI/indirizzo on-chain.
   LightningInvoice? _invoice;
@@ -139,7 +150,26 @@ class _MerchantChargeScreenState extends State<MerchantChargeScreen> {
         });
         _startLightningPolling(invoice.paymentHash);
       } else {
-        final address = widget.wallet.publicAddress;
+        final service = widget.receiveAddressService;
+        String address;
+        if (service == null) {
+          address = widget.wallet.publicAddress;
+        } else {
+          // PERCHÉ (ADR 31/10-23): con la rotazione attiva ogni incasso usa un
+          // indirizzo nuovo (privacy dell'esercente); senza, resta il
+          // comportamento storico su `publicAddress`.
+          final resolution = await service.next(widget.wallet);
+          final resolved = resolution.address;
+          if (resolved == null) {
+            if (!mounted) return;
+            setState(() {
+              _creating = false;
+              _view = resolution.view;
+            });
+            return;
+          }
+          address = resolved;
+        }
         final info = await widget.bitcoinService.fetchAddressInfo(address);
         if (!mounted) return;
         _baselineBalanceSats = (info['balance'] as num?)?.toInt() ?? 0;
@@ -309,6 +339,9 @@ class _MerchantChargeScreenState extends State<MerchantChargeScreen> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
+            if (_view != null)
+              // Indici non utilizzabili: senza indirizzo valido non si incassa.
+              WalletIndicesNotice(view: _view!),
             if (_error != null) ...[
               Text(
                 _error!,

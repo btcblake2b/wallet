@@ -60,11 +60,13 @@ class SwapService {
   /// Collega un provider dalla sua URI (`nostr+swap://…`).
   Future<SwapProvider> connect(String uri) async {
     final provider = SwapProvider.fromUri(uri);
+    // PERCHÉ (30/10/2026): la URI entra nel menu appena è valida — un provider
+    // offline (o un'app chiusa durante l'handshake) non deve sparire dallo
+    // storico dei nodi usati: il tentativo successivo resta un tocco solo.
+    await _providerStore.rememberUri(provider.toUri());
     final secret = await _providerStore.ensureClientSecret();
     await _client.connect(provider, clientSecretHex: secret);
     await _providerStore.save(provider, clientSecretHex: secret);
-    // PERCHÉ: la URI recente popola il menu a tendina della schermata swap.
-    await _providerStore.rememberUri(provider.toUri());
     return provider;
   }
 
@@ -84,6 +86,10 @@ class SwapService {
   Future<SwapProvider?> restoreConnection() async {
     final provider = await _providerStore.loadProvider();
     if (provider == null) return null;
+    // PERCHÉ (30/10/2026): un provider salvato da una versione precedente allo
+    // storico va registrato nel menu a tendina — altrimenti dopo un disconnect
+    // l'utente non ritrova più il nodo che aveva collegato.
+    await _providerStore.rememberUri(provider.toUri());
     final secret = await _providerStore.ensureClientSecret();
     await _client.connect(provider, clientSecretHex: secret);
     return provider;
@@ -367,7 +373,9 @@ class SwapService {
     );
     final txid = await _bitcoinService.broadcastTransaction(raw);
     await _sessionStore.upsert(
-      session.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000),
+      session.copyWith(
+        updatedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      ),
     );
     debugPrint(
       '[LoopEngineer] SwapService: refund trasmesso ${txid.substring(0, 12)}…',

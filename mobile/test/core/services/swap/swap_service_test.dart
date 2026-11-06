@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'fake_swap_provider.dart';
 
 class MockStorage extends Mock implements FlutterSecureStorage {}
+
 class MockBitcoinService extends Mock implements BitcoinService {}
 
 /// Script HTLC coerente coi parametri delle risposte fake (la guardia di
@@ -173,7 +174,8 @@ void main() {
     String uriFor() => 'nostr+swap://${fake.providerPubHex}'
         '?v=1&network=blake2b&relay=wss%3A%2F%2Frelay.test';
 
-    test('provider vivo (SWAP_NOT_FOUND) → disponibile, sonda chiusa', () async {
+    test('provider vivo (SWAP_NOT_FOUND) → disponibile, sonda chiusa',
+        () async {
       fake.responder = (method, params) => {
             'error': {'code': 'SWAP_NOT_FOUND', 'message': 'id sconosciuto'},
           };
@@ -257,7 +259,9 @@ void main() {
         if (method == 'swap_create') {
           return {'result': statusResult()};
         }
-        return {'error': {'code': 'NOT_IMPLEMENTED', 'message': 'test'}};
+        return {
+          'error': {'code': 'NOT_IMPLEMENTED', 'message': 'test'},
+        };
       };
       await connectProvider();
       final session = await service.startSwap(
@@ -344,7 +348,9 @@ void main() {
             ),
           };
         }
-        return {'error': {'code': 'NOT_IMPLEMENTED', 'message': 'test'}};
+        return {
+          'error': {'code': 'NOT_IMPLEMENTED', 'message': 'test'},
+        };
       };
 
       final result = await service.fund(
@@ -425,7 +431,9 @@ void main() {
             ),
           };
         }
-        return {'error': {'code': 'NOT_IMPLEMENTED', 'message': 'test'}};
+        return {
+          'error': {'code': 'NOT_IMPLEMENTED', 'message': 'test'},
+        };
       };
       final updated = await service.refresh(session);
       expect(updated.state, SwapClientState.completed);
@@ -516,7 +524,8 @@ void main() {
           feeRateSatVb: 2,
         ),
         throwsA(
-          isA<SwapException>().having((e) => e.code, 'code', 'REFUND_NOT_READY'),
+          isA<SwapException>()
+              .having((e) => e.code, 'code', 'REFUND_NOT_READY'),
         ),
       );
     });
@@ -551,6 +560,41 @@ void main() {
       expect(await sessionStore.byId(session.swapId), isNotNull);
       await service.cancelSession(session.swapId);
       expect(await sessionStore.byId(session.swapId), isNull);
+    });
+  });
+
+  group('menu dei nodi recenti', () {
+    test('connect riuscito: la URI del provider entra nello storico', () async {
+      await connectProvider();
+      final expected = SwapProvider.fromUri(
+        'nostr+swap://${fake.providerPubHex}'
+        '?v=1&network=blake2b&relay=wss%3A%2F%2Frelay.test',
+      ).toUri();
+      expect(await service.knownProviderUris(), [expected]);
+    });
+
+    // PERCHÉ: un provider offline non deve sparire dallo storico — altrimenti
+    // il menu a tendina resta vuoto proprio quando serve riprovare.
+    test('connect fallito: la URI resta comunque nello storico', () async {
+      fake.failConnect = true;
+      await expectLater(connectProvider(), throwsA(isA<SwapException>()));
+      final known = await service.knownProviderUris();
+      expect(known.single, contains(fake.providerPubHex));
+    });
+
+    test('restoreConnection: il provider salvato entra nello storico',
+        () async {
+      await connectProvider();
+      // Simula un collegamento creato PRIMA dello storico: provider salvato,
+      // lista URI assente.
+      data.remove('swap_provider_uris');
+      expect(await service.knownProviderUris(), isEmpty);
+
+      await service.restoreConnection();
+      expect(
+        (await service.knownProviderUris()).single,
+        contains(fake.providerPubHex),
+      );
     });
   });
 }

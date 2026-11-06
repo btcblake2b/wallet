@@ -2976,4 +2976,73 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get psbtNeedsSeed =>
       'Tässä lompakossa ei ole siementä: allekirjoita laitteella, jossa se on.';
+
+  @override
+  String get indicesCorruptTitle => 'Osoiteindeksin tila ei ole kaytettavissa';
+
+  @override
+  String get indicesCorruptBody =>
+      'Lompakko lukee edelleen saldon ja historian, mutta vastaanotto ja lahetys on estetty, kunnes indeksin tila palautetaan. Tarkista varmuuskopio, yrita skannausta uudelleen tai aloita nollasta naytetylla varoituksella.';
+
+  @override
+  String get indicesAnomalousTitle => 'Poikkeava osoiteindeksi';
+
+  @override
+  String get indicesAnomalousBody =>
+      'Tallennettu indeksi on selvasti odotettua aluetta suurempi. Palauta varmuuskopiosta tai ota yhteytta tukeen: nollasta aloittaminen kayttaisi osoitteita uudelleen.';
+
+  @override
+  String get indicesAdoptionTitle => 'Uutta: kiertavat osoitteet';
+
+  @override
+  String get indicesAdoptionBody =>
+      'Lompakko kayttaa nyt uutta osoitetta jokaisessa maksussa, joten maksut eivat ole enaa yhdistettavissa. Jatketaanko?';
+
+  @override
+  String get indicesAlreadyAssigned =>
+      'Tama on jo maaritetty osoite: uutta ei luotu.';
+
+  @override
+  String receiveGapFoundAtIndex(int index) {
+    return 'Vastaanotto: vahvistettu indeksiin $index asti';
+  }
+
+  @override
+  String receiveGapPartial(int probed, int requested) {
+    return 'Vastaanotto: osittainen tarkistus, $probed/$requested';
+  }
+
+  @override
+  String receiveGapInterrupted(int probed, int requested) {
+    return 'Vastaanotto: tarkistus keskeytyi kohtaan $probed/$requested — selain ei vastaa tai aika loppui. Yritä uudelleen.';
+  }
+
+  @override
+  String get indicesActionRetry => 'Yrita skannausta';
+
+  @override
+  String get indicesActionRestore => 'Palauta varmuuskopiosta';
+
+  @override
+  String get indicesActionSupport => 'Ota yhteytta tukeen';
+
+  @override
+  String get indicesActionContinue => 'Jatka';
+
+  @override
+  String get indicesSeedRequiredTitle => 'Avaa lompakko osoitteen johtamiseksi';
+
+  @override
+  String get indicesSeedRequiredBody =>
+      'Tama lompakko luotiin ennen julkisen tiliavaimen tallentamista. Avaa holvi kerran: avain johdetaan ja tallennetaan, ja sen jalkeen vastaanotto ei vaadi siemenlausetta.';
+
+  @override
+  String get indicesSeedMismatchTitle => 'Seed ei vastaa';
+
+  @override
+  String get indicesSeedMismatchBody =>
+      'Tähän laitteeseen tallennettu seed ei johda tämän lompakon osoitteita. Turvallisuuden vuoksi julkista avainta ei tallenneta, jotta historialliset osoitteet pysyvät saavutettavina. Tarkista, että toit oikean lompakon, tai ota yhteyttä tukeen.';
+
+  @override
+  String get indicesActionUnlock => 'Avaa';
 }

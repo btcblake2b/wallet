@@ -2858,4 +2858,70 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get psbtNeedsSeed => '该钱包没有种子：请在持有种子的设备上签名。';
+
+  @override
+  String get indicesCorruptTitle => '地址索引状态不可用';
+
+  @override
+  String get indicesCorruptBody =>
+      '钱包仍可读取余额和交易记录，但在索引状态恢复之前，收款和付款已被禁用。请检查备份，然后重试扫描或按提示从零开始。';
+
+  @override
+  String get indicesAnomalousTitle => '地址索引异常';
+
+  @override
+  String get indicesAnomalousBody => '保存的索引远超预期范围。请从备份恢复或联系支持：从零开始会重复使用已派生的地址。';
+
+  @override
+  String get indicesAdoptionTitle => '新功能：地址轮换';
+
+  @override
+  String get indicesAdoptionBody => '钱包将为每笔收款使用新地址，收款之间不再相互关联。是否继续？';
+
+  @override
+  String get indicesAlreadyAssigned => '这是已分配的地址：没有创建新地址。';
+
+  @override
+  String receiveGapFoundAtIndex(int index) {
+    return '收款: 已验证到索引 $index';
+  }
+
+  @override
+  String receiveGapPartial(int probed, int requested) {
+    return '收款: 部分校验 $probed/$requested';
+  }
+
+  @override
+  String receiveGapInterrupted(int probed, int requested) {
+    return '收款: 校验在 $probed/$requested 处中断——区块浏览器无法访问或超时。请重试。';
+  }
+
+  @override
+  String get indicesActionRetry => '重试扫描';
+
+  @override
+  String get indicesActionRestore => '从备份恢复';
+
+  @override
+  String get indicesActionSupport => '联系支持';
+
+  @override
+  String get indicesActionContinue => '继续';
+
+  @override
+  String get indicesSeedRequiredTitle => '解锁以派生地址';
+
+  @override
+  String get indicesSeedRequiredBody =>
+      '此钱包创建时尚未保存账户公钥。请解锁保险库一次：密钥将被派生并保存，此后收款不再需要助记词。';
+
+  @override
+  String get indicesSeedMismatchTitle => '种子不匹配';
+
+  @override
+  String get indicesSeedMismatchBody =>
+      '本设备保存的种子无法生成此钱包的地址。为安全起见不保存公钥，以便有历史记录的地址仍可访问。请确认导入的钱包是否正确，或联系支持。';
+
+  @override
+  String get indicesActionUnlock => '解锁';
 }

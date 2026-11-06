@@ -393,7 +393,10 @@ Uint8List _hexToBytes(String hex) {
       '${split.blocked.length} UTXO, ${sumUtxoSats(split.blocked)} sat',
     );
   }
-  return (utxos: split.spendable, blockedCoinbaseSats: sumUtxoSats(split.blocked));
+  return (
+    utxos: split.spendable,
+    blockedCoinbaseSats: sumUtxoSats(split.blocked)
+  );
 }
 
 // Top-level isolate function for sweep (send max)
@@ -422,7 +425,7 @@ String _buildAndSignTxSweep(BuildTxSweepData data) {
     throw Exception(
       split.blockedCoinbaseSats > 0
           ? 'Nessun UTXO spendibile per sweep: ${split.blockedCoinbaseSats} sat '
-                'provengono da payout di mining (coinbase) non ancora propagabili.'
+              'provengono da payout di mining (coinbase) non ancora propagabili.'
           : 'Nessun UTXO spendibile trovato per sweep.',
     );
   }
@@ -1546,6 +1549,7 @@ class BitcoinService {
             scriptPubKeyAddress: scriptAddr,
             ownerAddress: address,
             confirmations: confirmations,
+            blockHeight: confirmed ? blockHeight : null,
             isCoinbase: isCoinbase,
           );
         }

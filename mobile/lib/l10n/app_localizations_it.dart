@@ -2978,4 +2978,73 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get psbtNeedsSeed =>
       'Questo wallet non ha il seed: firmala sul dispositivo che lo possiede.';
+
+  @override
+  String get indicesCorruptTitle => 'Stato indici non disponibile';
+
+  @override
+  String get indicesCorruptBody =>
+      'Il wallet legge ancora saldo e storico, ma ricezione e invio sono disabilitati finché lo stato degli indici non viene ripristinato. Verifica il backup, poi riprova la scansione o riparti da zero con l’avviso mostrato.';
+
+  @override
+  String get indicesAnomalousTitle => 'Indice anomalo';
+
+  @override
+  String get indicesAnomalousBody =>
+      'L’indice salvato è molto oltre l’intervallo atteso per questo wallet. Ripristina da un backup o contatta il supporto: ripartire da zero riuserebbe indirizzi già derivati.';
+
+  @override
+  String get indicesAdoptionTitle => 'Novità: indirizzi a rotazione';
+
+  @override
+  String get indicesAdoptionBody =>
+      'Da ora il wallet usa un indirizzo nuovo per ogni incasso, così gli incassi non sono più collegabili fra loro. Continuare?';
+
+  @override
+  String get indicesAlreadyAssigned =>
+      'Questo è l’indirizzo già assegnato: non ne è stato creato uno nuovo.';
+
+  @override
+  String receiveGapFoundAtIndex(int index) {
+    return 'Ricezione: verificata fino all’indice $index';
+  }
+
+  @override
+  String receiveGapPartial(int probed, int requested) {
+    return 'Ricezione: verifica parziale, $probed/$requested';
+  }
+
+  @override
+  String receiveGapInterrupted(int probed, int requested) {
+    return 'Ricezione: verifica interrotta a $probed/$requested — explorer non raggiungibile o tempo esaurito. Riprova.';
+  }
+
+  @override
+  String get indicesActionRetry => 'Riprova la scansione';
+
+  @override
+  String get indicesActionRestore => 'Ripristina da backup';
+
+  @override
+  String get indicesActionSupport => 'Contatta il supporto';
+
+  @override
+  String get indicesActionContinue => 'Continua';
+
+  @override
+  String get indicesSeedRequiredTitle => 'Sblocca per derivare l’indirizzo';
+
+  @override
+  String get indicesSeedRequiredBody =>
+      'Questo wallet è stato creato prima che venisse salvata la chiave pubblica dell’account. Sblocca il vault una volta: la chiave viene derivata e salvata, e da quel momento ricevere non richiede più la seed.';
+
+  @override
+  String get indicesSeedMismatchTitle => 'Seed non corrispondente';
+
+  @override
+  String get indicesSeedMismatchBody =>
+      'Il seed salvato su questo dispositivo non deriva gli indirizzi di questo wallet. Per sicurezza non viene salvata alcuna chiave pubblica, così gli indirizzi con storia restano raggiungibili. Verifica di aver importato il wallet giusto o contatta il supporto.';
+
+  @override
+  String get indicesActionUnlock => 'Sblocca';
 }

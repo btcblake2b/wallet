@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/widgets/password_dialog.dart';
 
 import '../../../core/config/bitcoin_network_config.dart';
+import '../../../core/config/feature_flags.dart';
 import '../../../core/models/wallet_record.dart';
 import '../../../core/services/balance_cache.dart';
 import '../../../core/services/balance_display.dart';
@@ -19,10 +20,14 @@ import '../../../core/services/device_service.dart';
 import '../../../core/services/export/export_delivery.dart';
 import '../../../core/services/export/history_export.dart';
 import '../../../core/services/rbf_params_registry.dart';
+import '../../../core/services/receive_address_fallback.dart';
+import '../../../core/services/receive_address_presenter.dart';
+import '../../../core/services/receive_address_service.dart';
 import '../../../core/services/wallet_repository.dart';
 import '../../../core/services/security_service.dart';
 import '../../../core/widgets/info_dot.dart';
 import '../../../core/widgets/tappable_balance.dart';
+import '../../../core/widgets/wallet_indices_notice.dart';
 import '../../../l10n/info_hints_l10n.dart';
 import '../../../core/widgets/app_background.dart';
 import '../../../core/widgets/glass_container.dart';
@@ -56,6 +61,7 @@ class WalletDetailScreen extends StatefulWidget {
     required this.deviceService,
     this.random,
     this.lightningService,
+    this.receiveAddressService,
     this.requireSeedBackupBeforeReceive = kIsWeb,
   });
 
@@ -75,6 +81,15 @@ class WalletDetailScreen extends StatefulWidget {
 
   /// Random iniettabile per test deterministici della verifica seed.
   final Random? random;
+
+  /// Servizio di ricezione iniettabile.
+  ///
+  /// // PERCHÉ (ADR 02/11-32 §1): il flag di rotazione è una costante di
+  /// // compilazione (`FeatureFlags.current`), quindi nei test il ramo con
+  /// // rotazione attiva non sarebbe raggiungibile — e proprio quel ramo
+  /// // contiene l'invariante «la seed si decifra una volta sola». Con il seam
+  /// // il test può provarlo; in produzione resta `null` e decide il flag.
+  final ReceiveAddressService? receiveAddressService;
 
   /// `true` = non si mostra un indirizzo per ricevere finché il backup della
   /// seed non è confermato.
@@ -861,11 +876,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     // c'è (hot o watch-only) e la seed solo per i wallet più vecchi. Prima il
     // ramo hot decifrava SEMPRE la seed anche per mostrare un indirizzo.
     final derived = await _deriveAddresses();
-    for (final addr in derived.addresses) {
-      if (!used.contains(addr)) return addr;
-    }
-    // PERCHÉ: fallback conservativo — tutti i derivati usati, torna al primo.
-    return _wallet.publicAddress;
+    // Regola pura e testata (ADR 01/11-25 §2): primo /0/N non usato.
+    return firstUnusedReceiveAddress(
+      used: used,
+      derived: derived.addresses,
+      fallback: _wallet.publicAddress,
+    );
   }
 
   /// R2 (26/10): dialog + wizard di backup. Ritorna `true` solo se il backup
@@ -905,7 +921,85 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     return confirmed == true;
   }
 
-  Future<void> _showReceiveDialog() async {
+  /// Servizio di risoluzione dell'indirizzo quando la rotazione è attiva.
+  ///
+  /// // PERCHÉ `null` con il flag spento (ADR 01/11-24): il flag deve riportare
+  /// // il comportamento **precedente**, e il precedente è l'euristica «primo
+  /// // /0/N senza UTXO» (A3), non la lettura dell'indice persistito.
+  ReceiveAddressService? get _receiveService =>
+      widget.receiveAddressService ??
+      (FeatureFlags.current.walletIndexRotation
+          ? ReceiveAddressService(
+              repository: widget.walletRepository,
+              flags: FeatureFlags.current,
+            )
+          : null);
+
+  /// Risolve l'indirizzo per il dialog Ricevi, **senza** fail-open.
+  ///
+  /// // PERCHÉ (ADR 01/11-24): il vecchio `catch (_) → publicAddress` mostrava
+  /// // `/0/0` anche con gli indici corrotti: era il fail-open che il modello ha
+  /// // chiuso, reintrodotto nel punto più visibile dell'app.
+  Future<ReceiveAddressResolution> _resolveReceive({
+    bool adoptLegacy = false,
+  }) async {
+    final service = _receiveService;
+    if (service != null) {
+      String? mnemonic;
+      if (!_wallet.hasAccountXpub) {
+        mnemonic = await widget.walletRepository.decryptSeed(_wallet);
+      }
+      return service.next(
+        _wallet,
+        mnemonic: mnemonic,
+        adoptLegacy: adoptLegacy,
+      );
+    }
+    final view = ReceiveAddressPresenter.fromState(
+      state: _wallet.indicesState,
+      rotationEnabled: false,
+    );
+    if (!ReceiveAddressPresenter.canReceive(view)) {
+      return ReceiveAddressResolution(view: view);
+    }
+    return ReceiveAddressResolution(
+      view: ReceiveAddressView.alreadyAssigned,
+      address: await _resolveReceiveAddress(),
+    );
+  }
+
+  /// Dialog di blocco quando gli indici non sono utilizzabili.
+  ///
+  /// // PERCHÉ un dialog dedicato (ADR 01/11-24): le uscite sono diverse —
+  /// // adozione («Continua»), corrotto (riprova / riparti da 0 / backup),
+  /// // anomalo (backup / supporto, **mai** riparti da 0).
+  Future<void> _showIndicesBlockedDialog(ReceiveAddressView view) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: WalletIndicesNotice(
+          view: view,
+          onResetToZero: view == ReceiveAddressView.corruptBlocked
+              ? () {
+                  Navigator.pop(dialogContext);
+                  // Il reset vero passa dal conferma esplicita già prevista
+                  // dal flusso di recovery; qui si riapre il dialog Ricevi
+                  // con l'adozione, che è l'unica azione locale sicura.
+                  _showReceiveDialog(adoptLegacy: true);
+                }
+              : null,
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppLocalizations.of(context).passwordDialogCancel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showReceiveDialog({bool adoptLegacy = false}) async {
     final loc = AppLocalizations.of(context);
     // PERCHÉ (R2, 26/10): prima di mostrare un indirizzo bisogna poter
     // recuperare i fondi. Sul web la seed può sparire con lo storage del sito:
@@ -919,15 +1013,33 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
     // PERCHÉ: mostra lo spinner mentre si risolve l'indirizzo (derivazione
     // locale, veloce — nessuna chiamata di rete).
     setState(() => _isLoading = true);
-    String receiveAddress;
+    final ReceiveAddressResolution resolution;
     try {
-      receiveAddress = await _resolveReceiveAddress();
-    } catch (_) {
-      // PERCHÉ: se la derivazione fallisce, il primo indirizzo resta valido.
-      receiveAddress = _wallet.publicAddress;
+      resolution = await _resolveReceive(adoptLegacy: adoptLegacy);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      // Nessun indirizzo di ripiego: un errore non diventa `/0/0`.
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$e')));
+      return;
     }
     if (!mounted) return;
     setState(() => _isLoading = false);
+    // PERCHÉ (ADR 02/11-32 §1): il record persistito porta l'indice avanti e,
+    // per un wallet legacy, l'`accountXpub` appena salvato dal backfill. Senza
+    // questo aggiornamento la schermata resterebbe convinta che l'xpub manchi e
+    // decifrerebbe la seed al tap successivo.
+    final persisted = resolution.record;
+    if (persisted != null) setState(() => _wallet = persisted);
+
+    if (!ReceiveAddressPresenter.canReceive(resolution.view)) {
+      await _showIndicesBlockedDialog(resolution.view);
+      return;
+    }
+
+    final receiveAddress = resolution.address!;
 
     showDialog(
       context: context,
@@ -1776,6 +1888,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen>
           wallet: _wallet,
           bitcoinService: widget.bitcoinService,
           lightningService: widget.lightningService,
+          // PERCHÉ (ADR 31/10-23): la rotazione entra dal service, non dalla
+          // schermata — se il flag è spento il service torna `publicAddress`.
+          receiveAddressService: ReceiveAddressService(
+            repository: widget.walletRepository,
+            flags: FeatureFlags.current,
+          ),
         ),
       ),
     );
