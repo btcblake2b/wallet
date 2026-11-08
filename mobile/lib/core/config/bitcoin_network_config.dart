@@ -32,30 +32,42 @@ class BitcoinNetworkConfig {
   // Maturity di un output coinbase (consenso + policy di relay)
   // ============================================================
   // PERCHÉ: il mining del progetto paga in coinbase → il coin selection e il
-  // SALDO devono escluderli finché la rete non ne propaga la spesa. Fino al
-  // blocco 979.918 valeva una profondità unica (6.480 blocchi, PR
-  // privkeyio/lightning#11); dal 979.919 Knots `v29.4.3` (PR
-  // bitcoinknots#419, consenso `knots#468`) applica DUE regole: le coinbase
-  // dell'epoca 973.440-979.918 si sbloccano tutte a 979.919, quelle da
-  // 979.919 maturano dopo 25.920 blocchi (~180 giorni). La matematica sta in
-  // [CoinbaseMaturityRules]; qui restano solo i parametri della rete.
-  // ⚠️ Limite noto: la regola lunga vale fino all'expiry RDTS (2027-09); dopo
-  // quella data il consenso cambierà ancora e questi numeri vanno rivisti.
+  // SALDO devono escluderli finché la rete non ne propaga la spesa. La
+  // profondità richiesta dipende dall'ALTEZZA DELLA COINBASE (consenso Knots
+  // `v29.4.3`, `src/consensus/tx_verify.cpp`): ogni payout ha il proprio
+  // conto alla rovescia dal blocco in cui è stato minato.
+  //   - < 973.440          → 100 blocchi (consenso ordinario)
+  //   - 973.440 – 979.918  → 6.480 blocchi (epoca 45 giorni)
+  //   - ≥ 979.919          → 25.920 blocchi (~180 giorni) fino all'expiry RDTS
+  // La matematica sta in [CoinbaseMaturityRules]; qui i parametri della rete.
+  // ⚠️ Limite noto: dopo l'expiry RDTS (2027-09-01 00:00 UTC) il consenso torna
+  // a 100 blocchi per le coinbase minate dopo quell'istante. Il modello lavora
+  // per altezza, non per timestamp → continuerà ad applicare 25.920 a quelle
+  // coinbase (prudente: le mostra in attesa più a lungo del dovuto).
   static CoinbaseMaturityRules get coinbaseMaturityRules {
     switch (current) {
       case BtcNetwork.mainnet:
         return const CoinbaseMaturityRules(
-          longMaturityBlocks: 25920,
-          longStartHeight: 979919,
-          epochStartHeight: 973440,
-          epochReleaseHeight: 979919,
-          consensusMaturityBlocks: 100,
+          defaultMaturityBlocks: 100,
+          rdtsExpiryUnixTime: 1819756800, // 2027-09-01 00:00 UTC
+          rdtsExpiryNote: 'RDTS expires 2027-09-01; re-check chainparams after',
+          epochs: [
+            CoinbaseMaturityEpoch(
+              fromHeight: 973440,
+              toHeight: 979918,
+              maturityBlocks: 6480,
+            ),
+            CoinbaseMaturityEpoch(fromHeight: 979919, maturityBlocks: 25920),
+          ],
         );
-      // PERCHÉ (testnet4): nessuna fonte per le altezze dell'epoca su questa
+      // PERCHÉ (testnet4): nessuna fonte per le altezze delle epoche su questa
       // rete → si resta sulla profondità fissa documentata dalla PR #11
       // (6.705). Prudente: non si inventano epoche che non possiamo verificare.
       case BtcNetwork.testnet:
-        return const CoinbaseMaturityRules(longMaturityBlocks: 6705);
+        return const CoinbaseMaturityRules(
+          defaultMaturityBlocks: 6705,
+          epochs: [],
+        );
     }
   }
 
@@ -64,7 +76,7 @@ class BitcoinNetworkConfig {
   /// PERCHÉ resta una profondità e non un'altezza: la UI spiega "dopo N
   /// blocchi", mentre il countdown per singolo UTXO usa l'altezza reale.
   static int get coinbaseRelayMaturityBlocks =>
-      coinbaseMaturityRules.longMaturityBlocks;
+      coinbaseMaturityRules.strictestMaturityBlocks;
 
   // ============================================================
   // BIP32 – prefissi extended key (xpub/xprv per mainnet, tpub/tprv per testnet)

@@ -2,15 +2,15 @@
 ///
 /// PERCHÉ: la rete non propaga la spesa di una coinbase prima della maturity.
 /// Dal blocco 979.919 (Knots `v29.4.3`, PR `bitcoinknots#419`, consenso
-/// `knots#468`) le regole in vigore sulla mainnet blake2b sono DUE:
+/// `knots#468`) la profondità richiesta dipende dall'ALTEZZA DELLA COINBASE,
+/// quindi ogni payout ha il proprio conto alla rovescia dal blocco in cui è
+/// stato minato:
 ///
-/// - coinbase minate fra 973.440 e 979.918 (45 giorni): si sbloccano tutte
-///   insieme a 979.919;
-/// - coinbase minate da 979.919 in poi (180 giorni): 25.920 blocchi di attesa.
+/// - < 973.440 → 100 blocchi (consenso ordinario);
+/// - 973.440 – 979.918 → 6.480 blocchi (epoca 45 giorni);
+/// - ≥ 979.919 → 25.920 blocchi (~180 giorni), fino all'expiry RDTS.
 ///
-/// Quindi la profondità dovuta dipende dall'ALTEZZA della coinbase
-/// ([UtxoInfo.blockHeight]): una costante unica sbaglia in entrambe le
-/// direzioni. I parametri stanno in [CoinbaseMaturityRules]
+/// I parametri stanno in [CoinbaseMaturityRules]
 /// ([BitcoinNetworkConfig.coinbaseMaturityRules]); qui c'è solo la decisione.
 /// Il periodo si misura in BLOCCHI: la UI mostra quanti blocchi mancano, non
 /// una data. Il mining del progetto paga in coinbase: un wallet che ne
@@ -62,7 +62,7 @@ int relayRequiredDepth(UtxoInfo utxo, {int? maturityBlocks}) {
   if (maturityBlocks != null) return maturityBlocks;
   final rules = BitcoinNetworkConfig.coinbaseMaturityRules;
   final height = utxo.blockHeight;
-  if (height == null) return rules.longMaturityBlocks;
+  if (height == null) return rules.strictestMaturityBlocks;
   return rules.requiredDepth(height);
 }
 

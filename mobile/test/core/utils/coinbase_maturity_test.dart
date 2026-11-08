@@ -4,11 +4,12 @@ import 'package:btc_blake2b_wallet/core/models/utxo_info.dart';
 import 'package:btc_blake2b_wallet/core/utils/coinbase_maturity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Regole verificate (fonte: Knots `v29.4.3` release notes + PR
-/// `bitcoinknots/bitcoin#419`, consenso `knots#468`): dal blocco 979.919 la
-/// mainnet blake2b applica DUE regole — sblocco comune a 979.919 per le
-/// coinbase dell'epoca 973.440-979.918, 25.920 blocchi (~180 giorni) per
-/// quelle minate da 979.919 in poi.
+/// Regole verificate (fonte primaria: Knots `v29.4.3`,
+/// `src/consensus/tx_verify.cpp` + `src/consensus/params.h`): la maturity
+/// dipende dall'ALTEZZA DELLA COINBASE, quindi ogni payout ha il proprio
+/// conto alla rovescia — 100 blocchi prima di 973.440, 6.480 nell'epoca
+/// 973.440-979.918, 25.920 da 979.919. Confermato l'08/11/2026 con
+/// `testmempoolaccept` sul nodo reale (`bad-txns-premature-spend-of-coinbase`).
 void main() {
   group('isCoinbaseRelayable', () {
     const maturity = 6480;
@@ -153,14 +154,21 @@ void main() {
       );
     });
 
-    test('coinbase dell epoca 973.440-979.918: sblocco comune a 979.919', () {
+    test('coinbase dell epoca 973.440-979.918: 6.480 dal PROPRIO blocco', () {
+      // Verificato sul nodo reale: h=973.440 sblocca a 979.920 (h + 6.480).
       expect(
         isUtxoRelayable(
           utxo(isCoinbase: true, confirmations: 6480, blockHeight: 973440),
         ),
         isTrue,
       );
-      // 979.919 − 979.818 + 1 = 102 conferme: con 100 non è ancora matura.
+      expect(
+        isUtxoRelayable(
+          utxo(isCoinbase: true, confirmations: 6479, blockHeight: 973440),
+        ),
+        isFalse,
+      );
+      // Minata a fine finestra: NON si sblocca a 979.919, ma a h + 6.480.
       expect(
         isUtxoRelayable(
           utxo(isCoinbase: true, confirmations: 100, blockHeight: 979818),
@@ -169,9 +177,20 @@ void main() {
       );
       expect(
         isUtxoRelayable(
-          utxo(isCoinbase: true, confirmations: 102, blockHeight: 979818),
+          utxo(isCoinbase: true, confirmations: 6480, blockHeight: 979818),
         ),
         isTrue,
+      );
+    });
+
+    test('caso reale 08/11/2026: h=979877 con 1.270 conferme → rifiutata', () {
+      // `testmempoolaccept` sul nodo: bad-txns-premature-spend-of-coinbase,
+      // "tried to spend coinbase at depth 1270".
+      expect(
+        isUtxoRelayable(
+          utxo(isCoinbase: true, confirmations: 1270, blockHeight: 979877),
+        ),
+        isFalse,
       );
     });
 
@@ -199,13 +218,16 @@ void main() {
       expect(rules.unlockHeight(973439), 973539);
     });
 
-    test('epoca → sblocco comune a 979.919 (+1 conferma del blocco)', () {
-      // 6.480 = profondità dichiarata da Knots per l epoca 973.440-979.918.
+    test('epoca → 6.480 blocchi per OGNI coinbase, non uno sblocco comune', () {
+      // `CoinbaseMaturityBeforeRolling() = release − start` = 979.920 − 973.440.
       expect(rules.requiredDepth(973440), 6480);
       expect(rules.unlockHeight(973440), 979920);
-      // Minata a fine finestra: restano dovute le 100 conferme ordinarie.
-      expect(rules.requiredDepth(979918), 100);
-      expect(rules.unlockHeight(979918), 980018);
+      expect(rules.requiredDepth(975000), 6480);
+      expect(rules.unlockHeight(975000), 981480);
+      // Ultima coinbase dell'epoca: sblocca a 986.398, ~14 mesi dopo il 979.919
+      // sepolto. È il numero che le release note citano come 986.399.
+      expect(rules.requiredDepth(979918), 6480);
+      expect(rules.unlockHeight(979918), 986398);
     });
 
     test('dal 979.919 → 25.920 blocchi (~180 giorni)', () {
@@ -214,11 +236,26 @@ void main() {
       expect(rules.requiredDepth(1200000), 25920);
     });
 
+    test('dati reali del nodo (tip 981.146, 08/11/2026)', () {
+      const tip = 981146;
+      // La più vecchia coinbase ancora immatura: 6.406 conferme, 74 al giro.
+      expect(rules.requiredDepth(974741), 6480);
+      expect(rules.unlockHeight(974741), 981221);
+      expect(rules.requiredDepth(974741) - (tip - 974741 + 1), 74);
+      // La più recente dell'epoca ancora immatura.
+      expect(rules.requiredDepth(979877), 6480);
+      expect(rules.unlockHeight(979877), 986357);
+    });
+
     test('rete senza epoche (testnet) → profondità fissa', () {
-      const flat = CoinbaseMaturityRules(longMaturityBlocks: 6705);
+      const flat = CoinbaseMaturityRules(
+        defaultMaturityBlocks: 6705,
+        epochs: [],
+      );
       expect(flat.requiredDepth(1), 6705);
       expect(flat.requiredDepth(500000), 6705);
       expect(flat.unlockHeight(1), 6706);
+      expect(flat.strictestMaturityBlocks, 6705);
     });
   });
 
@@ -281,10 +318,12 @@ void main() {
 
       // Dal 979.919 la regola lunga: 25.920 − 600 = 25.320.
       expect(remainingRelayBlocks(coinbaseAt(979919, 600)), 25320);
-      // Fine epoca (979.818): 102 conferme dovute − 100 = 2 blocchi.
-      expect(remainingRelayBlocks(coinbaseAt(979818, 100)), 2);
+      // Fine epoca (979.818): 6.480 − 100 = 6.380 (sblocco a 986.298).
+      expect(remainingRelayBlocks(coinbaseAt(979818, 100)), 6380);
       // Pre-epoca (regola ordinaria): 100 − 40 = 60.
       expect(remainingRelayBlocks(coinbaseAt(900000, 40)), 60);
+      // Caso reale: h=974.741 con 6.406 conferme → 74 blocchi.
+      expect(remainingRelayBlocks(coinbaseAt(974741, 6406)), 74);
     });
 
     test('coinbase con conferme ignote → null: nessun countdown inventato', () {
